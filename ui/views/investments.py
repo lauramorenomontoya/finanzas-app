@@ -1,0 +1,477 @@
+"""
+Vista de Cuentas e Inversiones (Fiducias, Bolsillos de Ahorro y Fondos USD/COP).
+Permite gestionar múltiples cuentas, transferir fondos entre presupuesto e inversiones,
+y registrar rendimientos e intereses generados, con soporte para Edición ✏️ y Eliminación 🗑️.
+"""
+
+import customtkinter as ctk
+from datetime import datetime
+from typing import Callable, Optional, Dict, Any
+from ui.theme import Theme
+from ui.components import (
+    ToastNotification,
+    StatCard,
+    AccountActionModal,
+    EditAccountModal,
+    ConfirmDialog,
+    EditTransactionModal
+)
+
+
+class InvestmentsView(ctk.CTkFrame):
+    def __init__(self, master, db_manager, on_data_changed: Optional[Callable[[], None]] = None, **kwargs):
+        super().__init__(master, fg_color="transparent", **kwargs)
+        self.db = db_manager
+        self.on_data_changed = on_data_changed
+
+        self._build_ui()
+        self.refresh_data()
+
+    def _build_ui(self):
+        # 1. Toast
+        self.toast = ToastNotification(self)
+
+        # 2. Cabecera
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.pack(fill="x", padx=24, pady=(20, 16))
+
+        title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
+        title_box.pack(side="left")
+
+        ctk.CTkLabel(
+            title_box,
+            text="📈 Cuentas e Inversiones",
+            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            text_color=Theme.TEXT_PRIMARY
+        ).pack(anchor="w")
+
+        ctk.CTkLabel(
+            title_box,
+            text="Gestiona tus fiducias, cajitas de ahorro, billeteras y registro de rendimientos/intereses.",
+            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            text_color=Theme.TEXT_MUTED
+        ).pack(anchor="w")
+
+        # Botón Nueva Cuenta
+        btn_new_acc = ctk.CTkButton(
+            header_frame,
+            text="➕ Nueva Cuenta / Fiducia",
+            height=36,
+            corner_radius=8,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._handle_create_account
+        )
+        btn_new_acc.pack(side="right")
+
+        # 3. Fila de Tarjetas de Resumen
+        summary_container = ctk.CTkFrame(self, fg_color="transparent")
+        summary_container.pack(fill="x", padx=24, pady=(0, 16))
+        summary_container.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="inv_stat_cards")
+
+        self.card_cop_invested = StatCard(
+            summary_container,
+            title="Invertido en COP",
+            value="$0 COP",
+            subtitle="Fiducias y cajitas COP",
+            icon="🇨🇴",
+            accent_color=Theme.ACCENT_GREEN,
+            bg_color=Theme.BG_CARD,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.card_cop_invested.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+
+        self.card_usd_invested = StatCard(
+            summary_container,
+            title="Invertido en USD",
+            value="$0.00 USD",
+            subtitle="Fondos y billeteras USD",
+            icon="💵",
+            accent_color=Theme.ACCENT_BLUE,
+            bg_color=Theme.BG_CARD,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.card_usd_invested.grid(row=0, column=1, padx=4, sticky="nsew")
+
+        self.card_cop_yields = StatCard(
+            summary_container,
+            title="Rendimientos COP",
+            value="+$0 COP",
+            subtitle="Intereses acumulados",
+            icon="📈",
+            accent_color=Theme.ACCENT_GREEN,
+            bg_color=Theme.BG_CARD,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.card_cop_yields.grid(row=0, column=2, padx=4, sticky="nsew")
+
+        self.card_usd_yields = StatCard(
+            summary_container,
+            title="Rendimientos USD",
+            value="+$0.00 USD",
+            subtitle="Ganancias en dólares",
+            icon="📊",
+            accent_color=Theme.ACCENT_INDIGO,
+            bg_color=Theme.BG_CARD,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.card_usd_yields.grid(row=0, column=3, padx=(8, 0), sticky="nsew")
+
+        # 4. Selector de Filtro de Cuentas (Todas / COP / USD)
+        filter_bar = ctk.CTkFrame(self, fg_color="transparent")
+        filter_bar.pack(fill="x", padx=24, pady=(0, 12))
+
+        self.currency_filter = ctk.CTkSegmentedButton(
+            filter_bar,
+            values=["Todas las Cuentas", "🇨🇴 Cuentas COP", "💵 Cuentas USD"],
+            height=32,
+            command=lambda _: self._refresh_accounts_grid()
+        )
+        self.currency_filter.set("Todas las Cuentas")
+        self.currency_filter.pack(side="left")
+
+        # 5. Contenedor Dividido: Grid de Cuentas (Arriba) + Historial de Rendimientos/Aportes (Abajo)
+        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        main_content.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        main_content.grid_rowconfigure(0, weight=6)
+        main_content.grid_rowconfigure(1, weight=4)
+        main_content.grid_columnconfigure(0, weight=1)
+
+        # Panel de Cuentas (Scrollable)
+        accounts_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        accounts_panel.grid(row=0, column=0, sticky="nsew", pady=(0, 10))
+
+        acc_header = ctk.CTkFrame(accounts_panel, fg_color="transparent")
+        acc_header.pack(fill="x", padx=18, pady=(14, 8))
+
+        ctk.CTkLabel(
+            acc_header,
+            text="🏦 Cuentas, Fiducias y Bolsillos Activos",
+            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            text_color=Theme.TEXT_PRIMARY
+        ).pack(side="left")
+
+        self.accounts_scroll = ctk.CTkScrollableFrame(accounts_panel, fg_color="transparent")
+        self.accounts_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+
+        # Panel Inferior: Historial de Transacciones de Inversión
+        history_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        history_panel.grid(row=1, column=0, sticky="nsew")
+
+        hist_header = ctk.CTkFrame(history_panel, fg_color="transparent")
+        hist_header.pack(fill="x", padx=18, pady=(12, 6))
+
+        ctk.CTkLabel(
+            hist_header,
+            text="📜 Historial de Rendimientos, Aportes y Retiros",
+            font=ctk.CTkFont(family="SF Pro Display", size=14, weight="bold"),
+            text_color=Theme.TEXT_PRIMARY
+        ).pack(side="left")
+
+        self.history_scroll = ctk.CTkScrollableFrame(history_panel, fg_color="transparent", height=130)
+        self.history_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+
+    def _handle_create_account(self):
+        EditAccountModal(
+            self.winfo_toplevel(),
+            self.db,
+            account=None,
+            on_success=self._on_account_saved
+        )
+
+    def _handle_edit_account(self, account: Dict[str, Any]):
+        EditAccountModal(
+            self.winfo_toplevel(),
+            self.db,
+            account=account,
+            on_success=self._on_account_saved
+        )
+
+    def _on_account_saved(self):
+        self.toast.show("Cuenta actualizada exitosamente.", is_error=False)
+        self.refresh_data()
+        if self.on_data_changed:
+            self.on_data_changed()
+
+    def _open_account_action(self, account: Dict[str, Any], action_type: str):
+        AccountActionModal(
+            self.winfo_toplevel(),
+            self.db,
+            account=account,
+            initial_action=action_type,
+            on_success=self._on_action_success
+        )
+
+    def _on_action_success(self):
+        self.toast.show("Movimiento registrado con éxito.", is_error=False)
+        self.refresh_data()
+        if self.on_data_changed:
+            self.on_data_changed()
+
+    def refresh_data(self):
+        """Actualiza todas las métricas, tarjetas y listas."""
+        summary = self.db.get_investments_summary()
+
+        self.card_cop_invested.update_value(
+            f"${summary['total_cop_invested']:,.0f} COP",
+            f"{len([a for a in summary['accounts'] if a['currency'] == 'COP'])} cuentas activas"
+        )
+        self.card_usd_invested.update_value(
+            f"${summary['total_usd_invested']:,.2f} USD",
+            f"{len([a for a in summary['accounts'] if a['currency'] == 'USD'])} cuentas activas"
+        )
+        self.card_cop_yields.update_value(
+            f"+${summary['total_cop_yields']:,.0f} COP",
+            "Intereses acumulados"
+        )
+        self.card_usd_yields.update_value(
+            f"+${summary['total_usd_yields']:,.2f} USD",
+            "Ganancias acumuladas"
+        )
+
+        self._refresh_accounts_grid()
+        self._refresh_history_list()
+
+    def _refresh_accounts_grid(self):
+        for widget in self.accounts_scroll.winfo_children():
+            widget.destroy()
+
+        choice = self.currency_filter.get()
+        curr = None
+        if "COP" in choice:
+            curr = "COP"
+        elif "USD" in choice:
+            curr = "USD"
+
+        accounts = self.db.get_accounts(currency=curr, only_active=True)
+
+        if not accounts:
+            ctk.CTkLabel(
+                self.accounts_scroll,
+                text="No hay cuentas registradas en este filtro.\n¡Crea una nueva fiducia o cuenta de ahorro!",
+                font=ctk.CTkFont(size=12),
+                text_color=Theme.TEXT_MUTED,
+                justify="center"
+            ).pack(pady=30)
+            return
+
+        for acc in accounts:
+            currency = acc["currency"]
+            bal = acc["current_balance"]
+            bal_str = f"${bal:,.2f} USD" if currency == "USD" else f"${bal:,.0f} COP"
+            yields_str = f"+${acc['total_yields']:,.2f} USD" if currency == "USD" else f"+${acc['total_yields']:,.0f} COP"
+            icon = acc.get("icon", "📈")
+
+            card = ctk.CTkFrame(self.accounts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=4, padx=2)
+
+            # Contenedor principal de la tarjeta de cuenta
+            inner = ctk.CTkFrame(card, fg_color="transparent")
+            inner.pack(fill="x", padx=14, pady=10)
+
+            # Columna Izquierda: Información de la cuenta
+            info_col = ctk.CTkFrame(inner, fg_color="transparent")
+            info_col.pack(side="left", fill="both", expand=True)
+
+            title_row = ctk.CTkFrame(info_col, fg_color="transparent")
+            title_row.pack(anchor="w")
+
+            ctk.CTkLabel(
+                title_row,
+                text=f"{icon}  {acc['name']}",
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=Theme.TEXT_PRIMARY
+            ).pack(side="left")
+
+            ctk.CTkLabel(
+                title_row,
+                text=f"[{acc['currency']}]",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                text_color=Theme.ACCENT_GREEN if currency == "COP" else Theme.ACCENT_BLUE
+            ).pack(side="left", padx=(8, 0))
+
+            sub_text = f"{acc.get('institution', 'Personal')} • Rendimientos: {yields_str}"
+            ctk.CTkLabel(
+                info_col,
+                text=sub_text,
+                font=ctk.CTkFont(size=11),
+                text_color=Theme.TEXT_MUTED
+            ).pack(anchor="w", pady=(2, 0))
+
+            # Columna Central: Saldo actual
+            bal_col = ctk.CTkFrame(inner, fg_color="transparent")
+            bal_col.pack(side="left", padx=16)
+
+            ctk.CTkLabel(
+                bal_col,
+                text=bal_str,
+                font=ctk.CTkFont(family="SF Pro Display", size=17, weight="bold"),
+                text_color=Theme.ACCENT_GREEN if currency == "COP" else Theme.ACCENT_BLUE
+            ).pack(anchor="e")
+
+            # Columna Derecha: Botones de Acción Rápida
+            btns_col = ctk.CTkFrame(inner, fg_color="transparent")
+            btns_col.pack(side="right")
+
+            btn_yield = ctk.CTkButton(
+                btns_col,
+                text="📈 +Rendimiento",
+                width=100,
+                height=30,
+                corner_radius=6,
+                fg_color="#10b981",
+                hover_color="#059669",
+                text_color="#ffffff",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                command=lambda a=acc: self._open_account_action(a, "YIELD")
+            )
+            btn_yield.pack(side="left", padx=3)
+
+            btn_deposit = ctk.CTkButton(
+                btns_col,
+                text="📥 Aportar",
+                width=75,
+                height=30,
+                corner_radius=6,
+                fg_color="#0284c7",
+                hover_color="#0369a1",
+                text_color="#ffffff",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                command=lambda a=acc: self._open_account_action(a, "TRANSFER_TO")
+            )
+            btn_deposit.pack(side="left", padx=3)
+
+            btn_withdraw = ctk.CTkButton(
+                btns_col,
+                text="📤 Retirar",
+                width=75,
+                height=30,
+                corner_radius=6,
+                fg_color="#e11d48",
+                hover_color="#be123c",
+                text_color="#ffffff",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                command=lambda a=acc: self._open_account_action(a, "TRANSFER_FROM")
+            )
+            btn_withdraw.pack(side="left", padx=3)
+
+            btn_edit = ctk.CTkButton(
+                btns_col,
+                text="⚙️",
+                width=30,
+                height=30,
+                corner_radius=6,
+                fg_color=Theme.BG_INPUT,
+                hover_color=Theme.BORDER_DEFAULT,
+                font=ctk.CTkFont(size=12),
+                command=lambda a=acc: self._handle_edit_account(a)
+            )
+            btn_edit.pack(side="left", padx=(3, 0))
+
+    def _refresh_history_list(self):
+        for widget in self.history_scroll.winfo_children():
+            widget.destroy()
+
+        transactions = self.db.get_account_transactions(limit=25)
+
+        if not transactions:
+            ctk.CTkLabel(
+                self.history_scroll,
+                text="No hay movimientos de inversión registrados aún.",
+                font=ctk.CTkFont(size=11),
+                text_color=Theme.TEXT_MUTED
+            ).pack(pady=20)
+            return
+
+        for tx in transactions:
+            t_type = tx["type"]
+            curr = tx["currency"]
+            amt = tx["amount"]
+            amt_str = f"+${amt:,.2f} USD" if curr == "USD" else f"+${amt:,.0f} COP"
+            accent = Theme.ACCENT_GREEN
+
+            if t_type == "YIELD":
+                badge = "📈 Rendimiento / Intereses"
+                accent = Theme.ACCENT_GREEN
+            elif t_type in ("DEPOSIT", "TRANSFER_IN"):
+                badge = "📥 Aporte a Cuenta"
+                accent = Theme.ACCENT_BLUE
+            else:
+                badge = "📤 Retiro de Cuenta"
+                amt_str = f"-${amt:,.2f} USD" if curr == "USD" else f"-${amt:,.0f} COP"
+                accent = Theme.ACCENT_ROSE
+
+            card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=2, padx=2)
+
+            row = ctk.CTkFrame(card, fg_color="transparent")
+            row.pack(fill="x", padx=10, pady=6)
+
+            ctk.CTkLabel(
+                row,
+                text=f"{tx['date']} • {tx['account_name']} [{badge}]",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                text_color=Theme.TEXT_PRIMARY
+            ).pack(side="left")
+
+            btn_box = ctk.CTkFrame(row, fg_color="transparent")
+            btn_box.pack(side="right")
+
+            ctk.CTkLabel(
+                btn_box,
+                text=amt_str,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=accent
+            ).pack(side="left", padx=(0, 8))
+
+            btn_edit = ctk.CTkButton(
+                btn_box,
+                text="✏️",
+                width=24,
+                height=20,
+                fg_color="transparent",
+                hover_color=Theme.BORDER_DEFAULT,
+                font=ctk.CTkFont(size=11),
+                command=lambda t=tx: self._handle_edit_tx(t)
+            )
+            btn_edit.pack(side="left", padx=1)
+
+            btn_del = ctk.CTkButton(
+                btn_box,
+                text="🗑️",
+                width=24,
+                height=20,
+                fg_color="transparent",
+                hover_color="#450a0a",
+                font=ctk.CTkFont(size=11),
+                command=lambda t=tx: self._prompt_delete_tx(t)
+            )
+            btn_del.pack(side="left", padx=1)
+
+    def _handle_edit_tx(self, tx: Dict[str, Any]):
+        EditTransactionModal(
+            self.winfo_toplevel(),
+            self.db,
+            source_table="account_transactions",
+            record=tx,
+            on_success=self._on_action_success
+        )
+
+    def _prompt_delete_tx(self, tx: Dict[str, Any]):
+        ConfirmDialog(
+            self.winfo_toplevel(),
+            title="Eliminar Movimiento de Inversión",
+            message=f"¿Deseas eliminar el movimiento de {tx['account_name']} del {tx['date']}?",
+            confirm_text="Eliminar",
+            on_confirm=lambda: self._execute_delete_tx(tx["id"])
+        )
+
+    def _execute_delete_tx(self, tx_id: int):
+        success, msg, _ = self.db.delete_account_transaction(tx_id)
+        if success:
+            self.toast.show("Movimiento eliminado con éxito.", is_error=False)
+            self._on_action_success()
+        else:
+            self.toast.show(msg, is_error=True)
