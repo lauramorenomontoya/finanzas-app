@@ -127,14 +127,7 @@ class ScrollHelper:
 
         ctk.CTkScrollableFrame._mouse_wheel_all = enhanced_mouse_wheel_all
 
-        # 4. Asegurar que Shift-MouseWheel también esté enlazado en todos los ScrollableFrames
-        original_init = ctk.CTkScrollableFrame.__init__
+        # 4. Enlazar eventos globales una sola vez de forma segura
+        # En CustomTkinter, los eventos MouseWheel ya son capturados;
+        # solo ajustamos la lógica de cálculo sin duplicar bindings globales repetidos.
 
-        def enhanced_init(self, *args, **kwargs):
-            original_init(self, *args, **kwargs)
-            # Enlazar soporte para slide horizontal en trackpad de Mac
-            if sys.platform == "darwin":
-                self.bind_all("<Shift-MouseWheel>", self._mouse_wheel_all, add=True)
-                self.bind_all("<Option-MouseWheel>", self._mouse_wheel_all, add=True)
-
-        ctk.CTkScrollableFrame.__init__ = enhanced_init

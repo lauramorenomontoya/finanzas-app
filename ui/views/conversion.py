@@ -55,9 +55,10 @@ class ConversionView(ctk.CTkFrame):
         # 2. Contenedor de Dos Columnas (Formulario Interactivo + Historial de Conversiones)
         content_grid = ctk.CTkFrame(self, fg_color="transparent")
         content_grid.pack(fill="both", expand=True, padx=24, pady=(0, 20))
-        content_grid.grid_columnconfigure(0, weight=5)  # Formulario y Calculadora
-        content_grid.grid_columnconfigure(1, weight=5)  # Historial
+        content_grid.grid_columnconfigure(0, weight=50, uniform="conv_cols")  # Formulario y Calculadora
+        content_grid.grid_columnconfigure(1, weight=50, uniform="conv_cols")  # Historial
         content_grid.grid_rowconfigure(0, weight=1)
+
 
         # PANEL IZQUIERDO: Formulario de Conversión Inteligente
         form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)

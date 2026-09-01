@@ -78,9 +78,10 @@ class IncomesView(ctk.CTkFrame):
         # 2. Contenedor Principal (Formulario Izquierda + Historial Derecha)
         content_grid = ctk.CTkFrame(self, fg_color="transparent")
         content_grid.pack(fill="both", expand=True, padx=24, pady=(0, 20))
-        content_grid.grid_columnconfigure(0, weight=4)
-        content_grid.grid_columnconfigure(1, weight=6)
+        content_grid.grid_columnconfigure(0, weight=45, uniform="incomes_cols")
+        content_grid.grid_columnconfigure(1, weight=55, uniform="incomes_cols")
         content_grid.grid_rowconfigure(0, weight=1)
+
 
         # PANEL IZQUIERDO: Formulario de Registro
         form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
@@ -369,14 +370,15 @@ class IncomesView(ctk.CTkFrame):
             bottom = ctk.CTkFrame(card, fg_color="transparent")
             bottom.pack(fill="x", padx=12, pady=(0, 8))
 
+            btn_box = ctk.CTkFrame(bottom, fg_color="transparent")
+            btn_box.pack(side="right")
+
             info = f"{inc['date']}"
             if inc.get("notes"):
                 info += f" • {inc['notes']}"
 
-            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED).pack(side="left")
+            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, 6))
 
-            btn_box = ctk.CTkFrame(bottom, fg_color="transparent")
-            btn_box.pack(side="right")
 
             btn_edit = ctk.CTkButton(
                 btn_box,

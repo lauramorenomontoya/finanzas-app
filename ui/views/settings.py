@@ -115,9 +115,10 @@ class SettingsView(ctk.CTkFrame):
 
     def _build_categories_section(self):
         self.cat_frame = ctk.CTkFrame(self.content_box, fg_color="transparent")
-        self.cat_frame.grid_columnconfigure(0, weight=4)
-        self.cat_frame.grid_columnconfigure(1, weight=6)
+        self.cat_frame.grid_columnconfigure(0, weight=45, uniform="settings_cat")
+        self.cat_frame.grid_columnconfigure(1, weight=55, uniform="settings_cat")
         self.cat_frame.grid_rowconfigure(0, weight=1)
+
 
         # Panel Izquierdo: Formulario Nueva Categoría
         form_panel = ctk.CTkFrame(self.cat_frame, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
@@ -303,9 +304,10 @@ class SettingsView(ctk.CTkFrame):
 
     def _build_recurring_section(self):
         self.rec_frame = ctk.CTkFrame(self.content_box, fg_color="transparent")
-        self.rec_frame.grid_columnconfigure(0, weight=4)
-        self.rec_frame.grid_columnconfigure(1, weight=6)
+        self.rec_frame.grid_columnconfigure(0, weight=45, uniform="settings_rec")
+        self.rec_frame.grid_columnconfigure(1, weight=55, uniform="settings_rec")
         self.rec_frame.grid_rowconfigure(0, weight=1)
+
 
         # Panel Izquierdo: Formulario
         form_panel = ctk.CTkFrame(self.rec_frame, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
