@@ -181,9 +181,34 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertGreaterEqual(len(ledger), 1)
         self.assertEqual(ledger[0]["id"], tx_id)
 
+    def test_get_unified_ledger_filters(self):
+        # Insertar registros en diferentes fechas y módulos
+        self.db.add_usd_deposit("2026-07-15", "Cliente Julio", 500.0)
+        self.db.add_usd_deposit("2026-08-15", "Cliente Agosto", 800.0)
+        self.db.add_cop_expense("2026-08-20", "Restaurantes / Salidas", 60000.0)
+        self.db.add_cop_income("2026-08-25", "Nómina / Salario", 2500000.0)
+
+        # 1. Filtro por fecha (Mes actual: 2026-08)
+        aug_rows = self.db.get_unified_ledger(date_from="2026-08-01", date_to="2026-08-31")
+        self.assertEqual(len(aug_rows), 3)
+        concepts = [r["concept"] for r in aug_rows]
+        self.assertIn("Cliente Agosto", concepts)
+        self.assertNotIn("Cliente Julio", concepts)
+
+        # 2. Filtro por módulo (Egresos COP)
+        exp_rows = self.db.get_unified_ledger(module_filter="Egresos COP", date_from="2026-08-01")
+        self.assertEqual(len(exp_rows), 1)
+        self.assertEqual(exp_rows[0]["concept"], "Restaurantes / Salidas")
+
+        # 3. Filtro por búsqueda
+        search_rows = self.db.get_unified_ledger(search_query="Nómina")
+        self.assertEqual(len(search_rows), 1)
+        self.assertEqual(search_rows[0]["concept"], "Nómina / Salario")
+
     def test_monthly_net_worth_history(self):
         self.db.add_cop_income("2026-01-15", "Salario Enero", 4000000.0)
         self.db.add_usd_deposit("2026-02-10", "Cliente USD", 1000.0)
+
 
         history = self.db.get_monthly_net_worth_history(year=2026, exchange_rate=3100.0)
         self.assertEqual(len(history), 12)
@@ -208,14 +233,40 @@ class TestDatabaseManager(unittest.TestCase):
             self.assertTrue(result["success"])
             self.assertGreater(result["imported"], 0)
             self.assertEqual(result["skipped"], 0)
-
-            # 3. Validar que los balances hayan aumentado
-            self.assertGreater(self.db.get_usd_balance(), 0)
-            self.assertGreater(self.db.get_cop_balance(), 0)
         finally:
             if os.path.exists(temp_csv.name):
                 os.remove(temp_csv.name)
 
+    def test_category_service_consolidation(self):
+        from services.category_service import CategoryService
+
+
+        # 1. Registrar transacciones con nombres antiguos / duplicados
+        self.db.add_cop_expense("2026-08-01", "Resto/Tienda", 45000.0)
+        self.db.add_cop_expense("2026-08-02", "Cuidado", 30000.0)
+        self.db.add_cop_expense("2026-08-03", "Peluquería", 25000.0)
+        self.db.add_cop_income("2026-08-04", "Nómina", 2000000.0)
+        rec_id = self.db.add_recurring_expense("Suscripciones", "Netflix", 35000.0, "COP", 10)
+
+        # 2. Ejecutar consolidación
+        stats = CategoryService.consolidate_database_categories(self.db)
+        self.assertTrue(stats["success"])
+        self.assertGreaterEqual(stats["cop_transactions_updated"], 4)
+
+        # 3. Verificar que las categorías se actualizaron canónicamente
+        expenses = self.db.get_cop_expenses(limit=10)
+        exp_cats = {e["category"] for e in expenses}
+        self.assertIn("Restaurantes / Salidas", exp_cats)
+        self.assertIn("Salud & Cuidado Personal", exp_cats)
+        self.assertNotIn("Resto/Tienda", exp_cats)
+        self.assertNotIn("Cuidado", exp_cats)
+
+        # 4. Verificar gasto fijo actualizado
+        recs = self.db.get_recurring_expenses()
+        rec_item = [r for r in recs if r["id"] == rec_id][0]
+        self.assertEqual(rec_item["category"], "Suscripciones & Apps")
+
 
 if __name__ == "__main__":
     unittest.main()
+

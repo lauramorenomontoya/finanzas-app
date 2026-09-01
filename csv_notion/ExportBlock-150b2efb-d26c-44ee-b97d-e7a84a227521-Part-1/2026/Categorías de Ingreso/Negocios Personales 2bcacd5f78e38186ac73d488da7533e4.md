@@ -1,0 +1,3 @@
+# Negocios Personales
+
+Ingresos: Moto - Valen (../%E2%9E%95Ingresos/Moto%20-%20Valen%202f7acd5f78e3806d89ede2bd96b49cf3.md), Valen Moto (../%E2%9E%95Ingresos/Valen%20Moto%202ffacd5f78e3805fab81e5f36aa0a34f.md), Valen Moto (../%E2%9E%95Ingresos/Valen%20Moto%20317acd5f78e3805c9a1ce6c45c0cf606.md), Valen Moto (../%E2%9E%95Ingresos/Valen%20Moto%2033aacd5f78e380f0b9bdfc2641971f8b.md), Valen Moto (../%E2%9E%95Ingresos/Valen%20Moto%20359acd5f78e38022807dd195fc6ef9f3.md), Valen Moto (../%E2%9E%95Ingresos/Valen%20Moto%2036facd5f78e3800ea3e9fd83b0231c08.md), Valen (../%E2%9E%95Ingresos/Valen%20393acd5f78e380d0b674f9db04a20920.md)

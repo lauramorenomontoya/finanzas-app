@@ -1,14 +1,13 @@
 """
 Modal Rápido para Duplicar Registros Financieros:
 Permite clonar compras o ingresos recurrentes cambiando la fecha con un solo clic.
+Diseño responsivo con pie fijo de botones y cuerpo desplazable.
 """
 
 import customtkinter as ctk
 from datetime import datetime
 from typing import Callable, Dict, Any, Optional
 from ui.theme import Theme
-
-
 from ui.components.date_picker import DatePickerWidget
 
 
@@ -28,22 +27,37 @@ class DuplicateModal(ctk.CTkToplevel):
         self.on_success = on_success
 
         self.title("Duplicar Registro")
-        self.geometry("460x400")
-        self.resizable(False, False)
+        self.geometry("480x480")
+        self.minsize(440, 420)
+        self.resizable(True, True)
         self.configure(fg_color=Theme.BG_WINDOW)
 
         self.transient(parent)
         self.grab_set()
+        self._center_window(parent)
 
         self._build_ui()
 
+    def _center_window(self, parent):
+        self.update_idletasks()
+        try:
+            parent_x = parent.winfo_rootx()
+            parent_y = parent.winfo_rooty()
+            parent_w = parent.winfo_width()
+            parent_h = parent.winfo_height()
+            x = parent_x + (parent_w - 480) // 2
+            y = parent_y + (parent_h - 480) // 2
+            self.geometry(f"+{max(0, x)}+{max(0, y)}")
+        except Exception:
+            pass
+
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        # Encabezado
+        # 1. Encabezado Fijo Superior
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(18, 12))
+        header.pack(fill="x", padx=20, pady=(16, 10))
 
         ctk.CTkLabel(
             header,
@@ -64,23 +78,32 @@ class DuplicateModal(ctk.CTkToplevel):
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
-        # Campo Nueva Fecha con DatePickerWidget
-        ctk.CTkLabel(main_frame, text="Nueva Fecha de Registro:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-        self.date_entry = DatePickerWidget(main_frame, height=36)
-        self.date_entry.pack(fill="x", padx=20, pady=(0, 12))
+        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
+        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
+        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
 
-        # Campo Notas
-        ctk.CTkLabel(main_frame, text="Nota o Concepto:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-        self.notes_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
-        self.notes_entry.insert(0, str(self.record.get("notes", "") or ""))
-        self.notes_entry.pack(fill="x", padx=20, pady=(0, 14))
+        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, 6))
 
-        self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", padx=20, pady=(0, 8))
+        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
+        btn_row.pack(fill="x")
+
+        btn_cancel = ctk.CTkButton(
+            btn_row,
+            text="Cancelar",
+            font=ctk.CTkFont(size=12),
+            height=38,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_SECONDARY,
+            command=self.destroy
+        )
+        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         btn_clone = ctk.CTkButton(
-            main_frame,
-            text="📋 Clonar y Guardar Registro",
+            btn_row,
+            text="📋 Clonar y Guardar",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=8,
@@ -89,26 +112,36 @@ class DuplicateModal(ctk.CTkToplevel):
             text_color="#ffffff",
             command=self._handle_duplicate
         )
-        btn_clone.pack(fill="x", padx=20, pady=(0, 10))
+        btn_clone.pack(side="right", fill="x", expand=True, padx=(8, 0))
 
-    def _set_today(self):
-        self.date_entry.delete(0, "end")
-        self.date_entry.insert(0, datetime.now().strftime("%Y-%m-%d"))
+        # 3. Cuerpo Desplazable Central
+        scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
+        scroll_body.pack(fill="both", expand=True, padx=12, pady=(0, 10))
+
+        # Campo Nueva Fecha con DatePickerWidget
+        ctk.CTkLabel(scroll_body, text="Nueva Fecha de Registro:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        self.date_entry = DatePickerWidget(scroll_body, height=36)
+        self.date_entry.pack(fill="x", padx=6, pady=(0, 12))
+
+        # Campo Notas
+        ctk.CTkLabel(scroll_body, text="Nota o Concepto:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        self.notes_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+        self.notes_entry.insert(0, str(self.record.get("notes", "") or ""))
+        self.notes_entry.pack(fill="x", padx=6, pady=(0, 12))
 
     def _handle_duplicate(self):
         new_date = self.date_entry.get().strip()
         new_notes = self.notes_entry.get().strip()
-        rec_id = self.record["id"]
 
         try:
             datetime.strptime(new_date, "%Y-%m-%d")
         except ValueError:
-            self.lbl_error.configure(text="⚠️ La fecha debe tener formato YYYY-MM-DD.")
+            self.lbl_error.configure(text="⚠️ Selecciona una fecha válida.")
             return
 
         success, msg = self.db.duplicate_record(
             source_table=self.source_table,
-            record_id=rec_id,
+            record_id=self.record["id"],
             new_date=new_date,
             new_notes=new_notes
         )

@@ -52,12 +52,16 @@ class DatabaseManager(
         self.init_db()
 
     def get_connection(self) -> sqlite3.Connection:
-        """Obtiene una conexión configurada con WAL mode, soporte foráneo y filas tipo dict."""
+        """Obtiene una conexión configurada con WAL mode, alto rendimiento en memoria y soporte foráneo."""
         conn = sqlite3.connect(self.db_path, timeout=15.0, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON;")
         conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        conn.execute("PRAGMA cache_size = -64000;")
+        conn.execute("PRAGMA temp_store = MEMORY;")
         return conn
+
 
     def init_db(self) -> None:
         """Crea las tablas necesarias y realiza migraciones automáticas."""
@@ -93,11 +97,8 @@ class DatabaseManager(
                     );
                 """)
 
-                # Migración: Verificar si payment_method existe en cop_transactions
-                cursor.execute("PRAGMA table_info(cop_transactions);")
-                columns = [row["name"] for row in cursor.fetchall()]
-                if "payment_method" not in columns:
-                    cursor.execute("ALTER TABLE cop_transactions ADD COLUMN payment_method TEXT DEFAULT 'DEBIT';")
+                # Ejecutar migraciones automáticas de esquema para tablas existentes
+                self._run_schema_migrations(conn)
 
                 # 3. Tabla de Conversiones (Puente USD -> COP)
                 cursor.execute("""
@@ -193,38 +194,22 @@ class DatabaseManager(
                     );
                 """)
 
+                # Índices para acelerar consultas por fecha y tipo
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_date_type ON cop_transactions(date, type);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_cat ON cop_transactions(category);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_date_type ON usd_transactions(date, type);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_acc_date_type ON account_transactions(date, type);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_tx_tags ON transaction_tags(source_table, record_id);")
+
                 # Pre-poblar categorías limpias por defecto si está vacía
                 cursor.execute("SELECT COUNT(*) as count FROM categories;")
                 if cursor.fetchone()["count"] == 0:
-                    default_categories = [
-                        ("Clientes Internacionales USD", "INCOME_USD", "💼", "#38bdf8", 1),
-                        ("Consultoría / Freelance USD", "INCOME_USD", "🌐", "#0284c7", 1),
-                        ("Rendimientos USD", "INCOME_USD", "📈", "#60a5fa", 1),
-                        ("Otros Ingresos USD", "INCOME_USD", "💵", "#38bdf8", 1),
-                        ("Software / IA (ChatGPT, Claude)", "EXPENSE_USD", "🤖", "#8b5cf6", 1),
-                        ("Hosting / Servidores (AWS, Vercel)", "EXPENSE_USD", "☁️", "#06b6d4", 1),
-                        ("Suscripciones USD", "EXPENSE_USD", "💳", "#ec4899", 1),
-                        ("Educación / Cursos USD", "EXPENSE_USD", "📚", "#f59e0b", 1),
-                        ("Otros Gastos USD", "EXPENSE_USD", "💸", "#f43f5e", 1),
-                        ("Clientes Locales COP", "INCOME_COP", "🚀", "#10b981", 1),
-                        ("Honorarios / Proyectos COP", "INCOME_COP", "💻", "#059669", 1),
-                        ("Consultoría Profesional COP", "INCOME_COP", "📑", "#34d399", 1),
-                        ("Otros Ingresos COP", "INCOME_COP", "💰", "#6ee7b7", 1),
-                        ("Arriendo / Hipoteca", "EXPENSE_COP", "🏠", "#f43f5e", 1),
-                        ("Servicios Públicos (Luz, Agua, Gas)", "EXPENSE_COP", "💡", "#e11d48", 1),
-                        ("Alimentación / Mercado", "EXPENSE_COP", "🛒", "#fb7185", 1),
-                        ("Transporte / Gasolina", "EXPENSE_COP", "🚗", "#f97316", 1),
-                        ("Ocio y Restaurantes", "EXPENSE_COP", "🍽️", "#f59e0b", 1),
-                        ("Suscripciones / Internet", "EXPENSE_COP", "📱", "#8b5cf6", 1),
-                        ("Salud y Cuidado Personal", "EXPENSE_COP", "💊", "#06b6d4", 1),
-                        ("Educación / Cursos", "EXPENSE_COP", "📚", "#6366f1", 1),
-                        ("Imprevistos / Emergencias", "EXPENSE_COP", "⚠️", "#d97706", 1),
-                        ("Otros Gastos COP", "EXPENSE_COP", "📦", "#94a3b8", 1),
-                    ]
+                    from services.category_service import CategoryService
                     cursor.executemany("""
                         INSERT OR IGNORE INTO categories (name, type, icon, color, is_system)
                         VALUES (?, ?, ?, ?, ?);
-                    """, default_categories)
+                    """, CategoryService.CANONICAL_CATEGORIES)
+
 
                 # Pre-poblar cuentas por defecto si no existen
                 cursor.execute("SELECT COUNT(*) as count FROM accounts;")
@@ -271,6 +256,95 @@ class DatabaseManager(
                     """, default_tags)
 
                 conn.commit()
+
+    def _run_schema_migrations(self, conn: sqlite3.Connection) -> None:
+        """Verifica y actualiza constraints CHECK en tablas SQLite existentes."""
+        cursor = conn.cursor()
+
+        # 1. Migración para usd_transactions
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='usd_transactions';")
+        usd_row = cursor.fetchone()
+        if usd_row and "TRANSFER_TO_INVESTMENT" not in (usd_row[0] or ""):
+            cursor.execute("PRAGMA foreign_keys = OFF;")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS usd_transactions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    platform TEXT NOT NULL,
+                    type TEXT NOT NULL CHECK(type IN ('DEPOSIT', 'TRANSFER_OUT', 'TRANSFER_TO_INVESTMENT', 'TRANSFER_FROM_INVESTMENT', 'EXPENSE')),
+                    amount REAL NOT NULL CHECK(amount > 0),
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("""
+                INSERT INTO usd_transactions_new (id, date, platform, type, amount, notes, created_at)
+                SELECT id, date, platform, type, amount, notes, created_at FROM usd_transactions;
+            """)
+            cursor.execute("DROP TABLE usd_transactions;")
+            cursor.execute("ALTER TABLE usd_transactions_new RENAME TO usd_transactions;")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_date_type ON usd_transactions(date, type);")
+            cursor.execute("PRAGMA foreign_keys = ON;")
+
+        # 2. Migración para cop_transactions
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='cop_transactions';")
+        cop_row = cursor.fetchone()
+        if cop_row and "TRANSFER_TO_INVESTMENT" not in (cop_row[0] or ""):
+            cursor.execute("PRAGMA foreign_keys = OFF;")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cop_transactions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    type TEXT NOT NULL CHECK(type IN ('TRANSFER_IN', 'EXPENSE', 'MANUAL_INCOME', 'CC_PAYMENT', 'TRANSFER_TO_INVESTMENT', 'TRANSFER_FROM_INVESTMENT')),
+                    amount REAL NOT NULL CHECK(amount > 0),
+                    is_fixed INTEGER DEFAULT 0 CHECK(is_fixed IN (0, 1)),
+                    payment_method TEXT DEFAULT 'DEBIT' CHECK(payment_method IN ('DEBIT', 'CREDIT_CARD', 'CASH')),
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("PRAGMA table_info(cop_transactions);")
+            cols = [r["name"] for r in cursor.fetchall()]
+            if "payment_method" in cols:
+                cursor.execute("""
+                    INSERT INTO cop_transactions_new (id, date, category, type, amount, is_fixed, payment_method, notes, created_at)
+                    SELECT id, date, category, type, amount, is_fixed, COALESCE(payment_method, 'DEBIT'), notes, created_at FROM cop_transactions;
+                """)
+            else:
+                cursor.execute("""
+                    INSERT INTO cop_transactions_new (id, date, category, type, amount, is_fixed, payment_method, notes, created_at)
+                    SELECT id, date, category, type, amount, is_fixed, 'DEBIT', notes, created_at FROM cop_transactions;
+                """)
+            cursor.execute("DROP TABLE cop_transactions;")
+            cursor.execute("ALTER TABLE cop_transactions_new RENAME TO cop_transactions;")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_date_type ON cop_transactions(date, type);")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_cat ON cop_transactions(category);")
+            cursor.execute("PRAGMA foreign_keys = ON;")
+
+        # 3. Migración para categories
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='categories';")
+        cat_row = cursor.fetchone()
+        if cat_row and "EXPENSE_USD" not in (cat_row[0] or ""):
+            cursor.execute("PRAGMA foreign_keys = OFF;")
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS categories_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    type TEXT NOT NULL CHECK(type IN ('INCOME_USD', 'INCOME_COP', 'EXPENSE_COP', 'EXPENSE_USD')),
+                    icon TEXT DEFAULT '🏷️',
+                    color TEXT DEFAULT '#38bdf8',
+                    is_system INTEGER DEFAULT 0 CHECK(is_system IN (0, 1)),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("""
+                INSERT INTO categories_new (id, name, type, icon, color, is_system, created_at)
+                SELECT id, name, type, icon, color, is_system, created_at FROM categories;
+            """)
+            cursor.execute("DROP TABLE categories;")
+            cursor.execute("ALTER TABLE categories_new RENAME TO categories;")
+            cursor.execute("PRAGMA foreign_keys = ON;")
 
     def create_backup(self) -> Optional[str]:
         """Crea un respaldo de seguridad del archivo SQLite en la carpeta backups/."""

@@ -241,3 +241,22 @@ class RecurringMixin:
                         "skipped": len(recurring_ids),
                         "errors": [str(e)]
                     }
+
+    def apply_recurring_expenses(self, date_str: Optional[str] = None, expense_ids: Optional[List[int]] = None) -> Tuple[int, float]:
+        """Aplica gastos fijos especificados y retorna (count, total_amount)."""
+        if expense_ids is None:
+            items = self.get_recurring_expenses(only_active=True)
+            expense_ids = [i["id"] for i in items]
+
+        total_amt = 0.0
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            for r_id in expense_ids:
+                cursor.execute("SELECT amount FROM recurring_expenses WHERE id = ?;", (r_id,))
+                r = cursor.fetchone()
+                if r:
+                    total_amt += float(r["amount"])
+
+        res = self.apply_recurring_batch(expense_ids, date_str)
+        return res.get("applied", 0), total_amt
+

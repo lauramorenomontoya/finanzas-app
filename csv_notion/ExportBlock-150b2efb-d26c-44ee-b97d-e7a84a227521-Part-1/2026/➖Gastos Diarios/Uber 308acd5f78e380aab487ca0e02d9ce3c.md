@@ -1,0 +1,7 @@
+# Uber
+
+Fecha Gasto: 14 de febrero de 2026
+Mes: Febrero 2026 (../Gasto%20anual/Febrero%202026%202bcacd5f78e38177a4b6cd06e12c05b1.md)
+Gasto: 26.630,00 COP
+Categorías: Taxi (../Categor%C3%ADas/Taxi%202bcacd5f78e3811982ede26e80310af0.md)
+Checkbox: Pagado

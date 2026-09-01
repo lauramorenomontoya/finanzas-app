@@ -1,5 +1,6 @@
 """
 Modal para Crear o Editar Cuentas y Bolsillos de Inversión (Fiducias, Ahorro, USD).
+Diseño responsivo con pie fijo de botones y cuerpo desplazable.
 """
 
 import customtkinter as ctk
@@ -23,22 +24,37 @@ class EditAccountModal(ctk.CTkToplevel):
 
         title_str = "Editar Cuenta / Fiducia" if self.is_edit else "Nueva Cuenta / Fiducia"
         self.title(title_str)
-        self.geometry("480x520")
-        self.resizable(False, False)
+        self.geometry("500x600")
+        self.minsize(460, 480)
+        self.resizable(True, True)
         self.configure(fg_color=Theme.BG_WINDOW)
 
         self.transient(parent)
         self.grab_set()
+        self._center_window(parent)
 
         self._build_ui()
 
+    def _center_window(self, parent):
+        self.update_idletasks()
+        try:
+            parent_x = parent.winfo_rootx()
+            parent_y = parent.winfo_rooty()
+            parent_w = parent.winfo_width()
+            parent_h = parent.winfo_height()
+            x = parent_x + (parent_w - 500) // 2
+            y = parent_y + (parent_h - 600) // 2
+            self.geometry(f"+{max(0, x)}+{max(0, y)}")
+        except Exception:
+            pass
+
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        # Encabezado
+        # 1. Encabezado Fijo Superior
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(18, 12))
+        header.pack(fill="x", padx=20, pady=(16, 10))
 
         title_text = "✏️ Editar Cuenta o Fiducia" if self.is_edit else "➕ Nueva Cuenta o Fiducia"
         ctk.CTkLabel(
@@ -53,12 +69,52 @@ class EditAccountModal(ctk.CTkToplevel):
             text="Administra fiducias, cajitas de ahorro, billeteras USD o cuentas de inversión.",
             font=ctk.CTkFont(family="SF Pro Text", size=12),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(2, 0))
+
+        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
+        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
+        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
+
+        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, 6))
+
+        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
+        btn_row.pack(fill="x")
+
+        btn_cancel = ctk.CTkButton(
+            btn_row,
+            text="Cancelar",
+            font=ctk.CTkFont(size=12),
+            height=38,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_SECONDARY,
+            command=self.destroy
+        )
+        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        btn_save = ctk.CTkButton(
+            btn_row,
+            text="💾 Guardar Cuenta",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            height=38,
+            corner_radius=8,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            command=self._handle_save
+        )
+        btn_save.pack(side="right", fill="x", expand=True, padx=(8, 0))
+
+        # 3. Cuerpo Desplazable Central
+        scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
+        scroll_body.pack(fill="both", expand=True, padx=12, pady=(0, 10))
 
         # Campo Nombre
-        ctk.CTkLabel(main_frame, text="Nombre de la Cuenta / Fiducia:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Nombre de la Cuenta / Fiducia:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
         self.name_entry = ctk.CTkEntry(
-            main_frame,
+            scroll_body,
             placeholder_text="Ej: Fiducuenta Bancolombia / Cajita Nu / Arc USD",
             height=36,
             corner_radius=8,
@@ -68,11 +124,11 @@ class EditAccountModal(ctk.CTkToplevel):
         )
         if self.is_edit:
             self.name_entry.insert(0, self.account["name"])
-        self.name_entry.pack(fill="x", padx=20, pady=(0, 12))
+        self.name_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         # Fila: Moneda y Tipo
-        row_type = ctk.CTkFrame(main_frame, fg_color="transparent")
-        row_type.pack(fill="x", padx=20, pady=(0, 12))
+        row_type = ctk.CTkFrame(scroll_body, fg_color="transparent")
+        row_type.pack(fill="x", padx=6, pady=(0, 12))
         row_type.grid_columnconfigure((0, 1), weight=1)
 
         # Moneda
@@ -90,7 +146,7 @@ class EditAccountModal(ctk.CTkToplevel):
         )
         if self.is_edit:
             self.curr_combo.set(self.account["currency"])
-            self.curr_combo.configure(state="disabled")  # No cambiar moneda de cuenta existente
+            self.curr_combo.configure(state="disabled")
         else:
             self.curr_combo.set("COP")
         self.curr_combo.pack(fill="x")
@@ -116,9 +172,9 @@ class EditAccountModal(ctk.CTkToplevel):
         self.type_combo.pack(fill="x")
 
         # Campo Institución
-        ctk.CTkLabel(main_frame, text="Institución / Banco / Plataforma:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Institución / Banco / Plataforma:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
         self.inst_entry = ctk.CTkEntry(
-            main_frame,
+            scroll_body,
             placeholder_text="Ej: Bancolombia, Nu, Wenia, Lulo, IBKR",
             height=36,
             corner_radius=8,
@@ -128,11 +184,11 @@ class EditAccountModal(ctk.CTkToplevel):
         )
         if self.is_edit:
             self.inst_entry.insert(0, self.account.get("institution", "") or "")
-        self.inst_entry.pack(fill="x", padx=20, pady=(0, 12))
+        self.inst_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         # Fila: Ícono y Saldo Inicial
-        row_icon_bal = ctk.CTkFrame(main_frame, fg_color="transparent")
-        row_icon_bal.pack(fill="x", padx=20, pady=(0, 12))
+        row_icon_bal = ctk.CTkFrame(scroll_body, fg_color="transparent")
+        row_icon_bal.pack(fill="x", padx=6, pady=(0, 12))
         row_icon_bal.grid_columnconfigure(0, weight=3)
         row_icon_bal.grid_columnconfigure(1, weight=7)
 
@@ -170,24 +226,6 @@ class EditAccountModal(ctk.CTkToplevel):
         else:
             self.bal_entry.insert(0, "0")
         self.bal_entry.pack(fill="x")
-
-        # Error label
-        self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", padx=20, pady=(0, 6))
-
-        # Botón Guardar
-        btn_save = ctk.CTkButton(
-            main_frame,
-            text="💾 Guardar Cuenta",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
-            command=self._handle_save
-        )
-        btn_save.pack(fill="x", padx=20, pady=(0, 10))
 
     def _handle_save(self):
         name = self.name_entry.get().strip()
@@ -241,5 +279,6 @@ class EditAccountModal(ctk.CTkToplevel):
             if self.on_success:
                 self.on_success()
             self.destroy()
+
         except Exception as e:
-            self.lbl_error.configure(text=f"⚠️ {str(e)}")
+            self.lbl_error.configure(text=f"⚠️ Error al guardar cuenta: {str(e)}")

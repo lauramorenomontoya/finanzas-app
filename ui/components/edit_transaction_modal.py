@@ -1,14 +1,13 @@
 """
 Modal Universal para Editar Cualquier Registro:
 Soporta edición de transacciones USD, gastos/ingresos COP, conversiones y movimientos de inversión.
+Diseño responsivo con pie fijo de Guardar/Cancelar y cuerpo desplazable.
 """
 
 import customtkinter as ctk
 from datetime import datetime
 from typing import Callable, Dict, Any, Optional
 from ui.theme import Theme
-
-
 from ui.components.date_picker import DatePickerWidget
 
 
@@ -28,22 +27,37 @@ class EditTransactionModal(ctk.CTkToplevel):
         self.on_success = on_success
 
         self.title("Editar Registro Financiero")
-        self.geometry("500x530")
-        self.resizable(False, False)
+        self.geometry("520x620")
+        self.minsize(480, 520)
+        self.resizable(True, True)
         self.configure(fg_color=Theme.BG_WINDOW)
 
         self.transient(parent)
         self.grab_set()
+        self._center_window(parent)
 
         self._build_ui()
 
+    def _center_window(self, parent):
+        self.update_idletasks()
+        try:
+            parent_x = parent.winfo_rootx()
+            parent_y = parent.winfo_rooty()
+            parent_w = parent.winfo_width()
+            parent_h = parent.winfo_height()
+            x = parent_x + (parent_w - 520) // 2
+            y = parent_y + (parent_h - 620) // 2
+            self.geometry(f"+{max(0, x)}+{max(0, y)}")
+        except Exception:
+            pass
+
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        # Encabezado
+        # 1. Encabezado Fijo Superior
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(18, 12))
+        header.pack(fill="x", padx=20, pady=(16, 10))
 
         ctk.CTkLabel(
             header,
@@ -64,47 +78,87 @@ class EditTransactionModal(ctk.CTkToplevel):
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
+        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
+        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
+        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
+
+        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, 6))
+
+        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
+        btn_row.pack(fill="x")
+
+        btn_cancel = ctk.CTkButton(
+            btn_row,
+            text="Cancelar",
+            font=ctk.CTkFont(size=12),
+            height=38,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_SECONDARY,
+            command=self.destroy
+        )
+        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        btn_save = ctk.CTkButton(
+            btn_row,
+            text="💾 Guardar Cambios",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            height=38,
+            corner_radius=8,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            command=self._handle_save
+        )
+        btn_save.pack(side="right", fill="x", expand=True, padx=(8, 0))
+
+        # 3. Cuerpo Desplazable Central
+        scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
+        scroll_body.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+
         # Campo Fecha con DatePickerWidget
-        ctk.CTkLabel(main_frame, text="Fecha:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-        self.date_entry = DatePickerWidget(main_frame, initial_date=str(self.record.get("date", datetime.now().strftime("%Y-%m-%d"))), height=36)
-        self.date_entry.pack(fill="x", padx=20, pady=(0, 10))
+        ctk.CTkLabel(scroll_body, text="Fecha del Movimiento:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        self.date_entry = DatePickerWidget(scroll_body, initial_date=str(self.record.get("date", datetime.now().strftime("%Y-%m-%d"))), height=36)
+        self.date_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         # Campos específicos según la tabla de origen
         if self.source_table == "usd_transactions":
             # Plataforma
-            ctk.CTkLabel(main_frame, text="Plataforma / Origen USD:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.category_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Plataforma / Origen USD:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.category_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.category_entry.insert(0, str(self.record.get("platform", "")))
-            self.category_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.category_entry.pack(fill="x", padx=6, pady=(0, 12))
 
             # Monto USD
-            ctk.CTkLabel(main_frame, text="Monto ($ USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.amount_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Monto en Dólares ($ USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.amount_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.amount_entry.insert(0, str(self.record.get("amount", "")))
-            self.amount_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.amount_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         elif self.source_table == "cop_transactions":
             # Categoría
-            ctk.CTkLabel(main_frame, text="Categoría / Concepto:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.category_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Categoría del Movimiento:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.category_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.category_entry.insert(0, str(self.record.get("category", "")))
-            self.category_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.category_entry.pack(fill="x", padx=6, pady=(0, 12))
 
             # Monto COP
-            ctk.CTkLabel(main_frame, text="Monto ($ COP):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.amount_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Monto en Pesos ($ COP):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.amount_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.amount_entry.insert(0, str(int(float(self.record.get("amount", 0)))))
-            self.amount_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.amount_entry.pack(fill="x", padx=6, pady=(0, 12))
 
             # Fila: Método de Pago y Switch Gasto Fijo
-            row_opts = ctk.CTkFrame(main_frame, fg_color="transparent")
-            row_opts.pack(fill="x", padx=20, pady=(0, 10))
+            row_opts = ctk.CTkFrame(scroll_body, fg_color="transparent")
+            row_opts.pack(fill="x", padx=6, pady=(0, 12))
 
             self.payment_combo = ctk.CTkComboBox(
                 row_opts,
                 values=["Débito / Cuenta", "Tarjeta de Crédito", "Efectivo"],
-                height=32,
-                width=160,
+                height=34,
+                width=170,
                 corner_radius=6,
                 fg_color=Theme.BG_INPUT,
                 border_color=Theme.BORDER_DEFAULT,
@@ -128,46 +182,28 @@ class EditTransactionModal(ctk.CTkToplevel):
 
         elif self.source_table == "conversions":
             # Monto USD
-            ctk.CTkLabel(main_frame, text="Monto Retirado ($ USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.amount_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Monto Retirado ($ USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.amount_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.amount_entry.insert(0, str(self.record.get("usd_amount", "")))
-            self.amount_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.amount_entry.pack(fill="x", padx=6, pady=(0, 12))
 
             # Tasa de cambio
-            ctk.CTkLabel(main_frame, text="Tasa de Cambio (COP/USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.rate_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Tasa de Cambio (COP/USD):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.rate_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.rate_entry.insert(0, str(self.record.get("exchange_rate", "")))
-            self.rate_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.rate_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         else:  # account_transactions
-            ctk.CTkLabel(main_frame, text="Monto de Inversión:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-            self.amount_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+            ctk.CTkLabel(scroll_body, text="Monto del Movimiento:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+            self.amount_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
             self.amount_entry.insert(0, str(self.record.get("amount", "")))
-            self.amount_entry.pack(fill="x", padx=20, pady=(0, 10))
+            self.amount_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         # Campo Notas
-        ctk.CTkLabel(main_frame, text="Notas / Descripción:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
-        self.notes_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+        ctk.CTkLabel(scroll_body, text="Notas / Descripción Detallada:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        self.notes_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
         self.notes_entry.insert(0, str(self.record.get("notes", "") or ""))
-        self.notes_entry.pack(fill="x", padx=20, pady=(0, 14))
-
-        # Label Error
-        self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", padx=20, pady=(0, 6))
-
-        # Botón Guardar Cambios
-        btn_save = ctk.CTkButton(
-            main_frame,
-            text="💾 Guardar Cambios",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
-            command=self._handle_save
-        )
-        btn_save.pack(fill="x", padx=20, pady=(0, 10))
+        self.notes_entry.pack(fill="x", padx=6, pady=(0, 14))
 
     def _handle_save(self):
         date_str = self.date_entry.get().strip()

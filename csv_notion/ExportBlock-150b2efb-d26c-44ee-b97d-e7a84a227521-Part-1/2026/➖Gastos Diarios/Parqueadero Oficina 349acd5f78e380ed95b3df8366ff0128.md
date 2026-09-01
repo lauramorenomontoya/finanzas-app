@@ -1,0 +1,8 @@
+# Parqueadero Oficina
+
+Fecha Gasto: 21 de julio de 2026
+Mes: Julio 2026 (../Gasto%20anual/Julio%202026%202bcacd5f78e3814d90f9edde7c1d46eb.md)
+Gasto: 83.383,00 COP
+Categorías: Moto (../Categor%C3%ADas/Moto%202bcacd5f78e381389b8fe6848c1e1893.md)
+Checkbox: Pagado
+Descripción: FIJO MENSUAL

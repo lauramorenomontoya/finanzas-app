@@ -17,20 +17,93 @@ class LedgerMixin:
     ) -> List[Dict[str, Any]]:
         ledger_entries: List[Dict[str, Any]] = []
 
+        where_usd: List[str] = []
+        params_usd: List[Any] = []
+        where_cop: List[str] = []
+        params_cop: List[Any] = []
+        where_acc: List[str] = ["t.type = 'YIELD'"]
+        params_acc: List[Any] = []
+
+        if date_from:
+            where_usd.append("date >= ?")
+            params_usd.append(date_from)
+            where_cop.append("date >= ?")
+            params_cop.append(date_from)
+            where_acc.append("t.date >= ?")
+            params_acc.append(date_from)
+
+        if date_to:
+            where_usd.append("date <= ?")
+            params_usd.append(date_to)
+            where_cop.append("date <= ?")
+            params_cop.append(date_to)
+            where_acc.append("t.date <= ?")
+            params_acc.append(date_to)
+
+        # Mapeo de módulos específicos
+        include_usd = True
+        include_cop = True
+        include_yields = True
+
+        if module_filter and module_filter != "Todos":
+            if module_filter == "Ingresos USD":
+                include_usd = True
+                include_cop = False
+                include_yields = False
+                where_usd.append("type IN ('DEPOSIT', 'TRANSFER_FROM_INVESTMENT')")
+            elif module_filter == "Egresos USD":
+                include_usd = True
+                include_cop = False
+                include_yields = False
+                where_usd.append("type = 'EXPENSE'")
+            elif module_filter == "Ingresos COP":
+                include_usd = False
+                include_cop = True
+                include_yields = False
+                where_cop.append("type IN ('MANUAL_INCOME', 'TRANSFER_FROM_INVESTMENT')")
+            elif module_filter == "Egresos COP":
+                include_usd = False
+                include_cop = True
+                include_yields = False
+                where_cop.append("type IN ('EXPENSE', 'CC_PAYMENT')")
+            elif module_filter == "Conversión":
+                include_usd = True
+                include_cop = True
+                include_yields = False
+                where_usd.append("type = 'TRANSFER_OUT'")
+                where_cop.append("type = 'TRANSFER_IN'")
+            elif module_filter in ("Inversiones", "Rendimientos"):
+                include_usd = False
+                include_cop = False
+                include_yields = True
+            elif module_filter == "USD":
+                include_usd = True
+                include_cop = False
+                include_yields = False
+            elif module_filter == "COP":
+                include_usd = False
+                include_cop = True
+                include_yields = False
+
+        usd_sql_where = f"WHERE {' AND '.join(where_usd)}" if where_usd else ""
+        cop_sql_where = f"WHERE {' AND '.join(where_cop)}" if where_cop else ""
+        acc_sql_where = f"WHERE {' AND '.join(where_acc)}"
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
             # 1. Movimientos USD
-            if not module_filter or module_filter in ("Todos", "USD", "Ingresos USD", "Egresos USD"):
-                cursor.execute("""
+            if include_usd:
+                cursor.execute(f"""
                     SELECT id, date, platform, type, amount, notes, created_at
-                    FROM usd_transactions;
-                """)
+                    FROM usd_transactions
+                    {usd_sql_where};
+                """, params_usd)
                 for r in cursor.fetchall():
                     t = r["type"]
                     inflow = r["amount"] if t in ("DEPOSIT", "TRANSFER_FROM_INVESTMENT") else 0.0
                     outflow = r["amount"] if t in ("TRANSFER_OUT", "TRANSFER_TO_INVESTMENT", "EXPENSE") else 0.0
-                    
+
                     if t == "DEPOSIT":
                         mod_name = "Ingresos USD"
                         extra = "Depósito"
@@ -60,16 +133,17 @@ class LedgerMixin:
                     })
 
             # 2. Movimientos COP
-            if not module_filter or module_filter in ("Todos", "COP", "Ingresos COP", "Egresos COP"):
-                cursor.execute("""
+            if include_cop:
+                cursor.execute(f"""
                     SELECT id, date, category, type, amount, is_fixed, payment_method, notes, created_at
-                    FROM cop_transactions;
-                """)
+                    FROM cop_transactions
+                    {cop_sql_where};
+                """, params_cop)
                 for r in cursor.fetchall():
                     t = r["type"]
                     inflow = r["amount"] if t in ("MANUAL_INCOME", "TRANSFER_IN", "TRANSFER_FROM_INVESTMENT") else 0.0
                     outflow = r["amount"] if t in ("EXPENSE", "CC_PAYMENT", "TRANSFER_TO_INVESTMENT") else 0.0
-                    
+
                     pm_str = "TC" if r["payment_method"] == "CREDIT_CARD" else "Débito"
                     if t == "CC_PAYMENT":
                         pm_str = "Pago Tarjeta"
@@ -99,13 +173,13 @@ class LedgerMixin:
                     })
 
             # 3. Rendimientos en Cuentas
-            if not module_filter or module_filter in ("Todos", "Inversiones", "Rendimientos"):
-                cursor.execute("""
+            if include_yields:
+                cursor.execute(f"""
                     SELECT t.id, t.date, a.name as account_name, a.currency, t.type, t.amount, t.notes, t.created_at
                     FROM account_transactions t
                     JOIN accounts a ON t.account_id = a.id
-                    WHERE t.type = 'YIELD';
-                """)
+                    {acc_sql_where};
+                """, params_acc)
                 for r in cursor.fetchall():
                     ledger_entries.append({
                         "id": r["id"],
@@ -122,19 +196,27 @@ class LedgerMixin:
                         "created_at": r["created_at"]
                     })
 
-        # Adjuntar tags a los registros
+            # Cargar tags de los registros obtenidos
+            tags_map = {}
+            if ledger_entries:
+                cursor.execute("""
+                    SELECT tt.source_table, tt.record_id, t.id, t.name, t.color
+                    FROM transaction_tags tt
+                    JOIN tags t ON tt.tag_id = t.id;
+                """)
+                for tr in cursor.fetchall():
+                    key = (tr["source_table"], tr["record_id"])
+                    if key not in tags_map:
+                        tags_map[key] = []
+                    tags_map[key].append({"id": tr["id"], "name": tr["name"], "color": tr["color"]})
+
         for entry in ledger_entries:
-            entry["tags"] = self.get_tags_for_record(entry["source_table"], entry["id"]) if hasattr(self, "get_tags_for_record") else []
+            entry["tags"] = tags_map.get((entry["source_table"], entry["id"]), [])
 
         filtered = []
         q = search_query.lower().strip() if search_query else None
 
         for item in ledger_entries:
-            if date_from and item["date"] < date_from:
-                continue
-            if date_to and item["date"] > date_to:
-                continue
-
             if tag_id:
                 has_tag = any(t["id"] == tag_id for t in item.get("tags", []))
                 if not has_tag:
@@ -150,6 +232,7 @@ class LedgerMixin:
 
         filtered.sort(key=lambda x: (x["date"], x.get("created_at", "")), reverse=True)
         return filtered[:limit]
+
 
     def duplicate_record(
         self,

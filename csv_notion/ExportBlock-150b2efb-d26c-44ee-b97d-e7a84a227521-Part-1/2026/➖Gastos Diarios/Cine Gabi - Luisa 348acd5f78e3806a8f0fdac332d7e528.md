@@ -1,0 +1,7 @@
+# Cine Gabi - Luisa
+
+Fecha Gasto: 19 de abril de 2026
+Mes: Abril 2026 (../Gasto%20anual/Abril%202026%202bcacd5f78e3818bb158e6edc649e946.md)
+Gasto: 57.600,00 COP
+Categorías: Entretenimiento (../Categor%C3%ADas/Entretenimiento%202bcacd5f78e38109918bf9b85225e712.md)
+Checkbox: Pagado

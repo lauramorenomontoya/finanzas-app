@@ -1,0 +1,8 @@
+# Claro Hogar Medellín
+
+Fecha Gasto: 12 de agosto de 2026
+Mes: Agosto 2026 (../Gasto%20anual/Agosto%202026%202bcacd5f78e38166b96bc7e61d504c8d.md)
+Gasto: 85.043,00 COP
+Categorías: Hogar (../Categor%C3%ADas/Hogar%202bcacd5f78e381bea24fc2ea99b5a532.md)
+Checkbox: Pagado
+Descripción: FIJO MENSUAL

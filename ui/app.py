@@ -17,6 +17,10 @@ from ui.views.investments import InvestmentsView
 from ui.views.ledger import LedgerView
 from ui.views.analytics import AnalyticsView
 from ui.views.settings import SettingsView
+from ui.utils.scroll_helper import ScrollHelper
+
+# Habilitar soporte táctil global para iMac Trackpad, MacBook Trackpad y Magic Mouse
+ScrollHelper.enable_smooth_scrolling()
 
 
 class FinancialApp(ctk.CTk):
@@ -211,41 +215,62 @@ class FinancialApp(ctk.CTk):
         self.content_container.grid_rowconfigure(0, weight=1)
         self.content_container.grid_columnconfigure(0, weight=1)
 
-        # Instanciar vistas
-        self.incomes_view = IncomesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
-        self.expenses_view = ExpensesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
-        self.dashboard_view = DashboardView(self.content_container, self.db, navigate_to=self.show_view)
-
-        self.views = {
-            "dashboard": self.dashboard_view,
-            "incomes": self.incomes_view,
-            "expenses": self.expenses_view,
-            "usd_vault": self.incomes_view,     # Alias de compatibilidad
-            "cop_budget": self.expenses_view,   # Alias de compatibilidad
-            "conversion": ConversionView(self.content_container, self.db, on_data_changed=self.on_data_updated),
-            "investments": InvestmentsView(self.content_container, self.db, on_data_changed=self.on_data_updated),
-            "ledger": LedgerView(self.content_container, self.db, on_data_changed=self.on_data_updated),
-            "analytics": AnalyticsView(self.content_container, self.db),
-            "settings": SettingsView(self.content_container, self.db, on_data_changed=self.on_data_updated)
-        }
-
+        # Diccionario de vistas cargadas bajo demanda (Lazy Loading)
+        self.views: Dict[str, Any] = {}
         self.current_view_key = None
 
-    def show_view(self, view_key: str):
-        """Cambia la vista activa y resalta el botón correspondiente en la barra lateral."""
-        # Resolver alias si viene de atajos antiguos
+    def get_or_create_view(self, view_key: str):
+        """Instancia la vista únicamente cuando el usuario la solicita por primera vez."""
+        # Alias
         if view_key == "usd_vault":
             view_key = "incomes"
         elif view_key == "cop_budget":
             view_key = "expenses"
 
-        if view_key not in self.views:
+        if view_key in self.views:
+            return self.views[view_key]
+
+        view = None
+        if view_key == "dashboard":
+            view = DashboardView(self.content_container, self.db, navigate_to=self.show_view)
+        elif view_key == "incomes":
+            view = IncomesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "expenses":
+            view = ExpensesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "conversion":
+            view = ConversionView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "investments":
+            view = InvestmentsView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "ledger":
+            view = LedgerView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "analytics":
+            view = AnalyticsView(self.content_container, self.db)
+        elif view_key == "settings":
+            view = SettingsView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+
+        if view:
+            self.views[view_key] = view
+            if view_key == "incomes":
+                self.views["usd_vault"] = view
+            elif view_key == "expenses":
+                self.views["cop_budget"] = view
+
+        return view
+
+    def show_view(self, view_key: str):
+        """Cambia la vista activa y resalta el botón correspondiente en la barra lateral."""
+        if view_key == "usd_vault":
+            view_key = "incomes"
+        elif view_key == "cop_budget":
+            view_key = "expenses"
+
+        view = self.get_or_create_view(view_key)
+        if not view:
             return
 
         if self.current_view_key and self.current_view_key in self.views:
             self.views[self.current_view_key].pack_forget()
 
-        view = self.views[view_key]
         view.pack(fill="both", expand=True)
         self.current_view_key = view_key
 
@@ -261,18 +286,15 @@ class FinancialApp(ctk.CTk):
         self._update_sidebar_balances()
 
     def on_data_updated(self):
-        """Refresca los balances globales del sidebar y sincroniza el dashboard y la vista activa."""
+        """Refresca los balances globales del sidebar y sincroniza la vista activa visible."""
         self._update_sidebar_balances()
 
-        # Siempre refrescar el Dashboard para mantener métricas sincronizadas
-        if hasattr(self, "dashboard_view") and hasattr(self.dashboard_view, "refresh_data"):
-            self.dashboard_view.refresh_data()
-
-        # Refrescar la vista actual si no es el dashboard
-        if self.current_view_key and self.current_view_key != "dashboard":
+        # Refrescar únicamente la vista activa actual (las demás se refrescan bajo demanda al seleccionarlas)
+        if self.current_view_key:
             active_view = self.views.get(self.current_view_key)
             if active_view and hasattr(active_view, "refresh_data"):
                 active_view.refresh_data()
+
 
     def _update_sidebar_balances(self):
         usd_bal = self.db.get_usd_balance()

@@ -1,0 +1,4 @@
+# Transporte Público
+
+Gastos Diarios: Bus (../%E2%9E%96Gastos%20Diarios/Bus%202e2acd5f78e380a2abfbc013964d18ab.md), Cívica (../%E2%9E%96Gastos%20Diarios/C%C3%ADvica%20322acd5f78e38062a8b5f1046d4d1616.md), Cívica (../%E2%9E%96Gastos%20Diarios/C%C3%ADvica%2033dacd5f78e380c9a7abdf42794594ba.md), Uber (../%E2%9E%96Gastos%20Diarios/Uber%20341acd5f78e3806d8d12fe0940231e73.md), Civica (../%E2%9E%96Gastos%20Diarios/Civica%2034cacd5f78e380e6a7f7e3f080e0613e.md), Cívica (../%E2%9E%96Gastos%20Diarios/C%C3%ADvica%20367acd5f78e380208845ebc0884f71fa.md), Cívica (../%E2%9E%96Gastos%20Diarios/C%C3%ADvica%20381acd5f78e380688c6bef99c7e90d74.md), Bus (../%E2%9E%96Gastos%20Diarios/Bus%20391acd5f78e38039ac2befdb779f548b.md)
+Rollup: 6800,20000,15000,14073,20000,15000,10000,3800

@@ -11,7 +11,8 @@ from ui.components import (
     ConfirmDialog,
     EditAccountModal,
     EditCategoryModal,
-    EditRecurringModal
+    EditRecurringModal,
+    CSVImporterModal
 )
 
 
@@ -49,7 +50,7 @@ class SettingsView(ctk.CTkFrame):
         header_frame.pack(fill="x", padx=24, pady=(20, 14))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
-        title_box.pack(side="left")
+        title_box.pack(side="left", fill="x", expand=True)
 
         ctk.CTkLabel(
             title_box,
@@ -64,6 +65,19 @@ class SettingsView(ctk.CTkFrame):
             font=ctk.CTkFont(family="SF Pro Text", size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
+
+        btn_import = ctk.CTkButton(
+            header_frame,
+            text="📥 Importar CSV / Notion",
+            height=36,
+            corner_radius=8,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._open_importer
+        )
+        btn_import.pack(side="right")
 
         # 2. Selector de Sección (Categorías vs Cuentas vs Gastos Fijos)
         self.section_seg = ctk.CTkSegmentedButton(
@@ -85,6 +99,15 @@ class SettingsView(ctk.CTkFrame):
         self._build_recurring_section()
 
         self._show_active_section()
+
+    def _open_importer(self):
+        CSVImporterModal(self, self.db, on_success=self._on_import_completed)
+
+    def _on_import_completed(self):
+        self.toast.show("¡Datos de CSV / Notion importados exitosamente!", "success")
+        self.refresh_data()
+        if self.on_data_changed:
+            self.on_data_changed()
 
     # ==========================================
     # SUBSECCIÓN: CATEGORÍAS (CRUD CON COLOR PICKER & EMOJIS)

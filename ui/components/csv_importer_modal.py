@@ -1,14 +1,15 @@
 """
-Modal para Importar Historial Financiero Masivo desde Archivos CSV.
-Permite seleccionar archivo local, ver previsualización, descargar plantilla e importar a SQLite.
+Modal para Importar Historial Financiero Masivo desde Archivos CSV o Exportación de Notion.
+Permite seleccionar archivo local o carpeta completa de Notion, ver previsualización enriquecida con
+métricas (Gastos, Ingresos, Inversiones, Rango de Fechas DD/MM/YYYY y Categorías) e importar a SQLite.
 """
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 import os
-import csv
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
+from services.notion_importer import NotionImporter
 
 
 class CSVImporterModal(ctk.CTkToplevel):
@@ -21,11 +22,12 @@ class CSVImporterModal(ctk.CTkToplevel):
         super().__init__(parent)
         self.db = db_manager
         self.on_success = on_success
-        self.selected_file_path = None
+        self.selected_target_path = None
+        self.current_preview_data = None
 
-        self.title("Importador de Historial CSV")
-        self.geometry("780x600")
-        self.minsize(720, 520)
+        self.title("Importador de Historial CSV & Notion")
+        self.geometry("860x680")
+        self.minsize(780, 580)
         self.configure(fg_color=Theme.BG_WINDOW)
 
         self.transient(parent)
@@ -41,111 +43,129 @@ class CSVImporterModal(ctk.CTkToplevel):
             parent_y = parent.winfo_rooty()
             parent_w = parent.winfo_width()
             parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 780) // 2
-            y = parent_y + (parent_h - 600) // 2
+            x = parent_x + (parent_w - 860) // 2
+            y = parent_y + (parent_h - 680) // 2
             self.geometry(f"+{max(0, x)}+{max(0, y)}")
         except Exception:
             pass
 
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=18, pady=18)
 
-        # 1. Encabezado con Botón Descargar Plantilla
+        # 1. Encabezado
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(18, 12))
+        header.pack(fill="x", padx=20, pady=(16, 12))
 
         title_box = ctk.CTkFrame(header, fg_color="transparent")
         title_box.pack(side="left", fill="x", expand=True)
 
         ctk.CTkLabel(
             title_box,
-            text="📄 Importador Masivo de Datos CSV",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            text="📥 Importador Masivo: CSV & Notion",
+            font=ctk.CTkFont(family="SF Pro Display", size=19, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
-            text="Carga tu historial previo de ingresos, gastos y conversiones directamente a SQLite.",
+            text="Carga tus datos exportados de Notion o plantillas CSV estándar con fechas en formato día/mes/año.",
             font=ctk.CTkFont(family="SF Pro Text", size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
         btn_template = ctk.CTkButton(
             header,
-            text="📥 Descargar Plantilla CSV",
-            height=34,
+            text="📄 Descargar Plantilla",
+            height=32,
             corner_radius=8,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
-            font=ctk.CTkFont(size=12, weight="bold"),
+            font=ctk.CTkFont(size=11, weight="bold"),
             command=self._handle_download_template
         )
-        btn_template.pack(side="right", padx=(12, 0))
+        btn_template.pack(side="right", padx=(10, 0))
 
-        # 2. Barra de Selección de Archivo
+        # 2. Barra de Selección dual (Archivo o Carpeta Notion)
         picker_box = ctk.CTkFrame(main_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        picker_box.pack(fill="x", padx=20, pady=(0, 14))
+        picker_box.pack(fill="x", padx=20, pady=(0, 12))
 
         picker_inner = ctk.CTkFrame(picker_box, fg_color="transparent")
-        picker_inner.pack(fill="x", padx=14, pady=12)
+        picker_inner.pack(fill="x", padx=14, pady=10)
 
         self.lbl_filepath = ctk.CTkLabel(
             picker_inner,
-            text="Ningún archivo .csv seleccionado",
+            text="Ningún archivo o carpeta seleccionada",
             font=ctk.CTkFont(size=12),
             text_color=Theme.TEXT_MUTED
         )
-        self.lbl_filepath.pack(side="left", fill="x", expand=True, padx=(0, 12))
+        self.lbl_filepath.pack(side="left", fill="x", expand=True, padx=(0, 10))
 
-        btn_select = ctk.CTkButton(
+        btn_select_file = ctk.CTkButton(
             picker_inner,
-            text="📁 Seleccionar CSV...",
-            height=36,
+            text="📄 Archivo CSV...",
+            height=34,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=self._handle_select_file
+        )
+        btn_select_file.pack(side="right", padx=(6, 0))
+
+        btn_select_folder = ctk.CTkButton(
+            picker_inner,
+            text="📦 Carpeta Notion...",
+            height=34,
             corner_radius=8,
             fg_color="#0284c7",
             hover_color="#0369a1",
             text_color="#ffffff",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            command=self._handle_select_file
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=self._handle_select_folder
         )
-        btn_select.pack(side="right")
+        btn_select_folder.pack(side="right")
 
-        # 3. Área de Previsualización
+        # 3. Resumen y Badge de Tipo Detectado
+        self.summary_cards_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        self.summary_cards_frame.pack(fill="x", padx=20, pady=(0, 10))
+
+        # 4. Área de Previsualización
         preview_header = ctk.CTkFrame(main_frame, fg_color="transparent")
         preview_header.pack(fill="x", padx=20, pady=(0, 6))
 
-        ctk.CTkLabel(
+        self.lbl_preview_title = ctk.CTkLabel(
             preview_header,
-            text="👁️ Vista Previa del Archivo",
+            text="👁️ Vista Previa de Datos Detectados",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
-        ).pack(side="left")
+        )
+        self.lbl_preview_title.pack(side="left")
 
         self.lbl_row_count = ctk.CTkLabel(
             preview_header,
-            text="0 filas detectadas",
+            text="",
             font=ctk.CTkFont(size=11),
             text_color=Theme.TEXT_MUTED
         )
         self.lbl_row_count.pack(side="right")
 
-        self.preview_scroll = ctk.CTkScrollableFrame(main_frame, fg_color=Theme.BG_INPUT, corner_radius=8, height=190)
-        self.preview_scroll.pack(fill="both", expand=True, padx=20, pady=(0, 14))
+        self.preview_scroll = ctk.CTkScrollableFrame(main_frame, fg_color=Theme.BG_INPUT, corner_radius=8, height=220)
+        self.preview_scroll.pack(fill="both", expand=True, padx=20, pady=(0, 12))
 
         self.lbl_placeholder = ctk.CTkLabel(
             self.preview_scroll,
-            text="Selecciona un archivo .csv para ver la previsualización de datos antes de importar.",
+            text="Selecciona un archivo CSV o la carpeta 'csv_notion' para previsualizar los movimientos antes de importar.",
             font=ctk.CTkFont(size=12),
             text_color=Theme.TEXT_MUTED
         )
-        self.lbl_placeholder.pack(pady=40)
+        self.lbl_placeholder.pack(pady=50)
 
-        # 4. Barra de Estado y Botón de Importación
+        # 5. Footer con Estado y Botón de Importación
         footer = ctk.CTkFrame(main_frame, fg_color="transparent")
-        footer.pack(fill="x", padx=20, pady=(0, 14))
+        footer.pack(fill="x", padx=20, pady=(0, 12))
 
         self.lbl_status = ctk.CTkLabel(
             footer,
@@ -157,7 +177,7 @@ class CSVImporterModal(ctk.CTkToplevel):
 
         self.btn_import = ctk.CTkButton(
             footer,
-            text="🚀 Importar Datos a la Base de Datos",
+            text="🚀 Importar Datos a SQLite",
             height=40,
             corner_radius=8,
             fg_color="#10b981",
@@ -179,7 +199,7 @@ class CSVImporterModal(ctk.CTkToplevel):
         if dest_path:
             try:
                 self.db.generate_csv_template(save_path=dest_path)
-                messagebox.showinfo("Plantilla Guardada", f"La plantilla CSV de ejemplo ha sido guardada exitosamente en:\n{dest_path}")
+                messagebox.showinfo("Plantilla Guardada", f"La plantilla CSV de ejemplo ha sido guardada en:\n{dest_path}")
             except Exception as e:
                 messagebox.showerror("Error al Guardar", f"No se pudo guardar la plantilla: {str(e)}")
 
@@ -191,89 +211,154 @@ class CSVImporterModal(ctk.CTkToplevel):
         if not filepath:
             return
 
-        self.selected_file_path = filepath
+        self.selected_target_path = filepath
         filename = os.path.basename(filepath)
         self.lbl_filepath.configure(text=f"📄 {filename}", text_color=Theme.TEXT_PRIMARY)
-        self._preview_csv(filepath)
+        self._load_preview(filepath)
 
-    def _preview_csv(self, filepath: str):
+    def _handle_select_folder(self):
+        folderpath = filedialog.askdirectory(
+            title="Seleccionar Carpeta Exportada de Notion (ej. csv_notion)"
+        )
+        if not folderpath:
+            return
+
+        self.selected_target_path = folderpath
+        foldername = os.path.basename(folderpath) or folderpath
+        self.lbl_filepath.configure(text=f"📦 Carpeta Notion: {foldername}", text_color=Theme.TEXT_PRIMARY)
+        self._load_preview(folderpath)
+
+    def _load_preview(self, target_path: str):
+        for widget in self.summary_cards_frame.winfo_children():
+            widget.destroy()
         for widget in self.preview_scroll.winfo_children():
             widget.destroy()
 
         try:
-            with open(filepath, mode="r", encoding="utf-8-sig") as f:
-                sample = f.read(2048)
-                f.seek(0)
-                delimiter = ";" if ";" in sample and sample.count(";") > sample.count(",") else ","
-                reader = csv.reader(f, delimiter=delimiter)
-                rows = list(reader)
+            preview = self.db.preview_import_data(target_path)
+            self.current_preview_data = preview
 
-            if not rows:
-                ctk.CTkLabel(self.preview_scroll, text="El archivo CSV está vacío.", text_color=Theme.ACCENT_ROSE).pack(pady=20)
+            if not preview.get("success"):
+                err = preview.get("error", "No se pudo leer la información.")
+                ctk.CTkLabel(self.preview_scroll, text=f"⚠️ {err}", text_color=Theme.ACCENT_ROSE).pack(pady=30)
                 self.btn_import.configure(state="disabled")
                 return
 
-            headers = rows[0]
-            data_rows = rows[1:]
-            self.lbl_row_count.configure(text=f"{len(data_rows)} filas detectadas")
+            f_type = self.db.detect_import_format(target_path)
 
-            # Encabezados en la vista previa
-            header_card = ctk.CTkFrame(self.preview_scroll, fg_color=Theme.BG_CARD, corner_radius=6)
-            header_card.pack(fill="x", pady=2, padx=2)
-            header_text = " │ ".join(headers[:7])
-            ctk.CTkLabel(
-                header_card,
-                text=header_text,
-                font=ctk.CTkFont(size=11, weight="bold"),
-                text_color=Theme.ACCENT_BLUE
-            ).pack(anchor="w", padx=8, pady=4)
+            # 1. Renderizar Tarjetas de Resumen
+            self._render_summary_cards(preview, f_type)
 
-            # Primeras 15 filas de ejemplo
-            for idx, r in enumerate(data_rows[:15]):
-                card = ctk.CTkFrame(self.preview_scroll, fg_color=Theme.BG_CARD_SUBTLE if idx % 2 == 0 else "transparent", corner_radius=4)
-                card.pack(fill="x", pady=1, padx=2)
-                row_str = f"#{idx+1}: " + " │ ".join(r[:7])
-                ctk.CTkLabel(
-                    card,
-                    text=row_str,
-                    font=ctk.CTkFont(size=11),
-                    text_color=Theme.TEXT_SECONDARY
-                ).pack(anchor="w", padx=8, pady=3)
+            # 2. Renderizar Tabla de Previsualización
+            sample_rows = preview.get("sample_rows", [])
+            if not sample_rows:
+                ctk.CTkLabel(self.preview_scroll, text="No se detectaron transacciones válidas.", text_color=Theme.TEXT_MUTED).pack(pady=30)
+                self.btn_import.configure(state="disabled")
+                return
 
-            if len(data_rows) > 15:
-                ctk.CTkLabel(
-                    self.preview_scroll,
-                    text=f"... y {len(data_rows) - 15} filas adicionales.",
-                    font=ctk.CTkFont(size=10, slant="italic"),
-                    text_color=Theme.TEXT_MUTED
-                ).pack(pady=6)
+            # Cabecera de la tabla
+            table_hdr = ctk.CTkFrame(self.preview_scroll, fg_color=Theme.BG_CARD, corner_radius=6)
+            table_hdr.pack(fill="x", pady=(0, 4), padx=2)
+
+            cols = [("TIPO", 110), ("FECHA (D/M/A)", 100), ("CATEGORÍA", 140), ("CONCEPTO", 240), ("MONTO", 120)]
+            for name, w in cols:
+                ctk.CTkLabel(table_hdr, text=name, width=w, anchor="w", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(side="left", padx=6, pady=4)
+
+            # Filas de datos
+            for idx, r in enumerate(sample_rows):
+                row_card = ctk.CTkFrame(self.preview_scroll, fg_color=Theme.BG_CARD_SUBTLE if idx % 2 == 0 else "transparent", corner_radius=4)
+                row_card.pack(fill="x", pady=1, padx=2)
+
+                tipo = r.get("tipo", "GASTO_COP")
+                t_color = Theme.ACCENT_ROSE if "GASTO" in tipo else Theme.ACCENT_GREEN
+                fecha = r.get("fecha", "N/A")
+                cat = r.get("categoria", "General")
+                con = r.get("concepto", "")
+                monto = float(r.get("monto", 0.0))
+                m_str = f"${monto:,.0f} COP" if monto >= 1000 else f"${monto:,.2f}"
+
+                ctk.CTkLabel(row_card, text=tipo, width=110, anchor="w", font=ctk.CTkFont(size=10, weight="bold"), text_color=t_color).pack(side="left", padx=6, pady=3)
+                ctk.CTkLabel(row_card, text=fecha, width=100, anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_PRIMARY).pack(side="left", padx=6, pady=3)
+                ctk.CTkLabel(row_card, text=cat, width=140, anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_BLUE).pack(side="left", padx=6, pady=3)
+                ctk.CTkLabel(row_card, text=con[:30], width=240, anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=6, pady=3)
+                ctk.CTkLabel(row_card, text=m_str, width=120, anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left", padx=6, pady=3)
 
             self.btn_import.configure(state="normal", fg_color="#10b981")
-            self.lbl_status.configure(text="✅ Archivo listo para importar", text_color=Theme.ACCENT_GREEN)
+            self.lbl_status.configure(text="✅ Datos listos para importar a SQLite", text_color=Theme.ACCENT_GREEN)
 
         except Exception as e:
-            ctk.CTkLabel(self.preview_scroll, text=f"Error al leer archivo: {str(e)}", text_color=Theme.ACCENT_ROSE).pack(pady=20)
+            ctk.CTkLabel(self.preview_scroll, text=f"Error al analizar datos: {str(e)}", text_color=Theme.ACCENT_ROSE).pack(pady=30)
             self.btn_import.configure(state="disabled")
 
+    def _render_summary_cards(self, preview: Dict[str, Any], f_type: str):
+        # Badge descriptivo
+        badge_text = "📦 Exportación Completa de Notion" if f_type == "NOTION_FOLDER" else f"📄 Archivo Detectado: {f_type}"
+        badge = ctk.CTkFrame(self.summary_cards_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=6, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        badge.pack(side="top", anchor="w", pady=(0, 8))
+        ctk.CTkLabel(badge, text=badge_text, font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.ACCENT_BLUE).pack(padx=10, pady=3)
+
+        # Fila de tarjetas de métricas
+        row = ctk.CTkFrame(self.summary_cards_frame, fg_color="transparent")
+        row.pack(fill="x")
+
+        # Tarjeta 1: Gastos
+        g_cnt = preview.get("total_expenses_count", 0)
+        g_amt = preview.get("total_expenses_amount", 0.0)
+        if g_cnt > 0:
+            c1 = ctk.CTkFrame(row, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            c1.pack(side="left", padx=(0, 8), fill="both", expand=True)
+            ctk.CTkLabel(c1, text="💸 Total Gastos COP", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="w", padx=10, pady=(6, 0))
+            ctk.CTkLabel(c1, text=f"${g_amt:,.0f} COP ({g_cnt})", font=ctk.CTkFont(size=13, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(anchor="w", padx=10, pady=(0, 6))
+
+        # Tarjeta 2: Ingresos
+        i_cnt = preview.get("total_incomes_count", 0)
+        i_amt = preview.get("total_incomes_amount", 0.0)
+        if i_cnt > 0:
+            c2 = ctk.CTkFrame(row, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            c2.pack(side="left", padx=(0, 8), fill="both", expand=True)
+            ctk.CTkLabel(c2, text="💰 Total Ingresos COP", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="w", padx=10, pady=(6, 0))
+            ctk.CTkLabel(c2, text=f"${i_amt:,.0f} COP ({i_cnt})", font=ctk.CTkFont(size=13, weight="bold"), text_color=Theme.ACCENT_GREEN).pack(anchor="w", padx=10, pady=(0, 6))
+
+        # Tarjeta 3: Rango de Fechas
+        d_min = preview.get("date_min")
+        d_max = preview.get("date_max")
+        if d_min and d_max:
+            c3 = ctk.CTkFrame(row, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            c3.pack(side="left", fill="both", expand=True)
+            ctk.CTkLabel(c3, text="📅 Rango de Fechas (D/M/A)", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="w", padx=10, pady=(6, 0))
+            ctk.CTkLabel(c3, text=f"{d_min} ➔ {d_max}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(anchor="w", padx=10, pady=(0, 6))
+
     def _handle_import(self):
-        if not self.selected_file_path:
+        if not self.selected_target_path:
             return
 
         self.btn_import.configure(state="disabled", text="⏳ Importando...")
-        self.lbl_status.configure(text="⏳ Procesando e insertando registros...", text_color=Theme.ACCENT_BLUE)
+        self.lbl_status.configure(text="⏳ Creando respaldo y procesando registros...", text_color=Theme.ACCENT_BLUE)
         self.update_idletasks()
 
-        res = self.db.import_csv_data(self.selected_file_path)
+        res = self.db.import_csv_data(self.selected_target_path)
 
         if res.get("success"):
-            imp = res.get("imported", 0)
+            imp_total = res.get("imported_total", res.get("imported", 0))
+            imp_exp = res.get("imported_expenses", 0)
+            imp_inc = res.get("imported_incomes", 0)
+            imp_inv = res.get("imported_investments", 0)
             skp = res.get("skipped", 0)
-            msg = f"¡Importación exitosa!\n\nSe insertaron {imp} registros a SQLite ({skp} omitidos)."
-            messagebox.showinfo("Importación Completada", msg)
+
+            msg = (
+                f"🎉 ¡Importación Completada con Éxito!\n\n"
+                f"• Total Registros Guardados: {imp_total}\n"
+                f"  - Gastos Diarios COP: {imp_exp}\n"
+                f"  - Ingresos COP: {imp_inc}\n"
+                f"  - Inversiones / Fiducuenta: {imp_inv}\n"
+                f"• Registros Omitidos / Duplicados: {skp}\n\n"
+                f"Se creó un respaldo preventivo de la base de datos."
+            )
+            messagebox.showinfo("Importación Exitosa", msg)
             if self.on_success:
                 self.on_success()
             self.destroy()
         else:
-            err = res.get("error", "Error desconocido al importar.")
+            err = res.get("error", "Error desconocido durante la importación.")
             self.lbl_status.configure(text=f"⚠️ {err}", text_color=Theme.ACCENT_ROSE)
             self.btn_import.configure(state="normal", text="🚀 Reintentar Importación")

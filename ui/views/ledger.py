@@ -70,7 +70,9 @@ class LedgerView(ctk.CTkFrame):
         filter_inner = ctk.CTkFrame(filter_card, fg_color="transparent")
         filter_inner.pack(fill="x", padx=16, pady=10)
 
-        # Buscador en tiempo real
+        self._search_timer = None
+
+        # Buscador en tiempo real con debounce
         self.search_entry = ctk.CTkEntry(
             filter_inner,
             placeholder_text="🔍 Buscar concepto, cliente o notas...",
@@ -82,7 +84,7 @@ class LedgerView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12)
         )
         self.search_entry.pack(side="left", padx=(0, 10))
-        self.search_entry.bind("<KeyRelease>", lambda _: self._refresh_table())
+        self.search_entry.bind("<KeyRelease>", lambda _: self._on_search_key())
 
         # Filtro de Módulo
         ctk.CTkLabel(filter_inner, text="Módulo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, 4))
@@ -116,15 +118,16 @@ class LedgerView(ctk.CTkFrame):
         self.tag_filter_combo.set("Todos")
         self.tag_filter_combo.pack(side="left", padx=(0, 10))
 
-        # Filtro Temporal Rápido
+        # Filtro Temporal Rápido (Por defecto Mes Actual para máximo rendimiento)
         self.date_range_seg = ctk.CTkSegmentedButton(
             filter_inner,
-            values=["Todo", "Mes Actual", "Últimos 30 días", "Año Actual"],
+            values=["Mes Actual", "Últimos 30 días", "Año Actual", "Todo"],
             height=30,
             command=lambda _: self._refresh_table()
         )
-        self.date_range_seg.set("Todo")
+        self.date_range_seg.set("Mes Actual")
         self.date_range_seg.pack(side="right")
+
 
         # 3. Barra de Resumen de Totales
         self.summary_bar = ctk.CTkFrame(self, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, height=32)
@@ -174,7 +177,67 @@ class LedgerView(ctk.CTkFrame):
 
         # Contenedor Scrollable para las Filas
         self.table_scroll = ctk.CTkScrollableFrame(table_container, fg_color="transparent")
-        self.table_scroll.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self.table_scroll.pack(fill="both", expand=True, padx=8, pady=(0, 4))
+
+        # 5. Barra de Paginación en el pie de la tabla
+        self.pagination_frame = ctk.CTkFrame(table_container, fg_color="transparent", height=36)
+        self.pagination_frame.pack(fill="x", padx=12, pady=(2, 8))
+
+        self.btn_prev_page = ctk.CTkButton(
+            self.pagination_frame,
+            text="◀ Anterior",
+            width=80,
+            height=28,
+            corner_radius=6,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            font=ctk.CTkFont(size=11),
+            command=self._prev_page
+        )
+        self.btn_prev_page.pack(side="left")
+
+        self.lbl_page_info = ctk.CTkLabel(
+            self.pagination_frame,
+            text="Página 1 de 1",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=Theme.TEXT_MUTED
+        )
+        self.lbl_page_info.pack(side="left", padx=14)
+
+        self.btn_next_page = ctk.CTkButton(
+            self.pagination_frame,
+            text="Siguiente ▶",
+            width=80,
+            height=28,
+            corner_radius=6,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            font=ctk.CTkFont(size=11),
+            command=self._next_page
+        )
+        self.btn_next_page.pack(side="left")
+
+        self.current_page = 1
+        self.page_size = 25
+
+    def _on_search_key(self):
+        """Aplica debounce de 250ms al tipear en el buscador para no congelar la UI."""
+        if self._search_timer:
+            self.after_cancel(self._search_timer)
+        self._search_timer = self.after(250, self._refresh_table)
+
+    def _prev_page(self):
+        if self.current_page > 1:
+            self.current_page -= 1
+            self._render_current_page()
+
+    def _next_page(self):
+        if self.current_page < self.total_pages:
+            self.current_page += 1
+            self._render_current_page()
+
 
     def _get_date_filters(self) -> Tuple[Optional[str], Optional[str]]:
         choice = self.date_range_seg.get()
@@ -203,12 +266,10 @@ class LedgerView(ctk.CTkFrame):
         else:
             self.tag_filter_combo.set("Todos")
 
+        self.current_page = 1
         self._refresh_table()
 
     def _refresh_table(self):
-        for widget in self.table_scroll.winfo_children():
-            widget.destroy()
-
         mod_filter = self.module_combo.get()
         if mod_filter == "Todos":
             mod_filter = None
@@ -225,8 +286,8 @@ class LedgerView(ctk.CTkFrame):
         date_from, date_to = self._get_date_filters()
         search_q = self.search_entry.get().strip()
 
-        rows = self.db.get_unified_ledger(
-            limit=200,
+        self.cached_rows = self.db.get_unified_ledger(
+            limit=500,
             module_filter=mod_filter,
             date_from=date_from,
             date_to=date_to,
@@ -234,16 +295,30 @@ class LedgerView(ctk.CTkFrame):
             tag_id=tag_id
         )
 
-        total_in_cop = sum(r["inflow"] for r in rows if r["currency"] == "COP")
-        total_out_cop = sum(r["outflow"] for r in rows if r["currency"] == "COP")
-        total_in_usd = sum(r["inflow"] for r in rows if r["currency"] == "USD")
-        total_out_usd = sum(r["outflow"] for r in rows if r["currency"] == "USD")
+        total_in_cop = sum(r["inflow"] for r in self.cached_rows if r["currency"] == "COP")
+        total_out_cop = sum(r["outflow"] for r in self.cached_rows if r["currency"] == "COP")
+        total_in_usd = sum(r["inflow"] for r in self.cached_rows if r["currency"] == "USD")
+        total_out_usd = sum(r["outflow"] for r in self.cached_rows if r["currency"] == "USD")
 
-        self.lbl_stats_count.configure(text=f"{len(rows)} movimientos")
+        self.lbl_stats_count.configure(text=f"{len(self.cached_rows)} movimientos")
         self.lbl_stats_cop.configure(text=f"COP: +${total_in_cop:,.0f} / -${total_out_cop:,.0f} (Neto: ${total_in_cop - total_out_cop:,.0f})")
         self.lbl_stats_usd.configure(text=f"USD: +${total_in_usd:,.2f} / -${total_out_usd:,.2f} (Neto: ${total_in_usd - total_out_usd:,.2f})")
 
-        if not rows:
+        self.total_pages = max(1, (len(self.cached_rows) + self.page_size - 1) // self.page_size)
+        if self.current_page > self.total_pages:
+            self.current_page = 1
+
+        self._render_current_page()
+
+    def _render_current_page(self):
+        for widget in self.table_scroll.winfo_children():
+            widget.destroy()
+
+        self.lbl_page_info.configure(text=f"Página {self.current_page} de {self.total_pages} ({len(self.cached_rows)} total)")
+        self.btn_prev_page.configure(state="normal" if self.current_page > 1 else "disabled")
+        self.btn_next_page.configure(state="normal" if self.current_page < self.total_pages else "disabled")
+
+        if not self.cached_rows:
             ctk.CTkLabel(
                 self.table_scroll,
                 text="No se encontraron registros con los filtros seleccionados.",
@@ -252,7 +327,11 @@ class LedgerView(ctk.CTkFrame):
             ).pack(pady=40)
             return
 
-        for idx, item in enumerate(rows):
+        start_idx = (self.current_page - 1) * self.page_size
+        end_idx = start_idx + self.page_size
+        page_rows = self.cached_rows[start_idx:end_idx]
+
+        for idx, item in enumerate(page_rows):
             curr = item["currency"]
             inflow = item["inflow"]
             outflow = item["outflow"]

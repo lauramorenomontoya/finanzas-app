@@ -23,10 +23,10 @@ class TestNewFeatures(unittest.TestCase):
         usd_cats = self.db.get_categories("INCOME_USD")
         cop_income_cats = self.db.get_categories("INCOME_COP")
         cop_expense_cats = self.db.get_categories("EXPENSE_COP")
+        self.assertTrue(any("USD" in c["name"] or "Clientes" in c["name"] for c in usd_cats))
+        self.assertTrue(any("COP" in c["name"] or "Nómina" in c["name"] for c in cop_income_cats))
+        self.assertTrue(any(c["name"] == "Hogar & Servicios" for c in cop_expense_cats))
 
-        self.assertTrue(any(c["name"] == "Sea Island Creative (SIC)" for c in usd_cats))
-        self.assertTrue(any(c["name"] == "Invisible Work (IW)" for c in cop_income_cats))
-        self.assertTrue(any(c["name"] == "Arriendo / Hipoteca" for c in cop_expense_cats))
 
     def test_category_crud(self):
         # Crear categoría personalizada

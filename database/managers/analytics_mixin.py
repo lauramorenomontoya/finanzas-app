@@ -249,6 +249,7 @@ class AnalyticsMixin:
                 cursor.execute("""
                     SELECT 
                         a.currency,
+                        a.initial_balance,
                         COALESCE(SUM(CASE WHEN t.type IN ('DEPOSIT', 'TRANSFER_IN', 'YIELD') THEN t.amount ELSE 0 END), 0) -
                         COALESCE(SUM(CASE WHEN t.type IN ('WITHDRAWAL', 'TRANSFER_OUT') THEN t.amount ELSE 0 END), 0) AS tx_bal
                     FROM accounts a
@@ -259,10 +260,11 @@ class AnalyticsMixin:
                 inv_cop = 0.0
                 inv_usd = 0.0
                 for r in cursor.fetchall():
+                    acc_bal = float(r["initial_balance"] or 0) + float(r["tx_bal"] or 0)
                     if r["currency"] == "COP":
-                        inv_cop += float(r["tx_bal"] or 0)
+                        inv_cop += acc_bal
                     else:
-                        inv_usd += float(r["tx_bal"] or 0)
+                        inv_usd += acc_bal
 
                 total_cop = cop_bal + inv_cop
                 total_usd = usd_bal + inv_usd

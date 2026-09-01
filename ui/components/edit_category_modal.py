@@ -1,10 +1,11 @@
 """
 Modal para Editar Categorías con Color Picker Visual y Cuadrícula de Emojis:
 Permite modificar el nombre, icono y color sin ingresar códigos hexadecimales manualmente.
+Diseño responsivo con pie fijo de botones y cuerpo desplazable.
 """
 
 import customtkinter as ctk
-from typing import Callable, Dict, Any, Optional, List
+from typing import Callable, Dict, Any, Optional
 from ui.theme import Theme
 
 
@@ -39,22 +40,37 @@ class EditCategoryModal(ctk.CTkToplevel):
         self.selected_icon = str(category.get("icon", "🏷️"))
 
         self.title("Editar Categoría")
-        self.geometry("480x530")
-        self.resizable(False, False)
+        self.geometry("500x580")
+        self.minsize(460, 480)
+        self.resizable(True, True)
         self.configure(fg_color=Theme.BG_WINDOW)
 
         self.transient(parent)
         self.grab_set()
+        self._center_window(parent)
 
         self._build_ui()
 
+    def _center_window(self, parent):
+        self.update_idletasks()
+        try:
+            parent_x = parent.winfo_rootx()
+            parent_y = parent.winfo_rooty()
+            parent_w = parent.winfo_width()
+            parent_h = parent.winfo_height()
+            x = parent_x + (parent_w - 500) // 2
+            y = parent_y + (parent_h - 580) // 2
+            self.geometry(f"+{max(0, x)}+{max(0, y)}")
+        except Exception:
+            pass
+
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
 
-        # Encabezado
+        # 1. Encabezado Fijo Superior
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(16, 8))
+        header.pack(fill="x", padx=20, pady=(16, 10))
 
         ctk.CTkLabel(
             header,
@@ -78,17 +94,57 @@ class EditCategoryModal(ctk.CTkToplevel):
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
+        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
+        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
+        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
+
+        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, 6))
+
+        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
+        btn_row.pack(fill="x")
+
+        btn_cancel = ctk.CTkButton(
+            btn_row,
+            text="Cancelar",
+            font=ctk.CTkFont(size=12),
+            height=38,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_SECONDARY,
+            command=self.destroy
+        )
+        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        btn_save = ctk.CTkButton(
+            btn_row,
+            text="💾 Guardar Cambios",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            height=38,
+            corner_radius=8,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            command=self._handle_save
+        )
+        btn_save.pack(side="right", fill="x", expand=True, padx=(8, 0))
+
+        # 3. Cuerpo Desplazable Central
+        scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
+        scroll_body.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+
         # Campo Nombre
-        ctk.CTkLabel(main_frame, text="Nombre de la Categoría:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(4, 4))
-        self.name_entry = ctk.CTkEntry(main_frame, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+        ctk.CTkLabel(scroll_body, text="Nombre de la Categoría:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(4, 4))
+        self.name_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
         self.name_entry.insert(0, str(self.category.get("name", "")))
-        self.name_entry.pack(fill="x", padx=20, pady=(0, 10))
+        self.name_entry.pack(fill="x", padx=6, pady=(0, 12))
 
         # Selector Visual de Emojis (Cuadrícula)
-        ctk.CTkLabel(main_frame, text="Selecciona un Ícono / Emoji:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Selecciona un Ícono / Emoji:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
 
-        emoji_grid_frame = ctk.CTkFrame(main_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        emoji_grid_frame.pack(fill="x", padx=20, pady=(0, 10))
+        emoji_grid_frame = ctk.CTkFrame(scroll_body, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        emoji_grid_frame.pack(fill="x", padx=6, pady=(0, 12))
         emoji_grid_frame.grid_columnconfigure(tuple(range(7)), weight=1)
 
         self.emoji_buttons: Dict[str, ctk.CTkButton] = {}
@@ -99,22 +155,22 @@ class EditCategoryModal(ctk.CTkToplevel):
             btn = ctk.CTkButton(
                 emoji_grid_frame,
                 text=em,
-                width=32,
-                height=30,
+                width=34,
+                height=32,
                 corner_radius=6,
                 fg_color="#0284c7" if is_sel else "transparent",
                 hover_color=Theme.BORDER_DEFAULT,
                 font=ctk.CTkFont(size=14),
                 command=lambda e=em: self._select_emoji(e)
             )
-            btn.grid(row=r, column=c, padx=2, pady=2)
+            btn.grid(row=r, column=c, padx=3, pady=3)
             self.emoji_buttons[em] = btn
 
         # Selector Visual de Color (Color Palette Picker)
-        ctk.CTkLabel(main_frame, text="Selecciona el Color:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=20, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Selecciona el Color:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
 
-        color_palette_frame = ctk.CTkFrame(main_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        color_palette_frame.pack(fill="x", padx=20, pady=(0, 12))
+        color_palette_frame = ctk.CTkFrame(scroll_body, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        color_palette_frame.pack(fill="x", padx=6, pady=(0, 12))
         color_palette_frame.grid_columnconfigure(tuple(range(8)), weight=1)
 
         self.color_buttons: Dict[str, ctk.CTkButton] = {}
@@ -125,8 +181,8 @@ class EditCategoryModal(ctk.CTkToplevel):
             btn = ctk.CTkButton(
                 color_palette_frame,
                 text="✓" if is_sel else "",
-                width=28,
-                height=26,
+                width=30,
+                height=28,
                 corner_radius=6,
                 fg_color=col,
                 hover_color=col,
@@ -138,24 +194,6 @@ class EditCategoryModal(ctk.CTkToplevel):
             )
             btn.grid(row=r, column=c, padx=3, pady=3)
             self.color_buttons[col] = btn
-
-        # Mensaje de Error
-        self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", padx=20, pady=(0, 6))
-
-        # Botón Guardar
-        btn_save = ctk.CTkButton(
-            main_frame,
-            text="💾 Guardar Cambios",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
-            command=self._handle_save
-        )
-        btn_save.pack(fill="x", padx=20, pady=(0, 12))
 
     def _select_emoji(self, emoji: str):
         self.selected_icon = emoji

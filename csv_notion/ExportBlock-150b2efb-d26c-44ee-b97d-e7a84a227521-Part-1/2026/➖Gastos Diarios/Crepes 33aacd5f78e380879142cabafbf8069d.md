@@ -1,0 +1,7 @@
+# Crepes
+
+Fecha Gasto: 5 de abril de 2026
+Mes: Abril 2026 (../Gasto%20anual/Abril%202026%202bcacd5f78e3818bb158e6edc649e946.md)
+Gasto: 92.850,00 COP
+Categorías: Resto/Tienda (../Categor%C3%ADas/Resto%20Tienda%202bcacd5f78e38157a0adc2ce12b4d259.md)
+Checkbox: Pagado
