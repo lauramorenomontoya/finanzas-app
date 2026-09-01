@@ -466,7 +466,16 @@ class AnalyticsView(ctk.CTkFrame):
             ctk.CTkLabel(row_frame, text=m_net_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_net_color).grid(row=0, column=6, padx=10, pady=8, sticky="e")
 
     def _refresh_charts(self):
-        """Genera y renderiza las gráficas visuales con Matplotlib."""
+        """Genera y renderiza las gráficas visuales con Matplotlib de forma segura."""
+        if not hasattr(self, "_active_figures"):
+            self._active_figures = []
+        for fig in self._active_figures:
+            try:
+                fig.clf()
+            except Exception:
+                pass
+        self._active_figures.clear()
+
         for widget in self.charts_scroll.winfo_children():
             widget.destroy()
 
@@ -474,6 +483,7 @@ class AnalyticsView(ctk.CTkFrame):
             year = int(self.year_combo.get())
         except ValueError:
             year = self.current_year
+
 
         is_dark = (ctk.get_appearance_mode() == "Dark")
         bg_color = "#1e293b" if is_dark else "#ffffff"
@@ -575,3 +585,6 @@ class AnalyticsView(ctk.CTkFrame):
         canvas3 = FigureCanvasTkAgg(fig3, master=chart_card3)
         canvas3.draw()
         canvas3.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+
+        self._active_figures.extend([fig1, fig2, fig3])
+

@@ -17,13 +17,10 @@ from ui.views.investments import InvestmentsView
 from ui.views.ledger import LedgerView
 from ui.views.analytics import AnalyticsView
 from ui.views.settings import SettingsView
-from ui.utils.scroll_helper import ScrollHelper
-
-# Habilitar soporte táctil global para iMac Trackpad, MacBook Trackpad y Magic Mouse
-ScrollHelper.enable_smooth_scrolling()
 
 
 class FinancialApp(ctk.CTk):
+
     def __init__(self):
         super().__init__()
 
