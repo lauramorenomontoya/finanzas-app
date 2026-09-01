@@ -115,7 +115,8 @@ class EditAccountModal(ctk.CTkToplevel):
         ctk.CTkLabel(scroll_body, text="Nombre de la Cuenta / Fiducia:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
         self.name_entry = ctk.CTkEntry(
             scroll_body,
-            placeholder_text="Ej: Fiducuenta Bancolombia / Cajita Nu / Arc USD",
+            placeholder_text="Ej: Fiducuenta Bancolombia / Cajita Nu / ARQ USD",
+
             height=36,
             corner_radius=8,
             fg_color=Theme.BG_INPUT,

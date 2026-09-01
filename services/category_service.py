@@ -116,6 +116,7 @@ class CategoryService:
         "clientes internacionales usd": "Clientes Internacionales USD",
         "sea island creative (sic)": "Sea Island Creative (SIC)",
         "arc (sea island creative (sic))": "Sea Island Creative (SIC)",
+        "arq (sea island creative (sic))": "Sea Island Creative (SIC)",
         "wenia (clientes internacionales usd)": "Clientes Internacionales USD",
         "consultoría / freelance usd": "Freelance & Consultoría USD",
         "consultoria / freelance usd": "Freelance & Consultoría USD",
@@ -123,7 +124,10 @@ class CategoryService:
         "freelance & consultoría usd": "Freelance & Consultoría USD",
         "rendimientos usd": "Rendimientos USD",
         "otros ingresos usd": "Otros Ingresos USD",
+        "arq": "ARQ",
+        "arc": "ARQ",
     }
+
 
     # Mapeo canónico de egresos directos en USD
     EXPENSE_USD_MAPPING = {

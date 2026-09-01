@@ -3,7 +3,7 @@
 Una aplicación de escritorio moderna y nativa para **macOS** diseñada en Python con **CustomTkinter** y persistencia local en **SQLite**.
 
 Permite gestionar tus finanzas dividiéndolas en dos mundos claros:
-1. **🏦 Bóveda USD**: Ahorros intocables y recepción de ingresos en dólares (Wenia, Arc, Deel, etc.).
+1. **🏦 Bóveda USD**: Ahorros intocables y recepción de ingresos en dólares (Wenia, ARQ, Deel, etc.).
 2. **💳 Presupuesto COP**: Control de gastos fijos y variables mensuales en pesos colombianos.
 3. **🔄 Puente de Conversión**: Módulo interactivo para transferir dólares a pesos con cálculo de tasa de cambio en vivo y actualización automática de saldos.
 
@@ -12,7 +12,7 @@ Permite gestionar tus finanzas dividiéndolas en dos mundos claros:
 ## 📸 Características Principales
 
 - 🌙 **Modo Oscuro Elegante y Nativo**: Diseñado con bordes redondeados y estética minimalista para macOS.
-- 🏦 **Bóveda USD**: Registro de ingresos por plataforma (Wenia, Arc, Binance, Deel, etc.) con seguimiento de saldo intocable.
+- 🏦 **Bóveda USD**: Registro de ingresos por plataforma (Wenia, ARQ, Binance, Deel, etc.) con seguimiento de saldo intocable.
 - 💳 **Presupuesto COP**: Registro y categorización de gastos fijos mensuales (arriendo, servicios, etc.) vs. variables (mercado, salidas).
 - 🔄 **Puente de Conversión Inteligente**:
   - Ingreso de USD a retirar y tasa pactada (COP/USD).
@@ -70,9 +70,10 @@ ControlFinanciero/
 ## 💡 Cómo Usar la Aplicación
 
 1. **Registrar un ingreso en USD**:
-   - Ve a la pestaña **🏦 Bóveda USD**.
-   - Selecciona tu plataforma (ej. *Wenia* o *Arc*), ingresa el monto (ej. `800`) y haz clic en *Guardar Ingreso*.
+   - Ve a la pestaña **📥 Ingresos** (o **🏦 Bóveda USD**).
+   - Selecciona tu plataforma (ej. *Wenia* o *ARQ*), ingresa el monto (ej. `800`) y haz clic en *Guardar Ingreso*.
    - Verás tu saldo actualizado en la Bóveda.
+
 
 2. **Realizar una Conversión (USD ➔ COP)**:
    - Ve a la pestaña **🔄 Puente Conversión**.

@@ -130,7 +130,7 @@ class IncomesView(ctk.CTkFrame):
 
         self.platform_combo = ctk.CTkComboBox(
             form_panel,
-            values=["Wenia", "Arc", "Deel", "Binance", "Bancolombia", "Nu", "Transferencia Bancaria", "Otro"],
+            values=["Wenia", "ARQ", "Deel", "Binance", "Bancolombia", "Nu", "Transferencia Bancaria", "Otro"],
             height=34,
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
@@ -139,6 +139,7 @@ class IncomesView(ctk.CTkFrame):
         )
         self.platform_combo.set("Wenia")
         self.platform_combo.pack(fill="x", padx=18, pady=(0, 10))
+
 
         # Campo: Monto
         self.lbl_amount = ctk.CTkLabel(
@@ -251,7 +252,8 @@ class IncomesView(ctk.CTkFrame):
             if cats:
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
-            self.platform_combo.configure(values=["Wenia", "Arc", "Deel", "Binance", "Transferencia Bancaria", "Otro"])
+            self.platform_combo.configure(values=["Wenia", "ARQ", "Deel", "Binance", "Transferencia Bancaria", "Otro"])
+
             self.platform_combo.set("Wenia")
         else:
             self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color="#10b981", hover_color="#059669")
