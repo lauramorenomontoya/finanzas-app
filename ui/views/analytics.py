@@ -244,17 +244,17 @@ class AnalyticsView(ctk.CTkFrame):
         
         tbl_head = ctk.CTkFrame(self.annual_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, height=32)
         tbl_head.pack(fill="x", pady=(0, 6))
-        tbl_head.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
+        tbl_head.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
 
-        cols = ["Mes", "Ingreso USD", "Gasto/Retiro USD", "Ahorro USD", "Ingreso COP", "Gastos COP", "Superávit COP"]
+        cols = ["Mes", "Ingreso USD", "Gasto USD", "Ahorro USD", "Ingreso COP", "Gastos COP", "Flujo COP", "🌐 Flujo Global"]
         for idx, col_text in enumerate(cols):
             align = "w" if idx == 0 else "e"
             ctk.CTkLabel(
                 tbl_head,
                 text=col_text.upper(),
                 font=ctk.CTkFont(size=10, weight="bold"),
-                text_color=Theme.TEXT_MUTED
-            ).grid(row=0, column=idx, padx=10, pady=6, sticky=align)
+                text_color=Theme.TEXT_MUTED if idx < 7 else Theme.ACCENT_BLUE
+            ).grid(row=0, column=idx, padx=8, pady=6, sticky=align)
 
         self.months_scroll = ctk.CTkScrollableFrame(self.annual_frame, fg_color="transparent")
         self.months_scroll.pack(fill="both", expand=True)
@@ -302,12 +302,14 @@ class AnalyticsView(ctk.CTkFrame):
         self.charts_scroll.pack_forget()
 
         if "Composición" in choice:
+            self.lbl_annual_summary.configure(text="")
             self.composition_scroll.pack(fill="both", expand=True)
             self._refresh_composition()
         elif "Flujo" in choice:
             self.annual_frame.pack(fill="both", expand=True)
             self._refresh_annual_table()
         else:
+            self.lbl_annual_summary.configure(text="")
             self.charts_scroll.pack(fill="both", expand=True)
             self._refresh_charts()
 
@@ -404,11 +406,17 @@ class AnalyticsView(ctk.CTkFrame):
         totals = overview["totals"]
 
         net_cop = totals["cop_net"]
+        usd_saved = totals["usd_saved"]
+        global_net_cop = net_cop + (usd_saved * self.current_rate)
+
         net_prefix = "+" if net_cop >= 0 else ""
-        net_color = Theme.ACCENT_GREEN if net_cop >= 0 else Theme.ACCENT_ROSE
+        usd_prefix = "+" if usd_saved >= 0 else ""
+        global_prefix = "+" if global_net_cop >= 0 else ""
+        global_color = Theme.ACCENT_GREEN if global_net_cop >= 0 else Theme.ACCENT_ROSE
+
         self.lbl_annual_summary.configure(
-            text=f"Flujo Neto Anual COP: {net_prefix}${net_cop:,.0f} COP",
-            text_color=net_color
+            text=f"Flujo COP: {net_prefix}${net_cop:,.0f} • Ahorro USD: {usd_prefix}${usd_saved:,.0f} • 🌐 Flujo Global: {global_prefix}${global_net_cop:,.0f} COP",
+            text_color=global_color
         )
 
         for m_data in overview["months"]:
@@ -423,7 +431,7 @@ class AnalyticsView(ctk.CTkFrame):
             row_bg = Theme.BG_CARD_SUBTLE if has_activity else "transparent"
             row_frame = ctk.CTkFrame(self.months_scroll, fg_color=row_bg, corner_radius=8, height=36)
             row_frame.pack(fill="x", pady=2, padx=2)
-            row_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
+            row_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
 
             # 0. Mes
             ctk.CTkLabel(
@@ -431,30 +439,30 @@ class AnalyticsView(ctk.CTkFrame):
                 text=f"🗓️ {m_data['month_name']}",
                 font=ctk.CTkFont(size=12, weight="bold" if has_activity else "normal"),
                 text_color=Theme.TEXT_PRIMARY if has_activity else Theme.TEXT_MUTED
-            ).grid(row=0, column=0, padx=10, pady=8, sticky="w")
+            ).grid(row=0, column=0, padx=8, pady=8, sticky="w")
 
             # 1. Ingreso USD
             usd_inc_str = f"${m_data['usd_income']:,.0f}" if m_data['usd_income'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_BLUE if m_data['usd_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=1, padx=10, pady=8, sticky="e")
+            ctk.CTkLabel(row_frame, text=usd_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_BLUE if m_data['usd_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=1, padx=8, pady=8, sticky="e")
 
             # 2. Retiro/Gasto USD
             usd_out_tot = m_data["usd_converted"] + m_data.get("usd_spent", 0)
             usd_out_str = f"${usd_out_tot:,.0f}" if usd_out_tot > 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_out_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_INDIGO if usd_out_tot > 0 else Theme.TEXT_MUTED).grid(row=0, column=2, padx=10, pady=8, sticky="e")
+            ctk.CTkLabel(row_frame, text=usd_out_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_INDIGO if usd_out_tot > 0 else Theme.TEXT_MUTED).grid(row=0, column=2, padx=8, pady=8, sticky="e")
 
             # 3. Ahorro USD
             usd_sav_str = f"${m_data['usd_saved']:,.0f}" if m_data['usd_saved'] != 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_sav_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN if m_data['usd_saved'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=3, padx=10, pady=8, sticky="e")
+            ctk.CTkLabel(row_frame, text=usd_sav_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN if m_data['usd_saved'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=3, padx=8, pady=8, sticky="e")
 
             # 4. Ingreso COP
             cop_inc_str = f"${m_data['cop_manual_income']:,.0f}" if m_data['cop_manual_income'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=cop_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_GREEN if m_data['cop_manual_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=4, padx=10, pady=8, sticky="e")
+            ctk.CTkLabel(row_frame, text=cop_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_GREEN if m_data['cop_manual_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=4, padx=8, pady=8, sticky="e")
 
             # 5. Gastos COP
             cop_exp_str = f"${m_data['cop_expenses']:,.0f}" if m_data['cop_expenses'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=cop_exp_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_ROSE if m_data['cop_expenses'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=5, padx=10, pady=8, sticky="e")
+            ctk.CTkLabel(row_frame, text=cop_exp_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_ROSE if m_data['cop_expenses'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=5, padx=8, pady=8, sticky="e")
 
-            # 6. Superávit COP
+            # 6. Flujo COP
             m_net = m_data["cop_net"]
             if has_activity:
                 m_net_str = f"+${m_net:,.0f}" if m_net >= 0 else f"-${abs(m_net):,.0f}"
@@ -462,8 +470,39 @@ class AnalyticsView(ctk.CTkFrame):
             else:
                 m_net_str = "-"
                 m_net_color = Theme.TEXT_MUTED
+            ctk.CTkLabel(row_frame, text=m_net_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_net_color).grid(row=0, column=6, padx=8, pady=8, sticky="e")
 
-            ctk.CTkLabel(row_frame, text=m_net_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_net_color).grid(row=0, column=6, padx=10, pady=8, sticky="e")
+            # 7. Flujo Global (COP + USD * TRM)
+            m_global = m_net + (m_data["usd_saved"] * self.current_rate)
+            if has_activity:
+                m_glob_str = f"+${m_global:,.0f}" if m_global >= 0 else f"-${abs(m_global):,.0f}"
+                m_glob_color = Theme.ACCENT_GREEN if m_global >= 0 else Theme.ACCENT_ROSE
+            else:
+                m_glob_str = "-"
+                m_glob_color = Theme.TEXT_MUTED
+            ctk.CTkLabel(row_frame, text=m_glob_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_glob_color).grid(row=0, column=7, padx=8, pady=8, sticky="e")
+
+        # Fila destacada de TOTALES DEL AÑO
+        tot_frame = ctk.CTkFrame(self.months_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        tot_frame.pack(fill="x", pady=(8, 2), padx=2)
+        tot_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
+
+        ctk.CTkLabel(tot_frame, text=f"🎯 TOTAL {year}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).grid(row=0, column=0, padx=8, pady=9, sticky="w")
+        ctk.CTkLabel(tot_frame, text=f"${totals['usd_earned']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_BLUE).grid(row=0, column=1, padx=8, pady=9, sticky="e")
+
+        tot_usd_out = totals["usd_converted"] + totals.get("usd_spent", 0)
+        ctk.CTkLabel(tot_frame, text=f"${tot_usd_out:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_INDIGO).grid(row=0, column=2, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=f"${totals['usd_saved']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).grid(row=0, column=3, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=f"${totals['cop_manual_income']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).grid(row=0, column=4, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=f"${totals['cop_expenses']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_ROSE).grid(row=0, column=5, padx=8, pady=9, sticky="e")
+
+        net_tot_str = f"+${net_cop:,.0f}" if net_cop >= 0 else f"-${abs(net_cop):,.0f}"
+        net_tot_color = Theme.ACCENT_GREEN if net_cop >= 0 else Theme.ACCENT_ROSE
+        ctk.CTkLabel(tot_frame, text=net_tot_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=net_tot_color).grid(row=0, column=6, padx=8, pady=9, sticky="e")
+
+        glob_tot_str = f"+${global_net_cop:,.0f}" if global_net_cop >= 0 else f"-${abs(global_net_cop):,.0f}"
+        glob_tot_color = Theme.ACCENT_GREEN if global_net_cop >= 0 else Theme.ACCENT_ROSE
+        ctk.CTkLabel(tot_frame, text=glob_tot_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=glob_tot_color).grid(row=0, column=7, padx=8, pady=9, sticky="e")
 
     def _refresh_charts(self):
         """Genera y renderiza las gráficas visuales con Matplotlib de forma segura."""

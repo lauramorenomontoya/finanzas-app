@@ -28,10 +28,12 @@ except ImportError:
     sys.exit(1)
 
 from ui.app import FinancialApp
+from ui.utils.scroll_helper import ScrollHelper
 
 
 def main():
     try:
+        ScrollHelper.enable_smooth_scrolling()
         app = FinancialApp()
         app.mainloop()
     except KeyboardInterrupt:

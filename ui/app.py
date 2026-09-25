@@ -17,12 +17,15 @@ from ui.views.investments import InvestmentsView
 from ui.views.ledger import LedgerView
 from ui.views.analytics import AnalyticsView
 from ui.views.settings import SettingsView
+from ui.views.budget_view import BudgetView
 
 
 class FinancialApp(ctk.CTk):
 
     def __init__(self):
         super().__init__()
+        from ui.utils.scroll_helper import ScrollHelper
+        ScrollHelper.enable_smooth_scrolling()
 
         # Configuración de Tema y Aspecto
         ctk.set_appearance_mode("dark")
@@ -102,6 +105,7 @@ class FinancialApp(ctk.CTk):
             ("dashboard", "📊  Panel Principal"),
             ("incomes", "📥  Ingresos (USD / COP)"),
             ("expenses", "💸  Egresos & Gastos"),
+            ("budget", "🎯  Presupuesto & Metas"),
             ("conversion", "🔄  Puente USD ➔ COP"),
             ("investments", "📈  Cuentas & Inversiones"),
             ("ledger", "📖  Libro Mayor"),
@@ -234,6 +238,8 @@ class FinancialApp(ctk.CTk):
             view = IncomesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
         elif view_key == "expenses":
             view = ExpensesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+        elif view_key == "budget":
+            view = BudgetView(self.content_container, self.db)
         elif view_key == "conversion":
             view = ConversionView(self.content_container, self.db, on_data_changed=self.on_data_updated)
         elif view_key == "investments":

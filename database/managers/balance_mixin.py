@@ -134,6 +134,10 @@ class BalanceMixin:
             return max(0.0, debt)
 
     def pay_credit_card(self, date: str, amount: float, notes: str = "") -> Tuple[bool, str]:
+        # Soporte por si por error se invocó con argumentos invertidos (amount, date)
+        if isinstance(date, (int, float)) and isinstance(amount, str):
+            date, amount = str(amount), float(date)
+
         if amount <= 0:
             return False, "El monto del pago debe ser mayor a 0."
 
@@ -145,7 +149,9 @@ class BalanceMixin:
         if amount > cop_balance:
             return False, f"Saldo insuficiente en cuenta COP (${cop_balance:,.0f} COP) para realizar el pago de ${amount:,.0f} COP."
 
-        desc_notes = notes.strip() if notes else f"Pago de Tarjeta de Crédito (${amount:,.0f} COP)"
+        is_partial = amount < current_debt
+        default_label = f"Abono parcial Tarjeta de Crédito (${amount:,.0f} COP)" if is_partial else f"Pago total Tarjeta de Crédito (${amount:,.0f} COP)"
+        desc_notes = notes.strip() if notes else default_label
 
         with self._write_lock:
             with self.get_connection() as conn:
@@ -155,7 +161,15 @@ class BalanceMixin:
                     VALUES (?, 'Pago Tarjeta de Crédito', 'CC_PAYMENT', ?, 0, 'DEBIT', ?);
                 """, (date, float(amount), desc_notes))
                 conn.commit()
-                return True, f"¡Pago de ${amount:,.0f} COP registrado con éxito! Deuda restante: ${max(0.0, current_debt - amount):,.0f} COP."
+                tipo_pago = "Abono parcial" if is_partial else "Pago"
+                remaining_debt = max(0.0, current_debt - amount)
+                return True, f"¡{tipo_pago} de ${amount:,.0f} COP registrado con éxito! Deuda restante: ${remaining_debt:,.0f} COP."
+
+    def pay_credit_card_debt(self, amount: float, date: Optional[str] = None, notes: str = "") -> Tuple[bool, str]:
+        """Alias para registrar abono o pago de tarjeta recibiendo el monto primero."""
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+        return self.pay_credit_card(date=date, amount=amount, notes=notes)
 
     def get_cop_transactions(self, limit: int = 50, category: Optional[str] = None, payment_method: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:

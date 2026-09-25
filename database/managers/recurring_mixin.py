@@ -90,6 +90,7 @@ class RecurringMixin:
         """
         Devuelve la lista de gastos fijos de la plantilla con su estado de pago
         en el mes indicado, soportando tanto COP como USD.
+        Garantiza que cada transacción se asigne de forma unívoca a un solo gasto fijo.
         """
         if not year_month:
             year_month = datetime.now().strftime("%Y-%m")
@@ -97,36 +98,91 @@ class RecurringMixin:
         recurring_items = self.get_recurring_expenses(only_active=True)
         checklist: List[Dict[str, Any]] = []
 
+        import unicodedata
+        def _normalize(text: Optional[str]) -> str:
+            if not text:
+                return ""
+            return "".join(
+                c for c in unicodedata.normalize("NFD", text)
+                if unicodedata.category(c) != "Mn"
+            ).lower().strip()
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
+            # Consultar todas las transacciones de egreso del mes
+            cursor.execute("""
+                SELECT id, date, category, amount, payment_method, notes, recurring_id
+                FROM cop_transactions
+                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?
+                ORDER BY date DESC, id DESC;
+            """, (year_month,))
+            cop_txs = [dict(r) for r in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT id, date, platform, amount, notes, recurring_id
+                FROM usd_transactions
+                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?
+                ORDER BY date DESC, id DESC;
+            """, (year_month,))
+            usd_txs = [dict(r) for r in cursor.fetchall()]
+
+            claimed_cop_txs = set()
+            claimed_usd_txs = set()
+
             for rec in recurring_items:
+                rec_id = rec["id"]
                 desc = rec["description"]
-                cat = rec["category"]
                 curr = rec.get("currency", "COP")
+                desc_norm = _normalize(desc)
+
+                matched_tx = None
 
                 if curr == "USD":
-                    cursor.execute("""
-                        SELECT id, date, amount, notes
-                        FROM usd_transactions
-                        WHERE type = 'EXPENSE' 
-                          AND strftime('%Y-%m', date) = ?
-                          AND (notes LIKE ? OR platform LIKE ?)
-                        ORDER BY date DESC LIMIT 1;
-                    """, (year_month, f"%{desc}%", f"%{cat}%"))
-                else:
-                    cursor.execute("""
-                        SELECT id, date, amount, payment_method, notes
-                        FROM cop_transactions
-                        WHERE type = 'EXPENSE' 
-                          AND strftime('%Y-%m', date) = ?
-                          AND (notes LIKE ? OR (category = ? AND is_fixed = 1))
-                        ORDER BY date DESC LIMIT 1;
-                    """, (year_month, f"%{desc}%", cat))
+                    # 1. Búsqueda por recurring_id directo
+                    for tx in usd_txs:
+                        if tx["id"] not in claimed_usd_txs and tx.get("recurring_id") == rec_id:
+                            matched_tx = tx
+                            break
 
-                tx = cursor.fetchone()
-                is_paid = tx is not None
-                tx_id = tx["id"] if tx else None
-                paid_date = tx["date"] if tx else None
+                    # 2. Búsqueda por referencia o descripción en notas
+                    if not matched_tx and desc_norm:
+                        ref_tag = f"[ref #{rec_id}]"
+                        for tx in usd_txs:
+                            if tx["id"] in claimed_usd_txs:
+                                continue
+                            tx_notes_norm = _normalize(tx.get("notes"))
+                            if ref_tag in tx_notes_norm or desc_norm in tx_notes_norm or (len(tx_notes_norm) > 4 and tx_notes_norm in desc_norm):
+                                matched_tx = tx
+                                break
+
+                    if matched_tx:
+                        claimed_usd_txs.add(matched_tx["id"])
+                else:
+                    # COP
+                    # 1. Búsqueda por recurring_id directo
+                    for tx in cop_txs:
+                        if tx["id"] not in claimed_cop_txs and tx.get("recurring_id") == rec_id:
+                            matched_tx = tx
+                            break
+
+                    # 2. Búsqueda por referencia o descripción en notas
+                    if not matched_tx and desc_norm:
+                        ref_tag = f"[ref #{rec_id}]"
+                        for tx in cop_txs:
+                            if tx["id"] in claimed_cop_txs:
+                                continue
+                            tx_notes_norm = _normalize(tx.get("notes"))
+                            if ref_tag in tx_notes_norm or desc_norm in tx_notes_norm or (len(tx_notes_norm) > 4 and tx_notes_norm in desc_norm):
+                                matched_tx = tx
+                                break
+
+                    if matched_tx:
+                        claimed_cop_txs.add(matched_tx["id"])
+
+                is_paid = matched_tx is not None
+                tx_id = matched_tx["id"] if matched_tx else None
+                paid_date = matched_tx["date"] if matched_tx else None
 
                 checklist.append({
                     "id": rec["id"],
@@ -152,7 +208,7 @@ class RecurringMixin:
         with self._write_lock:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT category, description, amount, currency FROM recurring_expenses WHERE id = ?;", (recurring_id,))
+                cursor.execute("SELECT id, category, description, amount, currency FROM recurring_expenses WHERE id = ?;", (recurring_id,))
                 rec = cursor.fetchone()
                 if not rec:
                     return False, "Gasto fijo no encontrado en la plantilla.", None
@@ -162,17 +218,17 @@ class RecurringMixin:
 
                 if curr == "USD":
                     cursor.execute("""
-                        INSERT INTO usd_transactions (date, platform, type, amount, notes)
-                        VALUES (?, ?, 'EXPENSE', ?, ?);
-                    """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']}"))
+                        INSERT INTO usd_transactions (date, platform, type, amount, notes, recurring_id)
+                        VALUES (?, ?, 'EXPENSE', ?, ?, ?);
+                    """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
                     tx_id = cursor.lastrowid
                     conn.commit()
                     return True, f"¡{rec['description']} marcado como PAGADO (${amt:,.2f} USD)!", tx_id
                 else:
                     cursor.execute("""
-                        INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
-                        VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?);
-                    """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']}"))
+                        INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes, recurring_id)
+                        VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?, ?);
+                    """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
                     tx_id = cursor.lastrowid
                     conn.commit()
                     return True, f"¡{rec['description']} marcado como PAGADO (${amt:,.0f} COP)!", tx_id
@@ -204,7 +260,7 @@ class RecurringMixin:
                     cursor.execute("BEGIN IMMEDIATE;")
 
                     for r_id in recurring_ids:
-                        cursor.execute("SELECT category, description, amount, currency FROM recurring_expenses WHERE id = ? AND is_active = 1;", (r_id,))
+                        cursor.execute("SELECT id, category, description, amount, currency FROM recurring_expenses WHERE id = ? AND is_active = 1;", (r_id,))
                         rec = cursor.fetchone()
                         if not rec:
                             skipped_count += 1
@@ -215,14 +271,14 @@ class RecurringMixin:
 
                         if curr == "USD":
                             cursor.execute("""
-                                INSERT INTO usd_transactions (date, platform, type, amount, notes)
-                                VALUES (?, ?, 'EXPENSE', ?, ?);
-                            """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']}"))
+                                INSERT INTO usd_transactions (date, platform, type, amount, notes, recurring_id)
+                                VALUES (?, ?, 'EXPENSE', ?, ?, ?);
+                            """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
                         else:
                             cursor.execute("""
-                                INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
-                                VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?);
-                            """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']}"))
+                                INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes, recurring_id)
+                                VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?, ?);
+                            """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
 
                         applied_count += 1
 

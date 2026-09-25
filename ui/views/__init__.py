@@ -7,6 +7,7 @@ from .investments import InvestmentsView
 from .ledger import LedgerView
 from .analytics import AnalyticsView
 from .settings import SettingsView
+from .budget_view import BudgetView
 
 # Compatibilidad para referencias anteriores si fueran necesarias
 USDVaultView = IncomesView
@@ -21,6 +22,7 @@ __all__ = [
     "LedgerView",
     "AnalyticsView",
     "SettingsView",
+    "BudgetView",
     "USDVaultView",
     "COPBudgetView"
 ]

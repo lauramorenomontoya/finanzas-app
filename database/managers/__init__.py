@@ -13,6 +13,7 @@ from .analytics_mixin import AnalyticsMixin
 from .ledger_mixin import LedgerMixin
 from .csv_mixin import CSVMixin
 from .tags_mixin import TagsMixin
+from .budget_mixin import BudgetMixin
 
 __all__ = [
     "IncomeMixin",
@@ -26,4 +27,5 @@ __all__ = [
     "LedgerMixin",
     "CSVMixin",
     "TagsMixin",
+    "BudgetMixin",
 ]

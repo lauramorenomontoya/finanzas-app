@@ -22,8 +22,8 @@ class CCPaymentModal(ctk.CTkToplevel):
         self.on_success = on_success
 
         self.title("Pagar Tarjeta de Crédito")
-        self.geometry("480x520")
-        self.minsize(440, 460)
+        self.geometry("480x570")
+        self.minsize(440, 500)
         self.resizable(True, True)
         self.configure(fg_color=Theme.BG_WINDOW)
 
@@ -41,7 +41,7 @@ class CCPaymentModal(ctk.CTkToplevel):
             parent_w = parent.winfo_width()
             parent_h = parent.winfo_height()
             x = parent_x + (parent_w - 480) // 2
-            y = parent_y + (parent_h - 520) // 2
+            y = parent_y + (parent_h - 570) // 2
             self.geometry(f"+{max(0, x)}+{max(0, y)}")
         except Exception:
             pass
@@ -72,7 +72,7 @@ class CCPaymentModal(ctk.CTkToplevel):
         footer = ctk.CTkFrame(main_frame, fg_color="transparent")
         footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
 
-        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE, wraplength=420)
         self.lbl_error.pack(anchor="w", pady=(0, 6))
 
         btn_row = ctk.CTkFrame(footer, fg_color="transparent")
@@ -126,7 +126,7 @@ class CCPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(scroll_body, text="Monto a Pagar ($ COP):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
         
         amount_row = ctk.CTkFrame(scroll_body, fg_color="transparent")
-        amount_row.pack(fill="x", padx=6, pady=(0, 12))
+        amount_row.pack(fill="x", padx=6, pady=(0, 4))
 
         self.amount_entry = ctk.CTkEntry(
             amount_row,
@@ -154,37 +154,88 @@ class CCPaymentModal(ctk.CTkToplevel):
         )
         btn_full_pay.pack(side="right")
 
+        ctk.CTkLabel(
+            scroll_body,
+            text="💡 Puedes abonar una parte o presionar 'Todo' para saldarla completa.",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_MUTED
+        ).pack(anchor="w", padx=6, pady=(0, 10))
+
         # Campo Fecha con DatePickerWidget
         ctk.CTkLabel(scroll_body, text="Fecha del Pago:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
         self.date_entry = DatePickerWidget(scroll_body, height=36)
         self.date_entry.pack(fill="x", padx=6, pady=(0, 12))
 
+        # Campo Notas Opcional
+        ctk.CTkLabel(scroll_body, text="Notas / Concepto (Opcional):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        self.notes_entry = ctk.CTkEntry(
+            scroll_body,
+            placeholder_text="Ej: Abono quincenal / Pago parcial TC",
+            height=36,
+            corner_radius=8,
+            fg_color=Theme.BG_INPUT,
+            border_color=Theme.BORDER_DEFAULT,
+            font=ctk.CTkFont(size=13)
+        )
+        self.notes_entry.pack(fill="x", padx=6, pady=(0, 12))
+
     def _set_full_amount(self, debt: float):
         self.amount_entry.delete(0, "end")
         self.amount_entry.insert(0, str(int(debt)))
 
-    def _handle_pay(self):
-        amount_raw = self.amount_entry.get().strip().replace(".", "").replace(",", "")
-        date_str = self.date_entry.get().strip()
+    def _clean_cop_amount(self, raw: str) -> float:
+        s = raw.strip().replace("$", "").replace("COP", "").replace("\xa0", "").replace(" ", "")
+        if not s:
+            raise ValueError("Monto vacío")
 
+        if "," in s and "." in s:
+            if s.rfind(",") > s.rfind("."):
+                s = s.replace(".", "").replace(",", ".")
+            else:
+                s = s.replace(",", "")
+        elif "," in s:
+            parts = s.split(",")
+            if len(parts) > 2:
+                s = "".join(parts)
+            elif len(parts) == 2 and len(parts[1]) == 3:
+                s = "".join(parts)
+            else:
+                s = s.replace(",", ".")
+        elif "." in s:
+            parts = s.split(".")
+            if len(parts) > 2:
+                s = "".join(parts)
+            elif len(parts) == 2 and len(parts[1]) == 3:
+                s = "".join(parts)
+
+        val = float(s)
+        if val <= 0:
+            raise ValueError("El monto debe ser mayor a 0")
+        return val
+
+    def _handle_pay(self):
         try:
-            amount = float(amount_raw)
-            if amount <= 0:
-                raise ValueError()
+            amount = self._clean_cop_amount(self.amount_entry.get())
         except ValueError:
             self.lbl_error.configure(text="⚠️ Ingresa un monto válido mayor a 0.")
             return
 
+        date_str = self.date_entry.get().strip()
         try:
             datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             self.lbl_error.configure(text="⚠️ Selecciona una fecha válida.")
             return
 
-        success, msg = self.db.pay_credit_card_debt(amount, date_str)
-        if success:
-            if self.on_success:
-                self.on_success()
-            self.destroy()
-        else:
-            self.lbl_error.configure(text=f"⚠️ {msg}")
+        notes = self.notes_entry.get().strip()
+
+        try:
+            success, msg = self.db.pay_credit_card(date=date_str, amount=amount, notes=notes)
+            if success:
+                if self.on_success:
+                    self.on_success()
+                self.destroy()
+            else:
+                self.lbl_error.configure(text=f"⚠️ {msg}")
+        except Exception as e:
+            self.lbl_error.configure(text=f"⚠️ Error al registrar pago: {str(e)}")

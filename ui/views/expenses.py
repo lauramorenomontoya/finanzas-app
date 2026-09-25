@@ -509,6 +509,7 @@ class ExpensesView(ctk.CTkFrame):
             ).pack(pady=30)
             return
 
+        self.checklist_vars = {}
         for item in checklist:
             is_paid = item["is_paid"]
             curr = item.get("currency", "COP")
@@ -523,6 +524,8 @@ class ExpensesView(ctk.CTkFrame):
 
             # Checkbox interactivo
             chk_var = ctk.IntVar(value=1 if is_paid else 0)
+            self.checklist_vars[item["id"]] = chk_var
+
             chk = ctk.CTkCheckBox(
                 row,
                 text="",
@@ -582,13 +585,14 @@ class ExpensesView(ctk.CTkFrame):
             if self.on_data_changed:
                 self.on_data_changed()
         else:
-            if item["tx_id"]:
+            if item.get("tx_id"):
                 ConfirmDialog(
                     self.winfo_toplevel(),
                     title="Desmarcar Gasto Fijo",
                     message=f"¿Deseas desmarcar '{item['description']}' como pagado?\n\nEsto eliminará el registro de gasto y restaurará tu saldo disponible.",
                     confirm_text="Desmarcar",
-                    on_confirm=lambda: self._execute_unpay(item["tx_id"], item.get("currency", "COP"))
+                    on_confirm=lambda: self._execute_unpay(item["tx_id"], item.get("currency", "COP")),
+                    on_cancel=lambda: self._refresh_checklist()
                 )
             else:
                 self._refresh_checklist()

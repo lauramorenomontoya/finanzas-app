@@ -23,6 +23,7 @@ from database.managers import (
     LedgerMixin,
     CSVMixin,
     TagsMixin,
+    BudgetMixin,
 )
 
 
@@ -38,6 +39,7 @@ class DatabaseManager(
     LedgerMixin,
     CSVMixin,
     TagsMixin,
+    BudgetMixin,
 ):
     def __init__(self, db_path: Optional[str] = None):
         """Inicializa la conexión, lock de escritura thread-safe y esquema de datos."""
@@ -78,6 +80,7 @@ class DatabaseManager(
                         type TEXT NOT NULL CHECK(type IN ('DEPOSIT', 'TRANSFER_OUT', 'TRANSFER_TO_INVESTMENT', 'TRANSFER_FROM_INVESTMENT', 'EXPENSE')),
                         amount REAL NOT NULL CHECK(amount > 0),
                         notes TEXT,
+                        recurring_id INTEGER REFERENCES recurring_expenses(id) ON DELETE SET NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -93,6 +96,7 @@ class DatabaseManager(
                         is_fixed INTEGER DEFAULT 0 CHECK(is_fixed IN (0, 1)),
                         payment_method TEXT DEFAULT 'DEBIT' CHECK(payment_method IN ('DEBIT', 'CREDIT_CARD', 'CASH')),
                         notes TEXT,
+                        recurring_id INTEGER REFERENCES recurring_expenses(id) ON DELETE SET NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -194,10 +198,23 @@ class DatabaseManager(
                     );
                 """)
 
+                # Migración: Verificar si recurring_id existe en cop_transactions y usd_transactions
+                cursor.execute("PRAGMA table_info(cop_transactions);")
+                cop_cols = [row["name"] for row in cursor.fetchall()]
+                if "recurring_id" not in cop_cols:
+                    cursor.execute("ALTER TABLE cop_transactions ADD COLUMN recurring_id INTEGER REFERENCES recurring_expenses(id) ON DELETE SET NULL;")
+
+                cursor.execute("PRAGMA table_info(usd_transactions);")
+                usd_cols = [row["name"] for row in cursor.fetchall()]
+                if "recurring_id" not in usd_cols:
+                    cursor.execute("ALTER TABLE usd_transactions ADD COLUMN recurring_id INTEGER REFERENCES recurring_expenses(id) ON DELETE SET NULL;")
+
                 # Índices para acelerar consultas por fecha y tipo
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_date_type ON cop_transactions(date, type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_cat ON cop_transactions(category);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_recurring ON cop_transactions(recurring_id);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_date_type ON usd_transactions(date, type);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_recurring ON usd_transactions(recurring_id);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_acc_date_type ON account_transactions(date, type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_tx_tags ON transaction_tags(source_table, record_id);")
 
@@ -256,6 +273,9 @@ class DatabaseManager(
                     """, default_tags)
 
                 conn.commit()
+
+        # Inicializar tablas de presupuesto y metas
+        self._init_budget_tables()
 
     def _run_schema_migrations(self, conn: sqlite3.Connection) -> None:
         """Verifica y actualiza constraints CHECK en tablas SQLite existentes."""

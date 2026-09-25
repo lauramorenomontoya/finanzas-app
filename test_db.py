@@ -86,6 +86,53 @@ class TestDatabaseManager(unittest.TestCase):
         success, msg = self.db.unpay_recurring_item(tx_id, currency="USD")
         self.assertTrue(success)
 
+    def test_recurring_expenses_same_category_individual_selection(self):
+        # 1. Crear múltiples gastos fijos en la misma categoría (COP)
+        id_agua = self.db.add_recurring_expense("Hogar", "Agua", 50000.0, currency="COP", due_day=5)
+        id_luz = self.db.add_recurring_expense("Hogar", "Luz", 100000.0, currency="COP", due_day=10)
+        id_gas = self.db.add_recurring_expense("Hogar", "Gas", 30000.0, currency="COP", due_day=15)
+
+        ym = "2026-09"
+        # 2. Inicialmente todos deben estar pendientes
+        checklist = {i["id"]: i for i in self.db.get_recurring_checklist_status(ym)}
+        self.assertFalse(checklist[id_agua]["is_paid"])
+        self.assertFalse(checklist[id_luz]["is_paid"])
+        self.assertFalse(checklist[id_gas]["is_paid"])
+
+        # 3. Pagar únicamente 'Agua'
+        success, _, tx_agua = self.db.pay_recurring_item(id_agua, f"{ym}-05")
+        self.assertTrue(success)
+
+        # 4. Verificar que SOLO 'Agua' está marcado como pagado
+        checklist = {i["id"]: i for i in self.db.get_recurring_checklist_status(ym)}
+        self.assertTrue(checklist[id_agua]["is_paid"])
+        self.assertEqual(checklist[id_agua]["tx_id"], tx_agua)
+        self.assertFalse(checklist[id_luz]["is_paid"], "Luz no debería marcarse pagada al pagar Agua")
+        self.assertIsNone(checklist[id_luz]["tx_id"])
+        self.assertFalse(checklist[id_gas]["is_paid"], "Gas no debería marcarse pagada al pagar Agua")
+        self.assertIsNone(checklist[id_gas]["tx_id"])
+
+        # 5. Pagar 'Luz'
+        success, _, tx_luz = self.db.pay_recurring_item(id_luz, f"{ym}-10")
+        self.assertTrue(success)
+        self.assertNotEqual(tx_agua, tx_luz)
+
+        checklist = {i["id"]: i for i in self.db.get_recurring_checklist_status(ym)}
+        self.assertTrue(checklist[id_agua]["is_paid"])
+        self.assertTrue(checklist[id_luz]["is_paid"])
+        self.assertFalse(checklist[id_gas]["is_paid"])
+        self.assertEqual(checklist[id_luz]["tx_id"], tx_luz)
+
+        # 6. Desmarcar 'Agua' individualmente
+        success, _ = self.db.unpay_recurring_item(tx_agua, currency="COP")
+        self.assertTrue(success)
+
+        # 7. Verificar que SOLO 'Agua' volvió a pendiente, y 'Luz' permanece pagada
+        checklist = {i["id"]: i for i in self.db.get_recurring_checklist_status(ym)}
+        self.assertFalse(checklist[id_agua]["is_paid"], "Agua debe volver a pendiente")
+        self.assertTrue(checklist[id_luz]["is_paid"], "Luz debe seguir pagada después de desmarcar Agua")
+        self.assertFalse(checklist[id_gas]["is_paid"])
+
     def test_edit_recurring_expense(self):
         # 1. Crear gasto fijo
         rec_id = self.db.add_recurring_expense("Servicios Públicos", "Internet Fibra", 120000.0, currency="COP", due_day=10)
@@ -266,7 +313,40 @@ class TestDatabaseManager(unittest.TestCase):
         rec_item = [r for r in recs if r["id"] == rec_id][0]
         self.assertEqual(rec_item["category"], "Suscripciones & Apps")
 
+    def test_credit_card_partial_payments_and_aliases(self):
+        # 1. Cargar saldo COP y generar deuda con TC
+        self.db.add_cop_income("2026-09-01", "Honorarios", 2000000.0)
+        self.db.add_cop_expense("2026-09-02", "Compras Varias", 1000000.0, payment_method="CREDIT_CARD")
+        self.assertEqual(self.db.get_credit_card_debt(), 1000000.0)
+        self.assertEqual(self.db.get_cop_balance(), 2000000.0)
+
+        # 2. Registrar primer abono parcial ($400,000 COP) con pay_credit_card
+        success, msg = self.db.pay_credit_card("2026-09-05", 400000.0)
+        self.assertTrue(success)
+        self.assertIn("Abono parcial", msg)
+        self.assertEqual(self.db.get_credit_card_debt(), 600000.0)
+        self.assertEqual(self.db.get_cop_balance(), 1600000.0)
+
+        # 3. Registrar segundo abono parcial ($300,000 COP) con pay_credit_card_debt alias
+        success2, msg2 = self.db.pay_credit_card_debt(amount=300000.0, date="2026-09-10")
+        self.assertTrue(success2)
+        self.assertIn("Abono parcial", msg2)
+        self.assertEqual(self.db.get_credit_card_debt(), 300000.0)
+        self.assertEqual(self.db.get_cop_balance(), 1300000.0)
+
+        # 4. Probar seguridad con argumentos invertidos (amount, date)
+        success3, msg3 = self.db.pay_credit_card(300000.0, "2026-09-15")  # type: ignore
+        self.assertTrue(success3)
+        self.assertEqual(self.db.get_credit_card_debt(), 0.0)
+        self.assertEqual(self.db.get_cop_balance(), 1000000.0)
+
+        # 5. Verificar transacciones generadas en la base de datos
+        txs = self.db.get_cop_transactions(limit=10)
+        cc_payments = [t for t in txs if t["type"] == "CC_PAYMENT"]
+        self.assertEqual(len(cc_payments), 3)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

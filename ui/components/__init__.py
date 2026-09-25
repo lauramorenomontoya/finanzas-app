@@ -16,6 +16,7 @@ from .date_picker import DatePickerWidget, CalendarPopup
 from .apply_recurring_modal import ApplyRecurringModal
 from .global_search_modal import GlobalSearchModal
 from .tag_selector import TagSelector
+from .edit_budget_modal import CategoryBudgetModal, MonthlyTargetsModal, BudgetSettingsModal
 
 __all__ = [
     "StatCard",
@@ -36,4 +37,7 @@ __all__ = [
     "ApplyRecurringModal",
     "GlobalSearchModal",
     "TagSelector",
+    "CategoryBudgetModal",
+    "MonthlyTargetsModal",
+    "BudgetSettingsModal",
 ]

@@ -221,7 +221,7 @@ class ExpenseMixin:
                     COALESCE(SUM(amount), 0) AS total,
                     COUNT(*) AS count
                 FROM cop_transactions
-                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?
+                WHERE type = 'EXPENSE' AND category NOT LIKE 'Ajuste%' AND strftime('%Y-%m', date) = ?
                 GROUP BY category
                 ORDER BY total DESC;
             """, (year_month,))

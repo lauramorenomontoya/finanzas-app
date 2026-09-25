@@ -140,6 +140,20 @@ class DashboardView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
+        btn_go_budget = ctk.CTkButton(
+            left_header,
+            text="🎯 Presupuestos",
+            width=100,
+            height=26,
+            corner_radius=6,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.ACCENT_GREEN,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=lambda: self._trigger_nav("budget")
+        )
+        btn_go_budget.pack(side="right")
+
         # Área con scroll para el desglose de categorías
         self.categories_scroll = ctk.CTkScrollableFrame(left_col, fg_color="transparent", height=180)
         self.categories_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 10))
@@ -328,6 +342,8 @@ class DashboardView(ctk.CTkFrame):
             widget.destroy()
 
         categories = self.db.get_expenses_by_category()
+        budgets_map = {b["category"]: b["budget"] for b in self.db.get_category_budgets()}
+
         if not categories:
             empty_lbl = ctk.CTkLabel(
                 self.categories_scroll,
@@ -342,7 +358,25 @@ class DashboardView(ctk.CTkFrame):
             cat_name = item["category"]
             amount = item["total"]
             count = item["count"]
-            pct = (amount / total_expenses * 100) if total_expenses > 0 else 0
+            b_amt = budgets_map.get(cat_name, 0.0)
+
+            if b_amt > 0:
+                pct = (amount / b_amt * 100.0)
+                if pct >= 100:
+                    bar_color = "#f43f5e"
+                elif pct >= 75:
+                    bar_color = "#f59e0b"
+                else:
+                    bar_color = "#10b981"
+                text_label = f"${amount:,.0f} / ${b_amt:,.0f} ({pct:.0f}%)"
+                val_color = bar_color
+                bar_ratio = min(pct / 100.0, 1.0)
+            else:
+                pct = (amount / total_expenses * 100) if total_expenses > 0 else 0
+                bar_color = "#64748b"
+                text_label = f"${amount:,.0f} COP"
+                val_color = Theme.TEXT_SECONDARY
+                bar_ratio = min(pct / 100.0, 1.0)
 
             item_card = ctk.CTkFrame(self.categories_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
             item_card.pack(fill="x", pady=4, padx=2)
@@ -359,15 +393,15 @@ class DashboardView(ctk.CTkFrame):
 
             ctk.CTkLabel(
                 top_row,
-                text=f"${amount:,.0f} COP ({pct:.1f}%)",
+                text=text_label,
                 font=ctk.CTkFont(size=12, weight="bold"),
-                text_color=Theme.ACCENT_ROSE
+                text_color=val_color
             ).pack(side="right")
 
             # Barra de progreso visual
-            progress = ctk.CTkProgressBar(item_card, height=6, corner_radius=3, fg_color=Theme.BORDER_SUBTLE, progress_color="#f43f5e")
+            progress = ctk.CTkProgressBar(item_card, height=6, corner_radius=3, fg_color=Theme.BORDER_SUBTLE, progress_color=bar_color)
             progress.pack(fill="x", padx=10, pady=(0, 8))
-            progress.set(min(pct / 100.0, 1.0))
+            progress.set(bar_ratio)
 
     def _refresh_activities_feed(self):
         for widget in self.activities_scroll.winfo_children():
