@@ -80,3 +80,11 @@ class StatCard(ctk.CTkFrame):
         self.value_label.configure(text=new_value)
         if new_subtitle is not None:
             self.subtitle_label.configure(text=new_subtitle)
+
+    def set_value(self, new_value: str):
+        """Alias para actualizar el valor."""
+        self.value_label.configure(text=new_value)
+
+    def set_subtitle(self, new_subtitle: str):
+        """Alias para actualizar el subtítulo."""
+        self.subtitle_label.configure(text=new_subtitle)

@@ -24,6 +24,7 @@ from database.managers import (
     CSVMixin,
     TagsMixin,
     BudgetMixin,
+    DebtMixin,
 )
 
 
@@ -40,6 +41,7 @@ class DatabaseManager(
     CSVMixin,
     TagsMixin,
     BudgetMixin,
+    DebtMixin,
 ):
     def __init__(self, db_path: Optional[str] = None):
         """Inicializa la conexión, lock de escritura thread-safe y esquema de datos."""
@@ -197,6 +199,37 @@ class DatabaseManager(
                         PRIMARY KEY (tag_id, source_table, record_id)
                     );
                 """)
+
+                # 11. Tabla de Deudas y Préstamos
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS debts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        creditor TEXT NOT NULL,
+                        total_amount REAL NOT NULL CHECK(total_amount > 0),
+                        currency TEXT DEFAULT 'COP' CHECK(currency IN ('COP', 'USD')),
+                        start_date TEXT NOT NULL,
+                        due_date TEXT,
+                        notes TEXT,
+                        status TEXT DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'PAID')),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+
+                # 12. Tabla de Abonos a Deudas
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS debt_payments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        debt_id INTEGER NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
+                        date TEXT NOT NULL,
+                        amount REAL NOT NULL CHECK(amount > 0),
+                        notes TEXT,
+                        transaction_id INTEGER REFERENCES cop_transactions(id) ON DELETE SET NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);")
 
                 # Migración: Verificar si recurring_id existe en cop_transactions y usd_transactions
                 cursor.execute("PRAGMA table_info(cop_transactions);")

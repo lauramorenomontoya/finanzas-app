@@ -18,6 +18,7 @@ from ui.views.ledger import LedgerView
 from ui.views.analytics import AnalyticsView
 from ui.views.settings import SettingsView
 from ui.views.budget_view import BudgetView
+from ui.views.debt_view import DebtView
 
 
 class FinancialApp(ctk.CTk):
@@ -105,6 +106,7 @@ class FinancialApp(ctk.CTk):
             ("dashboard", "📊  Panel Principal"),
             ("incomes", "📥  Ingresos (USD / COP)"),
             ("expenses", "💸  Egresos & Gastos"),
+            ("debts", "💳  Control de Deudas"),
             ("budget", "🎯  Presupuesto & Metas"),
             ("conversion", "🔄  Puente USD ➔ COP"),
             ("investments", "📈  Cuentas & Inversiones"),
@@ -240,6 +242,8 @@ class FinancialApp(ctk.CTk):
             view = ExpensesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
         elif view_key == "budget":
             view = BudgetView(self.content_container, self.db)
+        elif view_key == "debts":
+            view = DebtView(self.content_container, self.db, on_data_changed=self.on_data_updated)
         elif view_key == "conversion":
             view = ConversionView(self.content_container, self.db, on_data_changed=self.on_data_updated)
         elif view_key == "investments":

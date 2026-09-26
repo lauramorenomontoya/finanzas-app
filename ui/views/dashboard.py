@@ -93,18 +93,19 @@ class DashboardView(ctk.CTkFrame):
         )
         self.card_cop.grid(row=0, column=1, padx=4, sticky="nsew")
 
-        # Tarjeta 3: Deuda Tarjeta de Crédito (NUEVO)
+        # Tarjeta 3: Deudas Totales (TC + Personales)
         self.card_cc_debt = StatCard(
             cards_container,
-            title="Deuda TC (Fin de Mes)",
+            title="Deudas Totales",
             value="$0 COP",
-            subtitle="0 pagos pendientes",
+            subtitle="TC y deudas personales",
             icon="💳",
             accent_color=Theme.ACCENT_ROSE,
             bg_color=Theme.BG_CARD,
             border_color="#e11d48"
         )
         self.card_cc_debt.grid(row=0, column=2, padx=4, sticky="nsew")
+        self.card_cc_debt.bind("<Button-1>", lambda _: self._navigate("debts"))
 
         # Tarjeta 4: Gastos del Mes COP
         self.card_expenses = StatCard(
@@ -322,9 +323,20 @@ class DashboardView(ctk.CTkFrame):
             f"${cop_balance:,.0f} COP",
             "Disponible en cuenta"
         )
+        debts_summary = self.db.get_debts_summary()
+        grand_debt = debts_summary["grand_total_debt"]
+        if grand_debt == 0:
+            debt_sub = "Sin deudas pendientes 🎉"
+        elif debts_summary["personal_remaining"] > 0 and debts_summary["credit_card_debt"] > 0:
+            debt_sub = f"TC: ${debts_summary['credit_card_debt']:,.0f} | Papá/Pers: ${debts_summary['personal_remaining']:,.0f}"
+        elif debts_summary["personal_remaining"] > 0:
+            debt_sub = f"{debts_summary['active_debts_count']} deuda(s) personal(es)"
+        else:
+            debt_sub = "Tarjeta de crédito por pagar"
+
         self.card_cc_debt.update_value(
-            f"${cc_debt:,.0f} COP",
-            "Sin deuda pendiente 🎉" if cc_debt == 0 else "Deuda a pagar a fin de mes ⚠️"
+            f"${grand_debt:,.0f} COP",
+            debt_sub
         )
         self.card_expenses.update_value(
             f"${metrics['cop_total_expenses']:,.0f} COP",

@@ -17,6 +17,9 @@ from .apply_recurring_modal import ApplyRecurringModal
 from .global_search_modal import GlobalSearchModal
 from .tag_selector import TagSelector
 from .edit_budget_modal import CategoryBudgetModal, MonthlyTargetsModal, BudgetSettingsModal
+from .add_debt_modal import AddDebtModal
+from .debt_payment_modal import DebtPaymentModal
+from .debt_history_modal import DebtHistoryModal
 
 __all__ = [
     "StatCard",
@@ -40,4 +43,7 @@ __all__ = [
     "CategoryBudgetModal",
     "MonthlyTargetsModal",
     "BudgetSettingsModal",
+    "AddDebtModal",
+    "DebtPaymentModal",
+    "DebtHistoryModal",
 ]
