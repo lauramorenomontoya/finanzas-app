@@ -211,6 +211,7 @@ class DatabaseManager(
                         due_date TEXT,
                         notes TEXT,
                         status TEXT DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'PAID')),
+                        debt_type TEXT DEFAULT 'PAYABLE' CHECK(debt_type IN ('PAYABLE', 'RECEIVABLE')),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -229,7 +230,14 @@ class DatabaseManager(
                 """)
 
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(debt_type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);")
+
+                # Migración: Verificar si debt_type existe en debts
+                cursor.execute("PRAGMA table_info(debts);")
+                debt_cols = [row["name"] for row in cursor.fetchall()]
+                if "debt_type" not in debt_cols:
+                    cursor.execute("ALTER TABLE debts ADD COLUMN debt_type TEXT DEFAULT 'PAYABLE';")
 
                 # Migración: Verificar si recurring_id existe en cop_transactions y usd_transactions
                 cursor.execute("PRAGMA table_info(cop_transactions);")

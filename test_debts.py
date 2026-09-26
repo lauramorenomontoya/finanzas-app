@@ -128,5 +128,52 @@ class TestDebtManager(unittest.TestCase):
         self.assertEqual(summary["active_debts_count"], 1)
 
 
+    def test_receivable_debt_and_collection(self):
+        # 1. Registrar préstamo a cobrar a Luisa
+        rec_id = self.db.add_debt(
+            creditor="Luisa",
+            total_amount=464950.0,
+            currency="COP",
+            start_date="2026-09-24",
+            debt_type="RECEIVABLE",
+            notes="Compras con TC: Compra + Ropa deportiva"
+        )
+        self.assertGreater(rec_id, 0)
+
+        # Verificar listado por debt_type
+        receivables = self.db.get_debts(debt_type="RECEIVABLE")
+        self.assertEqual(len(receivables), 1)
+        self.assertEqual(receivables[0]["creditor"], "Luisa")
+        self.assertEqual(receivables[0]["debt_type"], "RECEIVABLE")
+        self.assertEqual(receivables[0]["remaining_amount"], 464950.0)
+
+        # 2. Luisa me paga 200,000 COP
+        initial_cop = self.db.get_cop_balance()
+        success, msg = self.db.add_debt_payment(
+            debt_id=rec_id,
+            amount=200000.0,
+            date="2026-09-25",
+            notes="Abono recibido por transferencia",
+            deduct_from_balance=True # Suma a cuenta de ahorros COP
+        )
+        self.assertTrue(success)
+        self.assertIn("Pago recibido registrado", msg)
+
+        # Verificar que el saldo COP aumentó en 200,000 COP
+        new_cop = self.db.get_cop_balance()
+        self.assertEqual(new_cop, initial_cop + 200000.0)
+
+        # Verificar saldo restante por cobrar
+        rec_debt = self.db.get_debt_by_id(rec_id)
+        self.assertEqual(rec_debt["total_paid"], 200000.0)
+        self.assertEqual(rec_debt["remaining_amount"], 264950.0)
+
+        # 3. Eliminar el pago recibido revierte el ingreso
+        payments = self.db.get_debt_payments(rec_id)
+        self.assertEqual(len(payments), 1)
+        self.db.delete_debt_payment(payments[0]["id"])
+        self.assertEqual(self.db.get_cop_balance(), initial_cop)
+
+
 if __name__ == "__main__":
     unittest.main()

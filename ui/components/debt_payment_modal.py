@@ -23,7 +23,9 @@ class DebtPaymentModal(ctk.CTkToplevel):
         self.debt = debt
         self.on_success = on_success
 
-        self.title(f"Abonar a Deuda - {debt['creditor']}")
+        is_receivable = debt.get("debt_type") == "RECEIVABLE"
+        title_action = "Registrar Pago Recibido" if is_receivable else "Abonar a Deuda"
+        self.title(f"{title_action} - {debt['creditor']}")
         self.geometry("480x620")
         self.minsize(440, 520)
         self.resizable(True, True)
@@ -49,6 +51,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             pass
 
     def _build_ui(self):
+        is_receivable = self.debt.get("debt_type") == "RECEIVABLE"
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
         main_frame.pack(fill="both", expand=True, padx=16, pady=16)
 
@@ -56,16 +59,18 @@ class DebtPaymentModal(ctk.CTkToplevel):
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
         header.pack(fill="x", padx=20, pady=(16, 8))
 
+        header_title = f"📥 Registrar Pago de {self.debt['creditor']}" if is_receivable else f"💰 Registrar Abono a {self.debt['creditor']}"
+        header_sub = "Registra un cobro o abono recibido para amortizar lo que te deben" if is_receivable else "Registra un pago parcial o total para amortizar tu deuda"
         ctk.CTkLabel(
             header,
-            text=f"💰 Registrar Abono a {self.debt['creditor']}",
+            text=header_title,
             font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
-            text="Registra un pago parcial o total para amortizar tu deuda",
+            text=header_sub,
             font=ctk.CTkFont(family="SF Pro Text", size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
@@ -99,9 +104,10 @@ class DebtPaymentModal(ctk.CTkToplevel):
         )
         btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
+        btn_label = "Confirmar Pago Recibido" if is_receivable else "Confirmar Abono"
         btn_save = ctk.CTkButton(
             btn_box,
-            text="Confirmar Abono",
+            text=btn_label,
             fg_color=Theme.ACCENT_GREEN,
             hover_color="#059669",
             text_color="#ffffff",
@@ -241,7 +247,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
         self.date_picker = DatePickerWidget(scroll, initial_date=datetime.now().strftime("%Y-%m-%d"))
         self.date_picker.pack(fill="x", pady=(0, 12))
 
-        # Campo: Notas del Abono
+        # Campo: Notas del Abono / Pago
         ctk.CTkLabel(
             scroll,
             text="Notas / Detalle (Opcional)",
@@ -249,9 +255,10 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
+        ph_notes = "Ej: Transferencia Bancolombia, pago en efectivo..." if is_receivable else "Ej: Abono de quincena, transferencia Bancolombia..."
         self.entry_notes = ctk.CTkEntry(
             scroll,
-            placeholder_text="Ej: Abono de quincena, transferencia Bancolombia...",
+            placeholder_text=ph_notes,
             height=35,
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
@@ -260,11 +267,12 @@ class DebtPaymentModal(ctk.CTkToplevel):
         )
         self.entry_notes.pack(fill="x", pady=(0, 14))
 
-        # Casilla: Descontar de Saldo COP
+        # Casilla: Afectar Saldo COP
         self.var_deduct = ctk.BooleanVar(value=True)
+        chk_text = "Sumar automáticamente a mi saldo disponible COP (Ingreso)" if is_receivable else "Descontar automáticamente de mi saldo disponible COP (Egreso)"
         self.chk_deduct = ctk.CTkCheckBox(
             scroll,
-            text="Descontar automáticamente de mi saldo disponible COP (Egreso)",
+            text=chk_text,
             variable=self.var_deduct,
             font=ctk.CTkFont(family="SF Pro Text", size=12),
             text_color=Theme.TEXT_PRIMARY,

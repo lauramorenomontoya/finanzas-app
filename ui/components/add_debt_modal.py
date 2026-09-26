@@ -17,15 +17,18 @@ class AddDebtModal(ctk.CTkToplevel):
         parent,
         db_manager,
         debt: Optional[Dict[str, Any]] = None,
+        initial_type: str = "PAYABLE",
         on_success: Optional[Callable[[], None]] = None
     ):
         super().__init__(parent)
         self.db = db_manager
         self.debt = debt
+        self.initial_type = debt.get("debt_type", initial_type) if debt else initial_type
         self.on_success = on_success
 
         is_edit = debt is not None
-        self.title("Editar Deuda" if is_edit else "Registrar Nueva Deuda")
+        title_prefix = "Editar" if is_edit else "Registrar"
+        self.title(f"{title_prefix} Deuda / Préstamo")
         self.geometry("480x560")
         self.minsize(440, 500)
         self.resizable(True, True)
@@ -121,17 +124,38 @@ class AddDebtModal(ctk.CTkToplevel):
         scroll = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=20, pady=0)
 
-        # Campo: Acreedor / Prestamista
+        # Selector de Tipo: Debo vs Me deben
         ctk.CTkLabel(
             scroll,
-            text="Acreedor / Prestamista *",
+            text="Tipo de Registro *",
             font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(4, 2))
+        ).pack(anchor="w", pady=(2, 2))
 
+        self.seg_type = ctk.CTkSegmentedButton(
+            scroll,
+            values=["Debo (Pasivo)", "Me deben (Por Cobrar)"],
+            height=32,
+            corner_radius=8,
+            command=self._on_type_changed
+        )
+        init_val = "Me deben (Por Cobrar)" if self.initial_type == "RECEIVABLE" else "Debo (Pasivo)"
+        self.seg_type.set(init_val)
+        self.seg_type.pack(fill="x", pady=(0, 12))
+
+        # Campo: Acreedor o Deudor
+        self.lbl_creditor = ctk.CTkLabel(
+            scroll,
+            text="Acreedor / Prestamista *" if init_val == "Debo (Pasivo)" else "Deudor / ¿Quién te debe? *",
+            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            text_color=Theme.TEXT_SECONDARY
+        )
+        self.lbl_creditor.pack(anchor="w", pady=(0, 2))
+
+        ph_cred = "Ej: Papá, Banco, Amigo..." if init_val == "Debo (Pasivo)" else "Ej: Luisa, Papá, Hermano..."
         self.entry_creditor = ctk.CTkEntry(
             scroll,
-            placeholder_text="Ej: Papá, Banco, Amigo...",
+            placeholder_text=ph_cred,
             height=35,
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
@@ -143,12 +167,13 @@ class AddDebtModal(ctk.CTkToplevel):
             self.entry_creditor.insert(0, self.debt["creditor"])
 
         # Campo: Monto Total
-        ctk.CTkLabel(
+        self.lbl_amount = ctk.CTkLabel(
             scroll,
-            text="Monto Total Prestado *",
+            text="Monto Total Prestado *" if init_val == "Debo (Pasivo)" else "Monto Total por Cobrar *",
             font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(0, 2))
+        )
+        self.lbl_amount.pack(anchor="w", pady=(0, 2))
 
         self.entry_amount = ctk.CTkEntry(
             scroll,
@@ -224,7 +249,7 @@ class AddDebtModal(ctk.CTkToplevel):
 
         self.entry_notes = ctk.CTkEntry(
             scroll,
-            placeholder_text="Ej: Préstamo para gastos personales / emergencia...",
+            placeholder_text="Ej: Préstamo para gastos personales / compras...",
             height=35,
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
@@ -235,6 +260,16 @@ class AddDebtModal(ctk.CTkToplevel):
         if self.debt and self.debt.get("notes"):
             self.entry_notes.insert(0, self.debt["notes"])
 
+    def _on_type_changed(self, value):
+        if value == "Me deben (Por Cobrar)":
+            self.lbl_creditor.configure(text="Deudor / ¿Quién te debe? *")
+            self.lbl_amount.configure(text="Monto Total por Cobrar *")
+            self.entry_creditor.configure(placeholder_text="Ej: Luisa, Papá, Hermano...")
+        else:
+            self.lbl_creditor.configure(text="Acreedor / Prestamista *")
+            self.lbl_amount.configure(text="Monto Total Prestado *")
+            self.entry_creditor.configure(placeholder_text="Ej: Papá, Banco, Amigo...")
+
     def _save_debt(self):
         creditor = self.entry_creditor.get().strip()
         amount_raw = self.entry_amount.get().strip().replace("$", "").replace(",", "").replace(".", "")
@@ -242,9 +277,11 @@ class AddDebtModal(ctk.CTkToplevel):
         start_date = self.date_picker.get_date()
         due_date = self.entry_due_date.get().strip() or None
         notes = self.entry_notes.get().strip()
+        debt_type = "RECEIVABLE" if self.seg_type.get() == "Me deben (Por Cobrar)" else "PAYABLE"
 
         if not creditor:
-            self.lbl_error.configure(text="⚠️ Ingresa el nombre del acreedor o prestamista.")
+            target_who = "el deudor" if debt_type == "RECEIVABLE" else "el acreedor"
+            self.lbl_error.configure(text=f"⚠️ Ingresa el nombre de {target_who}.")
             return
 
         try:
@@ -262,10 +299,11 @@ class AddDebtModal(ctk.CTkToplevel):
                 total_amount=amount,
                 start_date=start_date,
                 due_date=due_date,
-                notes=notes
+                notes=notes,
+                debt_type=debt_type
             )
             if not success:
-                self.lbl_error.configure(text="❌ No se pudo actualizar la deuda.")
+                self.lbl_error.configure(text="❌ No se pudo actualizar el registro.")
                 return
         else:
             try:
@@ -275,7 +313,8 @@ class AddDebtModal(ctk.CTkToplevel):
                     currency=currency,
                     start_date=start_date,
                     due_date=due_date,
-                    notes=notes
+                    notes=notes,
+                    debt_type=debt_type
                 )
             except Exception as e:
                 self.lbl_error.configure(text=f"❌ Error al guardar: {e}")
