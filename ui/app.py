@@ -5,7 +5,7 @@ búsqueda global (Cmd+K), sincronización reactiva y arquitectura modular.
 """
 
 import customtkinter as ctk
-from typing import Dict
+from typing import Dict, Any
 from database.db_manager import DatabaseManager
 from ui.theme import Theme
 from ui.components import CSVImporterModal, GlobalSearchModal

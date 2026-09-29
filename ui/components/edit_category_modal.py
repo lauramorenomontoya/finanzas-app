@@ -7,6 +7,7 @@ Diseño responsivo con pie fijo de botones y cuerpo desplazable.
 import customtkinter as ctk
 from typing import Callable, Dict, Any, Optional
 from ui.theme import Theme
+from ui.utils.modal_helper import center_window
 
 
 class EditCategoryModal(ctk.CTkToplevel):
@@ -52,17 +53,7 @@ class EditCategoryModal(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            parent_x = parent.winfo_rootx()
-            parent_y = parent.winfo_rooty()
-            parent_w = parent.winfo_width()
-            parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 500) // 2
-            y = parent_y + (parent_h - 580) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 500, 580)
 
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)

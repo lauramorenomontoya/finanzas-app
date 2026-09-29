@@ -6,6 +6,7 @@ Permite buscar instantáneamente en todo el historial financiero con resultados 
 import customtkinter as ctk
 from typing import Callable, Optional, List, Dict, Any
 from ui.theme import Theme
+from ui.utils.modal_helper import center_window
 
 
 class GlobalSearchModal(ctk.CTkToplevel):
@@ -35,17 +36,7 @@ class GlobalSearchModal(ctk.CTkToplevel):
         self.bind("<Escape>", lambda _: self.destroy())
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            parent_x = parent.winfo_rootx()
-            parent_y = parent.winfo_rooty()
-            parent_w = parent.winfo_width()
-            parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 740) // 2
-            y = parent_y + (parent_h - 520) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 740, 520)
 
     def _build_ui(self):
         main_card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)

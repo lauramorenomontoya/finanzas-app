@@ -5,6 +5,7 @@ Diálogo modal de confirmación moderno para CustomTkinter.
 import customtkinter as ctk
 from typing import Callable, Optional
 from ui.theme import Theme
+from ui.utils.modal_helper import center_window
 
 
 class ConfirmDialog(ctk.CTkToplevel):
@@ -37,17 +38,7 @@ class ConfirmDialog(ctk.CTkToplevel):
         self._build_ui(title, message, confirm_text, cancel_text)
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            parent_x = parent.winfo_rootx()
-            parent_y = parent.winfo_rooty()
-            parent_w = parent.winfo_width()
-            parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 420) // 2
-            y = parent_y + (parent_h - 210) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 420, 210)
 
     def _build_ui(self, title: str, message: str, confirm_text: str, cancel_text: str):
         content = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=12, border_width=1, border_color=Theme.BORDER_DEFAULT)

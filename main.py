@@ -6,6 +6,15 @@ Punto de entrada principal de la aplicación.
 
 import sys
 import os
+import logging
+
+# Configuración de logging estructurado
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger("ControlFinanciero")
 
 # Asegurar que el directorio raíz esté en sys.path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +29,7 @@ if sys.prefix == sys.base_prefix and os.path.exists(venv_python) and sys.executa
 try:
     import customtkinter as ctk
 except ImportError:
+    logger.error("La librería 'customtkinter' no está instalada.")
     print("\n" + "="*70)
     print("❌ ERROR: La librería 'customtkinter' no está instalada.")
     print("Por favor instala las dependencias ejecutando en tu terminal:")
@@ -33,15 +43,14 @@ from ui.utils.scroll_helper import ScrollHelper
 
 def main():
     try:
+        logger.info("Iniciando Control Financiero...")
         ScrollHelper.enable_smooth_scrolling()
         app = FinancialApp()
         app.mainloop()
     except KeyboardInterrupt:
-        print("\nAplicación cerrada por el usuario.")
+        logger.info("Aplicación cerrada por el usuario.")
     except Exception as e:
-        print(f"\n❌ Ocurrió un error inesperado al ejecutar la aplicación: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Ocurrió un error inesperado al ejecutar la aplicación: %s", e)
 
 
 if __name__ == "__main__":

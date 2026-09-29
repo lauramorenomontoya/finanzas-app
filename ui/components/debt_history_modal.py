@@ -7,6 +7,7 @@ import customtkinter as ctk
 from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
 from ui.components.confirm_dialog import ConfirmDialog
+from ui.utils.modal_helper import center_window
 
 
 class DebtHistoryModal(ctk.CTkToplevel):
@@ -35,17 +36,7 @@ class DebtHistoryModal(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            parent_x = parent.winfo_rootx()
-            parent_y = parent.winfo_rooty()
-            parent_w = parent.winfo_width()
-            parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 540) // 2
-            y = parent_y + (parent_h - 620) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 540, 620)
 
     def _build_ui(self):
         self.main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)

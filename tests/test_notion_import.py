@@ -5,9 +5,11 @@ categorías y transacciones de Notion se procesen con 100% de exactitud y sin er
 """
 
 import os
+import sys
 import unittest
 import tempfile
 import shutil
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.db_manager import DatabaseManager
 from services.notion_importer import NotionImporter

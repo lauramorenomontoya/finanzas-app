@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
+from ui.utils.modal_helper import center_window
 
 
 class AddDebtModal(ctk.CTkToplevel):
@@ -41,17 +42,7 @@ class AddDebtModal(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            parent_x = parent.winfo_rootx()
-            parent_y = parent.winfo_rooty()
-            parent_w = parent.winfo_width()
-            parent_h = parent.winfo_height()
-            x = parent_x + (parent_w - 480) // 2
-            y = parent_y + (parent_h - 560) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 480, 560)
 
     def _build_ui(self):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)

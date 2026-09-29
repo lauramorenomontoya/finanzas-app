@@ -8,6 +8,7 @@ Modales para el Módulo de Presupuestos & Metas Financieras:
 import customtkinter as ctk
 from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
+from ui.utils.modal_helper import center_window
 
 
 class CategoryBudgetModal(ctk.CTkToplevel):
@@ -42,17 +43,7 @@ class CategoryBudgetModal(ctk.CTkToplevel):
         self._build_ui(current_budget, current_notes)
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            px = parent.winfo_rootx()
-            py = parent.winfo_rooty()
-            pw = parent.winfo_width()
-            ph = parent.winfo_height()
-            x = px + (pw - 460) // 2
-            y = py + (ph - 440) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 460, 440)
 
     def _build_ui(self, current_budget: float, current_notes: str):
         main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
@@ -228,17 +219,7 @@ class MonthlyTargetsModal(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            px = parent.winfo_rootx()
-            py = parent.winfo_rooty()
-            pw = parent.winfo_width()
-            ph = parent.winfo_height()
-            x = px + (pw - 520) // 2
-            y = py + (ph - 600) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 520, 600)
 
     def _build_ui(self):
         targets = self.db.get_monthly_targets(self.year_month)
@@ -404,17 +385,7 @@ class BudgetSettingsModal(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            px = parent.winfo_rootx()
-            py = parent.winfo_rooty()
-            pw = parent.winfo_width()
-            ph = parent.winfo_height()
-            x = px + (pw - 500) // 2
-            y = py + (ph - 560) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 500, 560)
 
     def _build_ui(self):
         settings = self.db.get_budget_settings()

@@ -94,15 +94,15 @@ Las mejoras están organizadas en **3 fases** de menor a mayor impacto visual.
 
 ---
 
-### 🔵 Fase 1 — Bugs & Deuda Técnica *(~2-3 horas)*
+### 🔵 Fase 1 — Bugs & Deuda Técnica ✅ *(Completada)*
 
-| # | Tarea | Archivo |
-|---|---|---|
-| 1.1 | Agregar `Any` al import de `typing` | `ui/app.py` |
-| 1.2 | Crear `ui/utils/modal_helper.py` con `center_window()` y refactorizar todos los modales | `ui/utils/` |
-| 1.3 | Mover archivos de test a `tests/` | Raíz del proyecto |
-| 1.4 | Actualizar `.gitignore` para excluir `*.db-shm`, `*.db-wal`, `temp_*` | `.gitignore` |
-| 1.5 | Agregar `logging` básico en lugar de `print()` en `main.py` | `main.py` |
+| # | Tarea | Archivo | Estado |
+|---|---|---|:---:|
+| 1.1 | Agregar `Any` al import de `typing` | `ui/app.py` | ✅ Completado |
+| 1.2 | Crear `ui/utils/modal_helper.py` con `center_window()` y refactorizar todos los modales | `ui/utils/` | ✅ Completado |
+| 1.3 | Mover archivos de test a `tests/` | Raíz del proyecto | ✅ Completado |
+| 1.4 | Actualizar `.gitignore` para excluir `*.db-shm`, `*.db-wal`, `temp_*` | `.gitignore` | ✅ Completado |
+| 1.5 | Agregar `logging` básico en lugar de `print()` en `main.py` | `main.py` | ✅ Completado |
 
 ---
 

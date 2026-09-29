@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
+from ui.utils.modal_helper import center_window
 
 
 class PayRecurringDialog(ctk.CTkToplevel):
@@ -36,13 +37,7 @@ class PayRecurringDialog(ctk.CTkToplevel):
         self._build_ui()
 
     def _center_window(self, parent):
-        self.update_idletasks()
-        try:
-            x = parent.winfo_rootx() + (parent.winfo_width() - 460) // 2
-            y = parent.winfo_rooty() + (parent.winfo_height() - 340) // 2
-            self.geometry(f"+{max(0, x)}+{max(0, y)}")
-        except Exception:
-            pass
+        center_window(self, parent, 460, 340)
 
     def _format_month(self, ym: str) -> str:
         try:

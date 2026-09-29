@@ -18,6 +18,9 @@ __pycache__/
 *.sqlite3
 *.backup*
 backups/
+temp_*
+test_*.db*
+test_budget_env/
 
 
 # Archivos del sistema operativo y editores
