@@ -11,6 +11,7 @@ from ui.components.stat_card import StatCard
 from ui.components.cc_payment_modal import CCPaymentModal
 from ui.components.csv_importer_modal import CSVImporterModal
 from ui.theme import Theme
+from services.currency_service import CurrencyService
 
 
 class DashboardView(ctk.CTkFrame):
@@ -18,12 +19,11 @@ class DashboardView(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.db = db_manager
         self.navigate_to = navigate_to
-
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.exchange_rate = self.db.get_latest_exchange_rate()
 
         self._build_ui()
         self.refresh_data()
+        self._fetch_rate_on_start()
 
     def _build_ui(self):
         # 1. Cabecera del Dashboard
@@ -62,17 +62,146 @@ class DashboardView(ctk.CTkFrame):
         )
         btn_csv.pack(side="right")
 
-        # 2. Fila de Tarjetas de Métricas Principales (Stat Cards)
+        # Badge de Tasa de Referencia TRM / Retiro en la cabecera
+        self.trm_badge = ctk.CTkFrame(
+            header_frame,
+            fg_color=Theme.BG_CARD,
+            corner_radius=8,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.trm_badge.pack(side="right", padx=(0, 10))
+
+        self.lbl_trm_info = ctk.CTkLabel(
+            self.trm_badge,
+            text=f"💵 TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=Theme.ACCENT_BLUE
+        )
+        self.lbl_trm_info.pack(padx=10, pady=5)
+
+        # 2. Gran Banner de Salud Financiera & Balance Real del Mes (Consolidado COP + USD)
+        self.health_banner = ctk.CTkFrame(
+            self,
+            fg_color=Theme.BG_CARD,
+            corner_radius=14,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.health_banner.pack(fill="x", padx=24, pady=(0, 14))
+
+        banner_top = ctk.CTkFrame(self.health_banner, fg_color="transparent")
+        banner_top.pack(fill="x", padx=18, pady=(14, 6))
+
+        self.lbl_banner_title = ctk.CTkLabel(
+            banner_top,
+            text="🌟 SALUD FINANCIERA & BALANCE REAL DEL MES (COP + USD)",
+            font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+            text_color=Theme.ACCENT_BLUE
+        )
+        self.lbl_banner_title.pack(side="left")
+
+        self.badge_status = ctk.CTkLabel(
+            banner_top,
+            text="🟢 SUPERÁVIT DEL MES",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#059669",
+            text_color="#ffffff",
+            corner_radius=6,
+            padx=10,
+            pady=3
+        )
+        self.badge_status.pack(side="right")
+
+        # Fila intermedia: Dos KPIs principales (Resultado Neto Consolidado y Liquidez Real Inmediata)
+        kpi_row = ctk.CTkFrame(self.health_banner, fg_color="transparent")
+        kpi_row.pack(fill="x", padx=18, pady=(0, 10))
+        kpi_row.grid_columnconfigure((0, 1), weight=1, uniform="kpi_cols")
+
+        # Columna 1: Resultado Neto del Mes
+        col_net = ctk.CTkFrame(kpi_row, fg_color="transparent")
+        col_net.grid(row=0, column=0, sticky="w", padx=(0, 10))
+
+        ctk.CTkLabel(
+            col_net,
+            text="Resultado Neto Real del Mes (Ingresos - Gastos):",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=Theme.TEXT_SECONDARY
+        ).pack(anchor="w")
+
+        self.lbl_net_result = ctk.CTkLabel(
+            col_net,
+            text="+$0 COP",
+            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            text_color="#10b981"
+        )
+        self.lbl_net_result.pack(anchor="w", pady=(2, 2))
+
+        self.lbl_net_desc = ctk.CTkLabel(
+            col_net,
+            text="Ingresos reales generados superaron los gastos.",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_MUTED
+        )
+        self.lbl_net_desc.pack(anchor="w")
+
+        # Columna 2: Liquidez Inmediata Consolidada
+        col_liq = ctk.CTkFrame(kpi_row, fg_color="transparent")
+        col_liq.grid(row=0, column=1, sticky="w", padx=(10, 0))
+
+        ctk.CTkLabel(
+            col_liq,
+            text="💧 Liquidez Inmediata Total (Bancolombia + Wenia disponible):",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=Theme.TEXT_SECONDARY
+        ).pack(anchor="w")
+
+        self.lbl_real_liquidity = ctk.CTkLabel(
+            col_liq,
+            text="+$0 COP",
+            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            text_color="#38bdf8"
+        )
+        self.lbl_real_liquidity.pack(anchor="w", pady=(2, 2))
+
+        self.lbl_liq_desc = ctk.CTkLabel(
+            col_liq,
+            text="Dinero líquido listo para usar sin tocar inversiones.",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_MUTED
+        )
+        self.lbl_liq_desc.pack(anchor="w")
+
+        # Franja inferior: Comparativa de Ingresos vs Gastos
+        bottom_strip = ctk.CTkFrame(
+            self.health_banner,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            corner_radius=8,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE
+        )
+        bottom_strip.pack(fill="x", padx=14, pady=(0, 12))
+
+        self.lbl_summary_details = ctk.CTkLabel(
+            bottom_strip,
+            text="",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_SECONDARY,
+            justify="left"
+        )
+        self.lbl_summary_details.pack(fill="x", padx=12, pady=8)
+
+        # 3. Fila de Tarjetas de Métricas Principales (Stat Cards)
         cards_container = ctk.CTkFrame(self, fg_color="transparent")
         cards_container.pack(fill="x", padx=24, pady=(0, 16))
         cards_container.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="stat_cards")
 
-        # Tarjeta 1: Bóveda USD (Ahorro Intocable)
+        # Tarjeta 1: Bóveda USD
         self.card_usd = StatCard(
             cards_container,
             title="Bóveda USD",
             value="$0.00 USD",
-            subtitle="Fondo de ahorro intocable",
+            subtitle="Liquidez en Wenia",
             icon="🏦",
             accent_color=Theme.ACCENT_BLUE,
             bg_color=Theme.BG_CARD,
@@ -80,12 +209,12 @@ class DashboardView(ctk.CTkFrame):
         )
         self.card_usd.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
 
-        # Tarjeta 2: Presupuesto Disponible COP
+        # Tarjeta 2: Disponible COP
         self.card_cop = StatCard(
             cards_container,
-            title="Disponible COP",
+            title="Disponible Bancolombia",
             value="$0 COP",
-            subtitle="Liquidez en cuenta",
+            subtitle="Saldo en cuenta corriente/ahorros",
             icon="💳",
             accent_color=Theme.ACCENT_GREEN,
             bg_color=Theme.BG_CARD,
@@ -93,26 +222,26 @@ class DashboardView(ctk.CTkFrame):
         )
         self.card_cop.grid(row=0, column=1, padx=4, sticky="nsew")
 
-        # Tarjeta 3: Deudas Totales (TC + Personales)
+        # Tarjeta 3: Deudas Totales
         self.card_cc_debt = StatCard(
             cards_container,
             title="Deudas Totales",
             value="$0 COP",
-            subtitle="TC y deudas personales",
-            icon="💳",
+            subtitle="TC y compromisos",
+            icon="🤝",
             accent_color=Theme.ACCENT_ROSE,
             bg_color=Theme.BG_CARD,
-            border_color="#e11d48"
+            border_color=Theme.BORDER_DEFAULT
         )
         self.card_cc_debt.grid(row=0, column=2, padx=4, sticky="nsew")
-        self.card_cc_debt.bind("<Button-1>", lambda _: self._navigate("debts"))
+        self.card_cc_debt.bind("<Button-1>", lambda _: self._trigger_nav("debts"))
 
         # Tarjeta 4: Gastos del Mes COP
         self.card_expenses = StatCard(
             cards_container,
             title="Gastos del Mes",
             value="$0 COP",
-            subtitle="Gastos en pesos",
+            subtitle="Egresos en pesos",
             icon="📉",
             accent_color=Theme.ACCENT_ROSE,
             bg_color=Theme.BG_CARD,
@@ -307,46 +436,126 @@ class DashboardView(ctk.CTkFrame):
             on_success=self.refresh_data
         )
 
-    def refresh_data(self):
-        """Actualiza todas las métricas, tarjetas y listas del dashboard."""
-        usd_balance = self.db.get_usd_balance()
-        cop_balance = self.db.get_cop_balance()
-        metrics = self.db.get_monthly_metrics()
-        cc_debt = self.db.get_credit_card_debt()
+    def _fetch_rate_on_start(self):
+        """Consulta la tasa oficial en segundo plano y actualiza el dashboard suavemente sin destruir widgets."""
+        def _on_rate(rate):
+            if rate and rate > 0:
+                try:
+                    self.db.set_setting("official_trm", str(rate))
+                except Exception:
+                    pass
+                if abs(rate - self.exchange_rate) > 0.01:
+                    try:
+                        self.after(0, lambda: self._update_rates_and_banner(rate))
+                    except Exception:
+                        pass
+        CurrencyService.fetch_rate_async(_on_rate)
 
-        # Actualizar Tarjetas
-        self.card_usd.update_value(
-            f"${usd_balance:,.2f} USD",
-            f"Total ahorrado: ${self.db.get_usd_total_saved_all_time():,.2f} USD"
-        )
-        self.card_cop.update_value(
-            f"${cop_balance:,.0f} COP",
-            "Disponible en cuenta"
-        )
+    def _update_rates_and_banner(self, exchange_rate: float):
+        """Actualiza las etiquetas de texto, banner de salud y tarjetas de liquidez sin destruir widgets hijos."""
+        self.exchange_rate = exchange_rate
+        summary = self.db.get_consolidated_monthly_summary(exchange_rate=self.exchange_rate)
+
+        # 1. Actualizar badge de tasa
+        if hasattr(self, "lbl_trm_info") and self.lbl_trm_info.winfo_exists():
+            self.lbl_trm_info.configure(text=f"💵 TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP")
+
+        # 2. Actualizar Banner de Salud Financiera
+        net_result = summary["net_monthly_result"]
+        if hasattr(self, "lbl_net_result") and self.lbl_net_result.winfo_exists():
+            if net_result >= 0:
+                self.lbl_net_result.configure(text=f"+${net_result:,.0f} COP", text_color="#10b981")
+                self.badge_status.configure(text="🟢 SUPERÁVIT DEL MES", fg_color="#059669")
+                self.lbl_net_desc.configure(text=f"🎉 ¡Mes positivo! Ganaste ${net_result:,.0f} COP más de lo que gastaste.")
+            else:
+                self.lbl_net_result.configure(text=f"-${abs(net_result):,.0f} COP", text_color="#f43f5e")
+                self.badge_status.configure(text="🔴 DÉFICIT DEL MES", fg_color="#e11d48")
+                self.lbl_net_desc.configure(text=f"Gastos superaron ingresos por ${abs(net_result):,.0f} COP.")
+
+        # Liquidez Inmediata Consolidada
+        net_liq = summary["net_immediate_liquidity"]
+        cop_liq = summary["cop_liquid"]
+        usd_liq = summary["usd_liquid"]
+        usd_cop = summary["usd_liquid_in_cop"]
+
+        if hasattr(self, "lbl_real_liquidity") and self.lbl_real_liquidity.winfo_exists():
+            if net_liq >= 0:
+                self.lbl_real_liquidity.configure(text=f"+${net_liq:,.0f} COP", text_color="#38bdf8")
+                self.lbl_liq_desc.configure(
+                    text=f"Bancolombia: ${cop_liq:,.0f} COP  •  Wenia: ${usd_liq:,.2f} USD (≈ ${usd_cop:,.0f} COP)"
+                )
+            else:
+                self.lbl_real_liquidity.configure(text=f"-${abs(net_liq):,.0f} COP", text_color="#f43f5e")
+                self.lbl_liq_desc.configure(text="Atención: Saldo líquido total negativo.")
+
+        # Franja detallada inferior
+        if hasattr(self, "lbl_summary_details") and self.lbl_summary_details.winfo_exists():
+            income_text = f"📥 Ingresos Totales: ${summary['total_consolidated_income']:,.0f} COP  (COP Directo: ${summary['cop_direct_income']:,.0f} | USD: ${summary['usd_income']:,.2f} ≈ ${summary['usd_income_in_cop']:,.0f})"
+            expense_text = f"📤 Gastos Totales: ${summary['total_consolidated_expenses']:,.0f} COP  (Fijos: ${summary['cop_fixed']:,.0f} | Variables: ${summary['cop_var']:,.0f})"
+
+            detail_lines = [f"{income_text}\n{expense_text}"]
+            if summary.get("extraordinary_purchases"):
+                equip_notes = ", ".join([f"{p.get('notes') or 'Compra de activo'} (${p['amount']:,.0f} COP)" for p in summary["extraordinary_purchases"]])
+                detail_lines.append(f"💡 Compra de equipo/activo de contado: {equip_notes}. (Gastos corrientes de vida: ${summary['routine_expenses']:,.0f} COP).")
+
+            self.lbl_summary_details.configure(text="\n".join(detail_lines))
+
+        # 3. Actualizar Tarjetas de Estadísticas USD y COP
+        if hasattr(self, "card_usd") and self.card_usd.winfo_exists():
+            self.card_usd.update_value(
+                f"${usd_liq:,.2f} USD",
+                f"≈ ${usd_cop:,.0f} COP líquidos disponibles"
+            )
+
+        if hasattr(self, "card_cop") and self.card_cop.winfo_exists():
+            if cop_liq < 0:
+                cop_sub = f"Cubierto con USD en Wenia (+${usd_cop:,.0f} COP)"
+            else:
+                cop_sub = f"Liquidez combinada: +${net_liq:,.0f} COP"
+            self.card_cop.update_value(
+                f"${cop_liq:,.0f} COP",
+                cop_sub
+            )
+
+        return summary
+
+    def refresh_data(self):
+        """Actualiza todas las métricas, tarjetas y listas del dashboard con visión consolidada."""
+        # 1. Actualizar banner de salud, tasa y tarjetas de liquidez
+        summary = self._update_rates_and_banner(self.exchange_rate)
+
+        # 2. Actualizar Tarjeta de Deudas Totales
         debts_summary = self.db.get_debts_summary()
         grand_debt = debts_summary["grand_total_debt"]
         if grand_debt == 0:
             debt_sub = "Sin deudas pendientes 🎉"
         elif debts_summary["personal_remaining"] > 0 and debts_summary["credit_card_debt"] > 0:
-            debt_sub = f"TC: ${debts_summary['credit_card_debt']:,.0f} | Papá/Pers: ${debts_summary['personal_remaining']:,.0f}"
+            debt_sub = f"TC mes: ${debts_summary['credit_card_debt']:,.0f} | Papá (PC): ${debts_summary['personal_remaining']:,.0f}"
         elif debts_summary["personal_remaining"] > 0:
-            debt_sub = f"{debts_summary['active_debts_count']} deuda(s) personal(es)"
+            debt_sub = f"Préstamo personal: ${debts_summary['personal_remaining']:,.0f}"
         else:
-            debt_sub = "Tarjeta de crédito por pagar"
+            debt_sub = f"Tarjeta de crédito: ${debts_summary['credit_card_debt']:,.0f}"
 
         self.card_cc_debt.update_value(
             f"${grand_debt:,.0f} COP",
             debt_sub
         )
+
+        # 3. Actualizar Tarjeta de Gastos del Mes COP
+        if summary.get("extraordinary_sum", 0) > 0:
+            exp_sub = f"Vida ordinaria: ${summary['routine_expenses']:,.0f} | Activo: ${summary['extraordinary_sum']:,.0f}"
+        else:
+            exp_sub = f"Fijos: ${summary['cop_fixed']:,.0f} | Variables: ${summary['cop_var']:,.0f}"
+
         self.card_expenses.update_value(
-            f"${metrics['cop_total_expenses']:,.0f} COP",
-            f"Débito: ${metrics['cop_cash_debit_expenses']:,.0f} | TC: ${metrics['cop_cc_expenses']:,.0f}"
+            f"${summary['cop_expenses']:,.0f} COP",
+            exp_sub
         )
 
-        # Actualizar Desglose de Gastos
-        self._refresh_categories_breakdown(metrics['cop_total_expenses'])
+        # 4. Actualizar Desglose de Gastos
+        self._refresh_categories_breakdown(summary['cop_expenses'])
 
-        # Actualizar Feed de Movimientos Recientes
+        # 5. Actualizar Feed de Movimientos Recientes
         self._refresh_activities_feed()
 
     def _refresh_categories_breakdown(self, total_expenses: float):

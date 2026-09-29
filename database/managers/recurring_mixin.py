@@ -2,6 +2,7 @@
 Mixin para Gestión de Gastos Fijos Multimoneda y Checklist (Agenda).
 """
 
+import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -110,21 +111,29 @@ class RecurringMixin:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Consultar todas las transacciones de egreso del mes
+            # Consultar todas las transacciones de egreso del mes (o asignadas al período)
             cursor.execute("""
                 SELECT id, date, category, amount, payment_method, notes, recurring_id
                 FROM cop_transactions
-                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?
+                WHERE type = 'EXPENSE'
+                  AND (
+                      (strftime('%Y-%m', date) = ? AND (notes IS NULL OR notes NOT LIKE '%[period: %' OR notes LIKE '%[period: ' || ? || ']%'))
+                      OR notes LIKE '%[period: ' || ? || ']%'
+                  )
                 ORDER BY date DESC, id DESC;
-            """, (year_month,))
+            """, (year_month, year_month, year_month))
             cop_txs = [dict(r) for r in cursor.fetchall()]
 
             cursor.execute("""
                 SELECT id, date, platform, amount, notes, recurring_id
                 FROM usd_transactions
-                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?
+                WHERE type = 'EXPENSE'
+                  AND (
+                      (strftime('%Y-%m', date) = ? AND (notes IS NULL OR notes NOT LIKE '%[period: %' OR notes LIKE '%[period: ' || ? || ']%'))
+                      OR notes LIKE '%[period: ' || ? || ']%'
+                  )
                 ORDER BY date DESC, id DESC;
-            """, (year_month,))
+            """, (year_month, year_month, year_month))
             usd_txs = [dict(r) for r in cursor.fetchall()]
 
             claimed_cop_txs = set()
@@ -184,6 +193,15 @@ class RecurringMixin:
                 tx_id = matched_tx["id"] if matched_tx else None
                 paid_date = matched_tx["date"] if matched_tx else None
 
+                if matched_tx and matched_tx.get("notes"):
+                    m = re.search(r'Pagado anticipado el (\d{4}-\d{2}-\d{2})', matched_tx["notes"])
+                    if m:
+                        actual_paid_date = m.group(1)
+                    else:
+                        actual_paid_date = None
+                else:
+                    actual_paid_date = None
+
                 checklist.append({
                     "id": rec["id"],
                     "category": rec["category"],
@@ -194,21 +212,40 @@ class RecurringMixin:
                     "is_paid": is_paid,
                     "tx_id": tx_id,
                     "paid_date": paid_date,
+                    "actual_paid_date": actual_paid_date,
                     "year_month": year_month
                 })
 
         checklist.sort(key=lambda x: (x["currency"] != "COP", x["due_day"]))
         return checklist
 
-    def pay_recurring_item(self, recurring_id: int, date_str: Optional[str] = None) -> Tuple[bool, str, Optional[int]]:
-        """Registra el pago de un gasto fijo (COP o USD) desde el checklist."""
+    def pay_recurring_item(
+        self,
+        recurring_id: int,
+        date_str: Optional[str] = None,
+        target_month: Optional[str] = None
+    ) -> Tuple[bool, str, Optional[int]]:
+        """Registra el pago de un gasto fijo (COP o USD) desde el checklist con soporte de período objetivo."""
         if not date_str:
             date_str = datetime.now().strftime("%Y-%m-%d")
+
+        if not target_month:
+            target_month = date_str[:7]
+
+        is_advance = (target_month != date_str[:7])
+        if is_advance:
+            # Imputar contablemente al primer día del mes objetivo
+            # para que pertenezca a los presupuestos, reportes y balance de dicho mes
+            tx_date = f"{target_month}-01"
+            note_tag = f" (Pagado anticipado el {date_str}) [period: {target_month}]"
+        else:
+            tx_date = date_str
+            note_tag = ""
 
         with self._write_lock:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT id, category, description, amount, currency FROM recurring_expenses WHERE id = ?;", (recurring_id,))
+                cursor.execute("SELECT id, category, description, amount, currency, due_day FROM recurring_expenses WHERE id = ?;", (recurring_id,))
                 rec = cursor.fetchone()
                 if not rec:
                     return False, "Gasto fijo no encontrado en la plantilla.", None
@@ -220,7 +257,7 @@ class RecurringMixin:
                     cursor.execute("""
                         INSERT INTO usd_transactions (date, platform, type, amount, notes, recurring_id)
                         VALUES (?, ?, 'EXPENSE', ?, ?, ?);
-                    """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
+                    """, (tx_date, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]{note_tag}", rec["id"]))
                     tx_id = cursor.lastrowid
                     conn.commit()
                     return True, f"¡{rec['description']} marcado como PAGADO (${amt:,.2f} USD)!", tx_id
@@ -228,7 +265,7 @@ class RecurringMixin:
                     cursor.execute("""
                         INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes, recurring_id)
                         VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?, ?);
-                    """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
+                    """, (tx_date, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]{note_tag}", rec["id"]))
                     tx_id = cursor.lastrowid
                     conn.commit()
                     return True, f"¡{rec['description']} marcado como PAGADO (${amt:,.0f} COP)!", tx_id
@@ -241,13 +278,29 @@ class RecurringMixin:
             success, msg, _ = self.delete_cop_transaction(tx_id, force=True)
         return success, "Pago de gasto fijo revertido a PENDIENTE." if success else msg
 
-    def apply_recurring_batch(self, recurring_ids: List[int], date_str: Optional[str] = None) -> Dict[str, Any]:
+    def apply_recurring_batch(
+        self,
+        recurring_ids: List[int],
+        date_str: Optional[str] = None,
+        target_month: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Aplica múltiples gastos fijos en una sola transacción atómica.
+        Aplica múltiples gastos fijos en una sola transacción atómica con soporte de período objetivo.
         Retorna resumen con total aplicado, omitido y errores.
         """
         if not date_str:
             date_str = datetime.now().strftime("%Y-%m-%d")
+
+        if not target_month:
+            target_month = date_str[:7]
+
+        is_advance = (target_month != date_str[:7])
+        if is_advance:
+            tx_date = f"{target_month}-01"
+            note_tag = f" (Pagado anticipado el {date_str}) [period: {target_month}]"
+        else:
+            tx_date = date_str
+            note_tag = ""
 
         applied_count = 0
         skipped_count = 0
@@ -273,12 +326,12 @@ class RecurringMixin:
                             cursor.execute("""
                                 INSERT INTO usd_transactions (date, platform, type, amount, notes, recurring_id)
                                 VALUES (?, ?, 'EXPENSE', ?, ?, ?);
-                            """, (date_str, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
+                            """, (tx_date, rec["category"], amt, f"Gasto fijo USD: {rec['description']} [Ref #{rec['id']}]{note_tag}", rec["id"]))
                         else:
                             cursor.execute("""
                                 INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes, recurring_id)
                                 VALUES (?, ?, 'EXPENSE', ?, 1, 'DEBIT', ?, ?);
-                            """, (date_str, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]", rec["id"]))
+                            """, (tx_date, rec["category"], amt, f"Gasto fijo COP: {rec['description']} [Ref #{rec['id']}]{note_tag}", rec["id"]))
 
                         applied_count += 1
 
@@ -298,7 +351,12 @@ class RecurringMixin:
                         "errors": [str(e)]
                     }
 
-    def apply_recurring_expenses(self, date_str: Optional[str] = None, expense_ids: Optional[List[int]] = None) -> Tuple[int, float]:
+    def apply_recurring_expenses(
+        self,
+        date_str: Optional[str] = None,
+        expense_ids: Optional[List[int]] = None,
+        target_month: Optional[str] = None
+    ) -> Tuple[int, float]:
         """Aplica gastos fijos especificados y retorna (count, total_amount)."""
         if expense_ids is None:
             items = self.get_recurring_expenses(only_active=True)
@@ -313,6 +371,6 @@ class RecurringMixin:
                 if r:
                     total_amt += float(r["amount"])
 
-        res = self.apply_recurring_batch(expense_ids, date_str)
+        res = self.apply_recurring_batch(expense_ids, date_str, target_month=target_month)
         return res.get("applied", 0), total_amt
 

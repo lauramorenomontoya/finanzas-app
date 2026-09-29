@@ -233,6 +233,15 @@ class DatabaseManager(
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(debt_type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);")
 
+                # 13. Tabla de Configuración de la App (Ajustes y Caché del Sistema)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS app_settings (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+
                 # Migración: Verificar si debt_type existe en debts
                 cursor.execute("PRAGMA table_info(debts);")
                 debt_cols = [row["name"] for row in cursor.fetchall()]
@@ -454,3 +463,23 @@ class DatabaseManager(
         latest = max(backups, key=os.path.getmtime)
         mtime = datetime.fromtimestamp(os.path.getmtime(latest))
         return mtime.strftime("%d/%m/%Y %H:%M")
+
+    def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Obtiene un valor de configuración persistente por su clave."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM app_settings WHERE key = ?;", (key,))
+            row = cursor.fetchone()
+            if row:
+                return row["value"]
+        return default
+
+    def set_setting(self, key: str, value: str):
+        """Guarda o actualiza un valor de configuración persistente."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO app_settings (key, value, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;
+            """, (key, str(value)))

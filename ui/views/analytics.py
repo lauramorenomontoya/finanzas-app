@@ -23,7 +23,7 @@ class AnalyticsView(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.db = db_manager
         self.current_year = datetime.now().year
-        self.current_rate = 3100.0
+        self.current_rate = self.db.get_latest_exchange_rate()
 
         self._build_ui()
         self._fetch_rate_on_start()
@@ -57,6 +57,24 @@ class AnalyticsView(ctk.CTkFrame):
         controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         controls_frame.pack(side="right")
 
+        # Badge de Tasa de Referencia en cabecera
+        self.trm_badge = ctk.CTkFrame(
+            controls_frame,
+            fg_color=Theme.BG_CARD,
+            corner_radius=8,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT
+        )
+        self.trm_badge.pack(side="left", padx=(0, 10))
+
+        self.lbl_trm_info = ctk.CTkLabel(
+            self.trm_badge,
+            text=f"💵 TRM Oficial: 1 USD ≈ ${self.current_rate:,.2f} COP",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=Theme.ACCENT_BLUE
+        )
+        self.lbl_trm_info.pack(padx=10, pady=5)
+
         ctk.CTkLabel(controls_frame, text="Año:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, 4))
         years = [str(self.current_year + i) for i in range(-2, 3)]
         self.year_combo = ctk.CTkComboBox(
@@ -71,7 +89,7 @@ class AnalyticsView(ctk.CTkFrame):
             command=lambda _: self.refresh_data()
         )
         self.year_combo.set(str(self.current_year))
-        self.year_combo.pack(side="left", padx=(0, 10))
+        self.year_combo.pack(side="left")
 
         # 2. Gran Banner de Patrimonio Neto Global Consolidado
         self.net_worth_banner = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
@@ -90,7 +108,6 @@ class AnalyticsView(ctk.CTkFrame):
             font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         ).pack(anchor="w")
-
         self.lbl_net_worth_cop = ctk.CTkLabel(
             left_nw,
             text="$0 COP",
@@ -116,26 +133,21 @@ class AnalyticsView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             trm_inner,
-            text="Tasa TRM Aplicada:",
+            text="Tasa de Cambio Aplicada:",
             font=ctk.CTkFont(size=10, weight="bold"),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
-        trm_row = ctk.CTkFrame(trm_inner, fg_color="transparent")
-        trm_row.pack(anchor="w", pady=(2, 4))
-
-        self.trm_entry = ctk.CTkEntry(
-            trm_row,
-            width=90,
-            height=28,
-            corner_radius=6,
-            fg_color=Theme.BG_INPUT,
-            border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(size=12, weight="bold")
+        self.lbl_trm_applied = ctk.CTkLabel(
+            trm_inner,
+            text=f"💵 1 USD ≈ ${self.current_rate:,.0f} COP",
+            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            text_color=Theme.ACCENT_BLUE
         )
-        self.trm_entry.insert(0, "3100")
-        self.trm_entry.pack(side="left", padx=(0, 6))
-        self.trm_entry.bind("<Return>", lambda _: self._on_trm_manual_change())
+        self.lbl_trm_applied.pack(anchor="w", pady=(2, 6))
+
+        trm_row = ctk.CTkFrame(trm_inner, fg_color="transparent")
+        trm_row.pack(anchor="w")
 
         self.btn_live_trm = ctk.CTkButton(
             trm_row,
@@ -149,7 +161,23 @@ class AnalyticsView(ctk.CTkFrame):
             font=ctk.CTkFont(size=10, weight="bold"),
             command=self._fetch_live_trm
         )
-        self.btn_live_trm.pack(side="left")
+        self.btn_live_trm.pack(side="left", padx=(0, 6))
+
+        self.btn_edit_trm = ctk.CTkButton(
+            trm_row,
+            text="✏️ Cambiar Tasa",
+            height=28,
+            width=95,
+            corner_radius=6,
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BORDER_DEFAULT,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            font=ctk.CTkFont(size=10, weight="bold"),
+            command=self._prompt_manual_trm
+        )
+        self.btn_edit_trm.pack(side="left")
 
         # 3. Fila de Tarjetas de Métricas de Activos y Pasivos
         self.kpi_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -276,21 +304,32 @@ class AnalyticsView(ctk.CTkFrame):
             self.btn_live_trm.configure(text="🌐 TRM en Vivo", state="normal")
             if rate and rate > 0:
                 self.current_rate = rate
-                self.trm_entry.delete(0, "end")
-                self.trm_entry.insert(0, f"{rate:.2f}")
+                try:
+                    self.db.set_setting("official_trm", str(rate))
+                except Exception:
+                    pass
                 self.refresh_data()
                 self.toast.show(f"TRM en vivo actualizada: ${rate:,.2f} COP/USD", is_error=False)
+            else:
+                self.refresh_data()
         self.after(0, update)
 
-    def _on_trm_manual_change(self):
-        try:
-            val = float(self.trm_entry.get().strip().replace(",", "."))
-            if val > 0:
-                self.current_rate = val
-                self.refresh_data()
-                self.toast.show(f"TRM manual ajustada a ${val:,.2f} COP/USD", is_error=False)
-        except ValueError:
-            pass
+    def _prompt_manual_trm(self):
+        """Permite al usuario ingresar una tasa personalizada si lo desea."""
+        dialog = ctk.CTkInputDialog(
+            text=f"Ingresa la tasa de cambio en COP por cada USD:\n(Actual: ${self.current_rate:,.0f} COP)",
+            title="Ajustar Tasa de Cambio"
+        )
+        val = dialog.get_input()
+        if val:
+            try:
+                rate = float(val.strip().replace("$", "").replace(".", "").replace(",", "."))
+                if rate > 0:
+                    self.current_rate = rate
+                    self.refresh_data()
+                    self.toast.show(f"Tasa ajustada a ${rate:,.2f} COP/USD", is_error=False)
+            except ValueError:
+                self.toast.show("Por favor ingresa un número válido.", is_error=True)
 
     def _on_tab_changed(self, choice: str):
         self._show_active_tab()
@@ -314,12 +353,13 @@ class AnalyticsView(ctk.CTkFrame):
             self._refresh_charts()
 
     def refresh_data(self):
-        try:
-            rate = float(self.trm_entry.get().strip().replace(",", "."))
-            if rate > 0:
-                self.current_rate = rate
-        except ValueError:
-            rate = self.current_rate
+        rate = self.current_rate
+
+        # Actualizar labels de tasa
+        if hasattr(self, "lbl_trm_info"):
+            self.lbl_trm_info.configure(text=f"💵 TRM Oficial: 1 USD ≈ ${rate:,.2f} COP")
+        if hasattr(self, "lbl_trm_applied"):
+            self.lbl_trm_applied.configure(text=f"💵 1 USD ≈ ${rate:,.2f} COP")
 
         net_worth = self.db.get_global_net_worth(exchange_rate=rate)
 

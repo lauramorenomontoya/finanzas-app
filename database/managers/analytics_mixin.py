@@ -83,6 +83,148 @@ class AnalyticsMixin:
                 "cop_total_income": float(cop_row["total_income"])
             }
 
+    def get_latest_exchange_rate(self) -> float:
+        """
+        Obtiene la TRM oficial de referencia más reciente:
+        1. Consulta la TRM oficial guardada en caché (app_settings).
+        2. Si no hay, consulta la tasa de la última conversión registrada.
+        3. Si ninguna existe, retorna 3350.0 como valor base de mercado.
+        """
+        try:
+            cached = self.get_setting("official_trm")
+            if cached:
+                val = float(cached)
+                if val > 0:
+                    return val
+        except Exception:
+            pass
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT exchange_rate FROM conversions ORDER BY date DESC, id DESC LIMIT 1;")
+            row = cursor.fetchone()
+            if row and row["exchange_rate"]:
+                return float(row["exchange_rate"])
+        return 3350.0
+
+    def get_consolidated_monthly_summary(
+        self,
+        year_month: Optional[str] = None,
+        exchange_rate: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Calcula el resumen financiero consolidado multimoneda del mes:
+        - Ingresos reales totales generados (COP directos + USD a tasa de cambio/TRM)
+        - Egresos totales reales (COP + USD)
+        - Resultado neto del mes (Superávit / Déficit) y % de ahorro
+        - Liquidez inmediata real (Saldo COP + Saldo líquido USD valorizado en COP)
+        - Detección de compras extraordinarias de activos
+        """
+        if not year_month:
+            year_month = datetime.now().strftime("%Y-%m")
+
+        if not exchange_rate or exchange_rate <= 0:
+            exchange_rate = self.get_latest_exchange_rate()
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # 1. USD en el mes
+            cursor.execute("""
+                SELECT 
+                    COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) AS deposits,
+                    COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS expenses,
+                    COALESCE(SUM(CASE WHEN type = 'TRANSFER_OUT' THEN amount ELSE 0 END), 0) AS conversions_out,
+                    COALESCE(SUM(CASE WHEN type = 'TRANSFER_TO_INVESTMENT' THEN amount ELSE 0 END), 0) AS invested_out
+                FROM usd_transactions
+                WHERE strftime('%Y-%m', date) = ?;
+            """, (year_month,))
+            usd_row = cursor.fetchone()
+            usd_income = float(usd_row["deposits"])
+            usd_expenses = float(usd_row["expenses"])
+            usd_converted = float(usd_row["conversions_out"])
+            usd_invested = float(usd_row["invested_out"])
+
+            # 2. COP en el mes (Ingresos directos vs conversiones)
+            cursor.execute("""
+                SELECT 
+                    COALESCE(SUM(CASE WHEN type = 'MANUAL_INCOME' THEN amount ELSE 0 END), 0) AS manual_income,
+                    COALESCE(SUM(CASE WHEN type = 'TRANSFER_IN' THEN amount ELSE 0 END), 0) AS from_conversion
+                FROM cop_transactions
+                WHERE strftime('%Y-%m', date) = ?;
+            """, (year_month,))
+            cop_inc_row = cursor.fetchone()
+            cop_direct_income = float(cop_inc_row["manual_income"])
+            cop_from_conversion = float(cop_inc_row["from_conversion"])
+
+            # 3. Egresos COP del mes
+            cursor.execute("""
+                SELECT 
+                    COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS total_expenses,
+                    COALESCE(SUM(CASE WHEN is_fixed = 1 AND type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS fixed_expenses,
+                    COALESCE(SUM(CASE WHEN is_fixed = 0 AND type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS var_expenses,
+                    COALESCE(SUM(CASE WHEN payment_method = 'CREDIT_CARD' AND type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS cc_expenses,
+                    COALESCE(SUM(CASE WHEN payment_method IN ('DEBIT', 'CASH') AND type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS debit_expenses
+                FROM cop_transactions
+                WHERE strftime('%Y-%m', date) = ?;
+            """, (year_month,))
+            cop_exp_row = cursor.fetchone()
+            cop_expenses = float(cop_exp_row["total_expenses"])
+            cop_fixed = float(cop_exp_row["fixed_expenses"])
+            cop_var = float(cop_exp_row["var_expenses"])
+            cop_cc = float(cop_exp_row["cc_expenses"])
+            cop_debit = float(cop_exp_row["debit_expenses"])
+
+            # 4. Saldos líquidos actuales
+            cop_liquid = self.get_cop_balance()
+            usd_liquid = self.get_usd_balance()
+            usd_liquid_in_cop = usd_liquid * exchange_rate
+            net_immediate_liquidity = cop_liquid + usd_liquid_in_cop
+
+            # 5. Consolidación de ingresos y egresos
+            usd_income_in_cop = usd_income * exchange_rate
+            total_consolidated_income = cop_direct_income + usd_income_in_cop
+            total_consolidated_expenses = cop_expenses + (usd_expenses * exchange_rate)
+            net_monthly_result = total_consolidated_income - total_consolidated_expenses
+            is_positive = net_monthly_result >= 0
+
+            # 6. Detección de compras extraordinarias mayores a $1.500.000 COP
+            cursor.execute("""
+                SELECT category, amount, notes
+                FROM cop_transactions
+                WHERE type = 'EXPENSE' AND amount >= 1500000 AND strftime('%Y-%m', date) = ?
+                ORDER BY amount DESC;
+            """, (year_month,))
+            extraordinary_purchases = [dict(r) for r in cursor.fetchall()]
+            extraordinary_sum = sum(p["amount"] for p in extraordinary_purchases)
+            routine_expenses = max(0.0, total_consolidated_expenses - extraordinary_sum)
+
+            return {
+                "year_month": year_month,
+                "exchange_rate": exchange_rate,
+                "cop_direct_income": cop_direct_income,
+                "cop_from_conversion": cop_from_conversion,
+                "usd_income": usd_income,
+                "usd_income_in_cop": usd_income_in_cop,
+                "total_consolidated_income": total_consolidated_income,
+                "cop_expenses": cop_expenses,
+                "cop_fixed": cop_fixed,
+                "cop_var": cop_var,
+                "cop_cc": cop_cc,
+                "cop_debit": cop_debit,
+                "usd_expenses": usd_expenses,
+                "total_consolidated_expenses": total_consolidated_expenses,
+                "net_monthly_result": net_monthly_result,
+                "is_positive": is_positive,
+                "cop_liquid": cop_liquid,
+                "usd_liquid": usd_liquid,
+                "usd_liquid_in_cop": usd_liquid_in_cop,
+                "net_immediate_liquidity": net_immediate_liquidity,
+                "extraordinary_purchases": extraordinary_purchases,
+                "extraordinary_sum": extraordinary_sum,
+                "routine_expenses": routine_expenses
+            }
+
     def get_annual_overview(self, year: Optional[int] = None) -> Dict[str, Any]:
         """Obtiene resumen de flujo mensual y anualizado para analítica."""
         if not year:

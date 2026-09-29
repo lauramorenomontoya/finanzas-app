@@ -17,7 +17,8 @@ from ui.components import (
     DuplicateModal,
     DatePickerWidget,
     ApplyRecurringModal,
-    TagSelector
+    TagSelector,
+    PayRecurringDialog
 )
 from ui.theme import Theme
 
@@ -28,6 +29,7 @@ class ExpensesView(ctk.CTkFrame):
         self.db = db_manager
         self.on_data_changed = on_data_changed
         self.display_limit = 25
+        self.checklist_ym = datetime.now().strftime("%Y-%m")
 
         self._build_ui()
         self.refresh_data()
@@ -244,6 +246,59 @@ class ExpensesView(ctk.CTkFrame):
         self.right_view_seg.set("📋 Checklist Gastos Fijos (Agenda)")
         self.right_view_seg.pack(side="left")
 
+        # Selector de Mes para la Agenda de Gastos Fijos
+        self.month_nav_frame = ctk.CTkFrame(right_header, fg_color="transparent")
+        self.month_nav_frame.pack(side="right")
+
+        btn_prev = ctk.CTkButton(
+            self.month_nav_frame,
+            text="◀",
+            width=28,
+            height=28,
+            corner_radius=6,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            command=self._prev_checklist_month
+        )
+        btn_prev.pack(side="left", padx=1)
+
+        self.lbl_checklist_month = ctk.CTkLabel(
+            self.month_nav_frame,
+            text=self._format_month_label(self.checklist_ym),
+            font=ctk.CTkFont(family="SF Pro Display", size=13, weight="bold"),
+            text_color=Theme.TEXT_PRIMARY,
+            width=115
+        )
+        self.lbl_checklist_month.pack(side="left", padx=3)
+
+        btn_next = ctk.CTkButton(
+            self.month_nav_frame,
+            text="▶",
+            width=28,
+            height=28,
+            corner_radius=6,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
+            command=self._next_checklist_month
+        )
+        btn_next.pack(side="left", padx=1)
+
+        btn_today = ctk.CTkButton(
+            self.month_nav_frame,
+            text="Hoy",
+            width=42,
+            height=28,
+            corner_radius=6,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            hover_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.ACCENT_BLUE,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=self._current_checklist_month
+        )
+        btn_today.pack(side="left", padx=(3, 0))
+
         # Contenedor de Vistas Derechas
         self.right_content = ctk.CTkFrame(right_panel, fg_color="transparent")
         self.right_content.pack(fill="both", expand=True, padx=12, pady=(0, 12))
@@ -268,7 +323,7 @@ class ExpensesView(ctk.CTkFrame):
         )
         self.lbl_checklist_summary.pack(side="left")
 
-        btn_batch_apply = ctk.CTkButton(
+        self.btn_batch_apply = ctk.CTkButton(
             p_top,
             text="⚡ Aplicar Gastos del Mes",
             height=26,
@@ -279,7 +334,7 @@ class ExpensesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._open_apply_recurring_modal
         )
-        btn_batch_apply.pack(side="right")
+        self.btn_batch_apply.pack(side="right")
 
         self.checklist_progress_bar = ctk.CTkProgressBar(p_inner, height=8, corner_radius=4, fg_color=Theme.BORDER_DEFAULT, progress_color="#10b981")
         self.checklist_progress_bar.pack(fill="x", pady=(6, 4))
@@ -370,9 +425,11 @@ class ExpensesView(ctk.CTkFrame):
         self.history_frame.pack_forget()
 
         if "Checklist" in choice:
+            self.month_nav_frame.pack(side="right")
             self.checklist_frame.pack(fill="both", expand=True)
             self._refresh_checklist()
         else:
+            self.month_nav_frame.pack_forget()
             self.history_frame.pack(fill="both", expand=True)
             self._refresh_history_feed()
 
@@ -473,11 +530,54 @@ class ExpensesView(ctk.CTkFrame):
     # CHECKLIST MULTIMONEDA
     # ==========================================
 
+    def _format_month_label(self, ym: str) -> str:
+        """Formatea '2026-09' a 'Septiembre 2026'."""
+        try:
+            dt = datetime.strptime(ym, "%Y-%m")
+            meses = [
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+            return f"{meses[dt.month - 1]} {dt.year}"
+        except Exception:
+            return ym
+
+    def _prev_checklist_month(self):
+        dt = datetime.strptime(self.checklist_ym, "%Y-%m")
+        if dt.month == 1:
+            self.checklist_ym = f"{dt.year - 1}-12"
+        else:
+            self.checklist_ym = f"{dt.year}-{dt.month - 1:02d}"
+        self.lbl_checklist_month.configure(text=self._format_month_label(self.checklist_ym))
+        self._refresh_checklist()
+
+    def _next_checklist_month(self):
+        dt = datetime.strptime(self.checklist_ym, "%Y-%m")
+        if dt.month == 12:
+            self.checklist_ym = f"{dt.year + 1}-01"
+        else:
+            self.checklist_ym = f"{dt.year}-{dt.month + 1:02d}"
+        self.lbl_checklist_month.configure(text=self._format_month_label(self.checklist_ym))
+        self._refresh_checklist()
+
+    def _current_checklist_month(self):
+        self.checklist_ym = datetime.now().strftime("%Y-%m")
+        self.lbl_checklist_month.configure(text=self._format_month_label(self.checklist_ym))
+        self._refresh_checklist()
+
+    def _open_apply_recurring_modal(self):
+        ApplyRecurringModal(
+            self.winfo_toplevel(),
+            self.db,
+            target_ym=self.checklist_ym,
+            on_success=self.refresh_data
+        )
+
     def _refresh_checklist(self):
         for widget in self.checklist_scroll.winfo_children():
             widget.destroy()
 
-        checklist = self.db.get_recurring_checklist_status()
+        checklist = self.db.get_recurring_checklist_status(self.checklist_ym)
 
         total_items = len(checklist)
         paid_items = sum(1 for i in checklist if i["is_paid"])
@@ -492,12 +592,15 @@ class ExpensesView(ctk.CTkFrame):
 
         pct = (paid_items / total_items) if total_items > 0 else 0.0
         self.checklist_progress_bar.set(pct)
+        m_name = self._format_month_label(self.checklist_ym)
         self.lbl_checklist_summary.configure(
-            text=f"{paid_items} de {total_items} gastos pagados este mes ({pct*100:.0f}%)"
+            text=f"{paid_items} de {total_items} gastos pagados para {m_name} ({pct*100:.0f}%)"
         )
         self.lbl_checklist_pending_amt.configure(
             text=f"Pendiente: ${pending_cop:,.0f} COP • ${pending_usd:,.2f} USD"
         )
+        short_m = m_name.split()[0]
+        self.btn_batch_apply.configure(text=f"⚡ Aplicar Gastos de {short_m}")
 
         if not checklist:
             ctk.CTkLabel(
@@ -567,8 +670,12 @@ class ExpensesView(ctk.CTkFrame):
             ).pack(anchor="w")
 
             sub_info = f"Vencimiento habitual: Día {item['due_day']}"
-            if is_paid and item["paid_date"]:
-                sub_info = f"✓ Pagado el {item['paid_date']}"
+            if is_paid and item.get("paid_date"):
+                display_date = item.get("actual_paid_date") or item["paid_date"]
+                if item.get("actual_paid_date") or item["paid_date"][:7] != self.checklist_ym:
+                    sub_info = f"✓ Pagado el {display_date} (por anticipado)"
+                else:
+                    sub_info = f"✓ Pagado el {display_date}"
 
             ctk.CTkLabel(
                 info_box,
@@ -579,23 +686,37 @@ class ExpensesView(ctk.CTkFrame):
 
     def _toggle_checklist_item(self, item: Dict[str, Any], new_state: int):
         if new_state == 1:
-            success, msg, _ = self.db.pay_recurring_item(item["id"])
-            self.toast.show(msg, is_error=not success)
-            self.refresh_data()
-            if self.on_data_changed:
-                self.on_data_changed()
+            curr_ym = datetime.now().strftime("%Y-%m")
+            if self.checklist_ym != curr_ym:
+                PayRecurringDialog(
+                    self.winfo_toplevel(),
+                    item=item,
+                    target_ym=self.checklist_ym,
+                    on_confirm=lambda d: self._execute_pay(item["id"], d, self.checklist_ym),
+                    on_cancel=lambda: self._refresh_checklist()
+                )
+            else:
+                self._execute_pay(item["id"], datetime.now().strftime("%Y-%m-%d"), self.checklist_ym)
         else:
             if item.get("tx_id"):
+                m_name = self._format_month_label(self.checklist_ym)
                 ConfirmDialog(
                     self.winfo_toplevel(),
                     title="Desmarcar Gasto Fijo",
-                    message=f"¿Deseas desmarcar '{item['description']}' como pagado?\n\nEsto eliminará el registro de gasto y restaurará tu saldo disponible.",
+                    message=f"¿Deseas desmarcar '{item['description']}' como pagado para {m_name}?\n\nEsto eliminará el registro de gasto y restaurará tu saldo disponible.",
                     confirm_text="Desmarcar",
                     on_confirm=lambda: self._execute_unpay(item["tx_id"], item.get("currency", "COP")),
                     on_cancel=lambda: self._refresh_checklist()
                 )
             else:
                 self._refresh_checklist()
+
+    def _execute_pay(self, item_id: int, date_str: str, target_month: str):
+        success, msg, _ = self.db.pay_recurring_item(item_id, date_str=date_str, target_month=target_month)
+        self.toast.show(msg, is_error=not success)
+        self.refresh_data()
+        if self.on_data_changed:
+            self.on_data_changed()
 
     def _execute_unpay(self, tx_id: int, currency: str):
         success, msg = self.db.unpay_recurring_item(tx_id, currency=currency)

@@ -20,6 +20,7 @@ from .edit_budget_modal import CategoryBudgetModal, MonthlyTargetsModal, BudgetS
 from .add_debt_modal import AddDebtModal
 from .debt_payment_modal import DebtPaymentModal
 from .debt_history_modal import DebtHistoryModal
+from .pay_recurring_dialog import PayRecurringDialog
 
 __all__ = [
     "StatCard",
@@ -46,4 +47,5 @@ __all__ = [
     "AddDebtModal",
     "DebtPaymentModal",
     "DebtHistoryModal",
+    "PayRecurringDialog",
 ]

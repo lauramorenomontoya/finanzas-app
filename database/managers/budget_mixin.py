@@ -441,12 +441,16 @@ class BudgetMixin:
             """)
             fixed_template_sum = float(cursor.fetchone()["fixed_sum"])
 
-            # Gastos fijos ya pagados en el mes
+            # Gastos fijos ya pagados en el mes (incluyendo pagos anticipados para este período)
             cursor.execute("""
                 SELECT COALESCE(SUM(amount), 0) AS fixed_paid
                 FROM cop_transactions
-                WHERE is_fixed = 1 AND type = 'EXPENSE' AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE is_fixed = 1 AND type = 'EXPENSE'
+                  AND (
+                      (strftime('%Y-%m', date) = ? AND (notes IS NULL OR notes NOT LIKE '%[period: %' OR notes LIKE '%[period: ' || ? || ']%'))
+                      OR notes LIKE '%[period: ' || ? || ']%'
+                  );
+            """, (year_month, year_month, year_month))
             fixed_paid = float(cursor.fetchone()["fixed_paid"])
 
             # Compromiso de fijos total: al menos lo que está en la plantilla

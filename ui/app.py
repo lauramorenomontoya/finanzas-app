@@ -271,6 +271,9 @@ class FinancialApp(ctk.CTk):
         elif view_key == "cop_budget":
             view_key = "expenses"
 
+        if self.current_view_key == view_key:
+            return
+
         view = self.get_or_create_view(view_key)
         if not view:
             return

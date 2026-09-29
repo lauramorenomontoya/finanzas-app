@@ -16,10 +16,12 @@ class ApplyRecurringModal(ctk.CTkToplevel):
         self,
         parent,
         db_manager,
+        target_ym: Optional[str] = None,
         on_success: Optional[Callable[[], None]] = None
     ):
         super().__init__(parent)
         self.db = db_manager
+        self.target_ym = target_ym or datetime.now().strftime("%Y-%m")
         self.on_success = on_success
         self.check_vars: Dict[int, ctk.IntVar] = {}
         self.items_data: List[Dict[str, Any]] = []
@@ -49,9 +51,19 @@ class ApplyRecurringModal(ctk.CTkToplevel):
         except Exception:
             pass
 
+    def _format_month_name(self, ym: str) -> str:
+        try:
+            dt = datetime.strptime(ym, "%Y-%m")
+            meses = [
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+            return f"{meses[dt.month - 1]} {dt.year}"
+        except Exception:
+            return ym
+
     def _load_data(self):
-        current_ym = datetime.now().strftime("%Y-%m")
-        all_status = self.db.get_recurring_checklist_status(current_ym)
+        all_status = self.db.get_recurring_checklist_status(self.target_ym)
         # Filtrar únicamente los que no han sido pagados
         self.items_data = [item for item in all_status if not item["is_paid"]]
 
@@ -59,20 +71,23 @@ class ApplyRecurringModal(ctk.CTkToplevel):
         main_card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
         main_card.pack(fill="both", expand=True, padx=18, pady=18)
 
+        m_name = self._format_month_name(self.target_ym)
+        self.title(f"Aplicar Gastos Fijos - {m_name}")
+
         # 1. Cabecera
         header = ctk.CTkFrame(main_card, fg_color="transparent")
         header.pack(fill="x", padx=18, pady=(16, 10))
 
         ctk.CTkLabel(
             header,
-            text="📅 Aplicar Gastos Fijos del Mes",
+            text=f"📅 Aplicar Gastos Fijos de {m_name}",
             font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
-            text="Registra masivamente los gastos periódicos pendientes para este mes.",
+            text=f"Registra masivamente los gastos periódicos pendientes para {m_name}.",
             font=ctk.CTkFont(family="SF Pro Text", size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
@@ -285,13 +300,14 @@ class ApplyRecurringModal(ctk.CTkToplevel):
         self.btn_apply.configure(state="disabled", text="⏳ Registrando...")
         self.update_idletasks()
 
-        res = self.db.apply_recurring_batch(selected_ids, date_str=date_str)
+        res = self.db.apply_recurring_batch(selected_ids, date_str=date_str, target_month=self.target_ym)
 
         if res.get("success"):
             applied = res.get("applied", 0)
+            m_name = self._format_month_name(self.target_ym)
             messagebox.showinfo(
                 "Gastos Fijos Aplicados",
-                f"¡Operación completada con éxito!\n\nSe registraron {applied} gastos fijos en la fecha {date_str}."
+                f"¡Operación completada con éxito!\n\nSe registraron {applied} gastos fijos para {m_name} con fecha {date_str}."
             )
             if self.on_success:
                 self.on_success()

@@ -1,7 +1,8 @@
 """
-Servicio para consulta de tasa de cambio en vivo (USD -> COP).
-Consume APIs públicas y gratuitas sin API Key (open.er-api.com y exchangerate-api.com).
-Incluye timeout estricto, headers de navegador y manejo asíncrono para garantizar fluidez en la UI.
+Servicio para consulta de la Tasa Representativa del Mercado (TRM) oficial de Colombia (USD -> COP).
+Consume prioritariamente la API de la Superintendencia Financiera de Colombia en Datos Abiertos (datos.gov.co).
+Incluye fuentes de respaldo internacionales gratuitas (open.er-api.com y exchangerate-api.com).
+Cuenta con timeout estricto, headers de cliente de datos y ejecución asíncrona no bloqueante.
 """
 
 import json
@@ -13,9 +14,13 @@ from typing import Callable, Optional
 
 
 class CurrencyService:
-    DEFAULT_RATE = 3100.0
+    DEFAULT_RATE = 3350.0
 
-    API_URLS = [
+    # Fuente Primaria Oficial: Superintendencia Financiera de Colombia (Datos Abiertos)
+    SUPERFINANCIERA_URL = "https://www.datos.gov.co/resource/32sa-8pi3.json?$limit=1&$order=vigenciadesde%20DESC"
+
+    # Fuentes de Respaldo Internacionales
+    FALLBACK_URLS = [
         "https://open.er-api.com/v6/latest/USD",
         "https://api.exchangerate-api.com/v4/latest/USD"
     ]
@@ -23,12 +28,13 @@ class CurrencyService:
     @staticmethod
     def get_live_usd_to_cop_rate(timeout: float = 4.0) -> Optional[float]:
         """
-        Obtiene la tasa de cambio USD -> COP en tiempo real desde APIs públicas gratuitas.
-        Extrae el valor del campo 'COP' dentro del diccionario 'rates'.
+        Obtiene la TRM oficial de Colombia (USD -> COP).
+        Intenta primero la API oficial de la Superintendencia Financiera (datos.gov.co).
+        Si no responde en el tiempo límite, recurre a APIs internacionales de respaldo.
         """
         headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Accept": "application/json, text/plain, */*"
+            "User-Agent": "ControlFinanciero/1.0 (Macintosh; Intel)",
+            "Accept": "application/json"
         }
 
         try:
@@ -36,7 +42,28 @@ class CurrencyService:
         except Exception:
             ctx = None
 
-        for url in CurrencyService.API_URLS:
+        # 1. Intentar Superintendencia Financiera de Colombia (TRM Oficial)
+        try:
+            req = urllib.request.Request(CurrencyService.SUPERFINANCIERA_URL, headers=headers)
+            kwargs = {"timeout": timeout}
+            if ctx is not None:
+                kwargs["context"] = ctx
+
+            with urllib.request.urlopen(req, **kwargs) as response:
+                if response.status == 200:
+                    content = response.read().decode("utf-8")
+                    data = json.loads(content)
+                    if isinstance(data, list) and len(data) > 0:
+                        first = data[0]
+                        if "valor" in first:
+                            val = float(first["valor"])
+                            if val > 0:
+                                return round(val, 2)
+        except Exception:
+            pass
+
+        # 2. Fuentes de respaldo internacionales
+        for url in CurrencyService.FALLBACK_URLS:
             try:
                 req = urllib.request.Request(url, headers=headers)
                 kwargs = {"timeout": timeout}
@@ -49,7 +76,6 @@ class CurrencyService:
                     content = response.read().decode("utf-8")
                     data = json.loads(content)
 
-                    # Extraer el valor de COP en 'rates'
                     if isinstance(data, dict) and "rates" in data and isinstance(data["rates"], dict):
                         cop_rate = data["rates"].get("COP")
                         if cop_rate is not None:

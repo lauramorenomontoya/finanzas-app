@@ -493,6 +493,7 @@ class BudgetView(ctk.CTkFrame):
 
     def refresh_data(self):
         overview = self.db.get_budget_overview(self.current_ym)
+        summary = self.db.get_consolidated_monthly_summary(self.current_ym)
         curr = self.active_currency
 
         # -------------------------------------------------------------
@@ -519,9 +520,15 @@ class BudgetView(ctk.CTkFrame):
             var_spent = overview["actual_var_spent"]
             if var_spent > 0 and (base_inc - fixed_tot - sav_tot - var_spent) < 0:
                 diff = abs(base_inc - fixed_tot - sav_tot - var_spent)
-                self.lbl_safe_desc.configure(
-                    text=f"⚠️ Has consumido ${var_spent:,.0f} COP en compras variables. Se superó el margen ideal del mes en ${diff:,.0f} COP."
-                )
+                if summary.get("extraordinary_purchases"):
+                    eq_name = summary["extraordinary_purchases"][0].get("notes") or "Compra de activo"
+                    self.lbl_safe_desc.configure(
+                        text=f"💡 El margen variable mensual fue absorbido por la compra de equipo de contado: {eq_name}. Cuentas con ${summary['usd_liquid']:,.2f} USD líquidos en Wenia de respaldo."
+                    )
+                else:
+                    self.lbl_safe_desc.configure(
+                        text=f"⚠️ Has consumido ${var_spent:,.0f} COP en compras variables. Se superó el margen ideal del mes en ${diff:,.0f} COP."
+                    )
             elif base_inc <= 0:
                 self.lbl_safe_desc.configure(
                     text=f"💡 Aún no hay ingresos registrados para {self.current_ym}. Define un ingreso previsto en 'Metas del Mes'."
@@ -638,12 +645,23 @@ class BudgetView(ctk.CTkFrame):
 
         if pct_p3 >= 100.0 or free_remaining < 0:
             over_val = abs(free_remaining)
-            self.p3_badge.configure(text="🔴 SOBREGIRADO", fg_color="#e11d48")
-            self.p3_progress.configure(progress_color="#f43f5e")
-            self.p3_status_text.configure(
-                text=f"🚨 ALERTA: Has gastado el {pct_p3:.0f}% (${var_spent:,.0f} COP). Te has sobregirado en ${over_val:,.0f} COP frente a tu cupo libre.",
-                text_color="#f43f5e"
-            )
+            if summary.get("extraordinary_purchases"):
+                eq_name = summary["extraordinary_purchases"][0].get("notes") or "Compra de activo"
+                eq_amt = summary["extraordinary_sum"]
+                ord_var = max(0.0, var_spent - eq_amt)
+                self.p3_badge.configure(text="🟡 ACTIVO ADQUIRIDO", fg_color="#d97706")
+                self.p3_progress.configure(progress_color="#f59e0b")
+                self.p3_status_text.configure(
+                    text=f"💡 Compra de activo de contado: {eq_name} (${eq_amt:,.0f} COP). Tus gastos de vida ordinarios fueron ${ord_var:,.0f} COP (dentro del presupuesto de ${p3_limit:,.0f} COP).",
+                    text_color="#f59e0b"
+                )
+            else:
+                self.p3_badge.configure(text="🔴 SOBREGIRADO", fg_color="#e11d48")
+                self.p3_progress.configure(progress_color="#f43f5e")
+                self.p3_status_text.configure(
+                    text=f"🚨 ALERTA: Has gastado el {pct_p3:.0f}% (${var_spent:,.0f} COP). Te has sobregirado en ${over_val:,.0f} COP frente a tu cupo libre.",
+                    text_color="#f43f5e"
+                )
         elif pct_p3 >= 75.0:
             self.p3_badge.configure(text="🟡 ATENCIÓN: CERCA AL LÍMITE", fg_color="#d97706")
             self.p3_progress.configure(progress_color="#f59e0b")
