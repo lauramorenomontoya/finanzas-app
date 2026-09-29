@@ -99,44 +99,86 @@ class FinancialApp(ctk.CTk):
 
         ctk.CTkFrame(self.sidebar, height=1, fg_color=Theme.BORDER_SIDEBAR).pack(fill="x", padx=16, pady=(0, 10))
 
-        # 2. Botones de Navegación
+        # 2. Contenedor de Navegación por Grupos (Scrollable para pantallas de cualquier tamaño)
         self.nav_buttons: Dict[str, ctk.CTkButton] = {}
+        self.nav_pills: Dict[str, ctk.CTkFrame] = {}
 
-        nav_items = [
-            ("dashboard", "📊  Panel Principal"),
-            ("incomes", "📥  Ingresos (USD / COP)"),
-            ("expenses", "💸  Egresos & Gastos"),
-            ("debts", "💳  Control de Deudas"),
-            ("budget", "🎯  Presupuesto & Metas"),
-            ("conversion", "🔄  Puente USD ➔ COP"),
-            ("investments", "📈  Cuentas & Inversiones"),
-            ("ledger", "📖  Libro Mayor"),
-            ("analytics", "📊  Balance General"),
-            ("settings", "⚙️  Configuración & CRUD"),
+        nav_scroll = ctk.CTkScrollableFrame(
+            self.sidebar,
+            fg_color="transparent",
+            scrollbar_button_color=Theme.BORDER_DEFAULT,
+            scrollbar_button_hover_color=Theme.TEXT_MUTED
+        )
+        nav_scroll.pack(fill="both", expand=True, padx=4, pady=(0, 6))
+
+        nav_groups = [
+            ("FINANZAS", [
+                ("dashboard", "📊  Panel Principal"),
+                ("incomes", "📥  Ingresos (USD / COP)"),
+                ("expenses", "💸  Egresos & Gastos"),
+            ]),
+            ("PLANIFICACIÓN", [
+                ("budget", "🎯  Presupuesto & Metas"),
+                ("debts", "💳  Control de Deudas"),
+                ("conversion", "🔄  Puente USD ➔ COP"),
+            ]),
+            ("PATRIMONIO", [
+                ("investments", "📈  Cuentas & Inversiones"),
+                ("ledger", "📖  Libro Mayor"),
+                ("analytics", "📊  Balance General"),
+            ]),
+            ("SISTEMA", [
+                ("settings", "⚙️  Configuración & CRUD"),
+            ]),
         ]
 
-        for view_key, label in nav_items:
-            btn = ctk.CTkButton(
-                self.sidebar,
-                text=label,
-                anchor="w",
-                height=36,
-                corner_radius=8,
-                font=ctk.CTkFont(family="SF Pro Text", size=13, weight="bold"),
-                fg_color="transparent",
-                text_color=Theme.TEXT_SECONDARY,
-                hover_color=Theme.BG_CARD,
-                command=lambda key=view_key: self.show_view(key)
+        for group_idx, (group_title, items) in enumerate(nav_groups):
+            # Título de Sección
+            group_lbl = ctk.CTkLabel(
+                nav_scroll,
+                text=group_title,
+                font=ctk.CTkFont(family="SF Pro Text", size=10, weight="bold"),
+                text_color=Theme.TEXT_MUTED
             )
-            btn.pack(fill="x", padx=14, pady=2)
-            self.nav_buttons[view_key] = btn
+            top_pad = 4 if group_idx == 0 else 12
+            group_lbl.pack(anchor="w", padx=14, pady=(top_pad, 2))
 
-        # Botón Importar CSV
+            for view_key, label in items:
+                item_row = ctk.CTkFrame(nav_scroll, fg_color="transparent")
+                item_row.pack(fill="x", padx=6, pady=1)
+
+                # Píldora indicadora lateral de selección activa
+                pill = ctk.CTkFrame(
+                    item_row,
+                    width=3,
+                    height=20,
+                    corner_radius=2,
+                    fg_color="transparent"
+                )
+                pill.pack(side="left", padx=(0, 4))
+                self.nav_pills[view_key] = pill
+
+                btn = ctk.CTkButton(
+                    item_row,
+                    text=label,
+                    anchor="w",
+                    height=32,
+                    corner_radius=8,
+                    font=ctk.CTkFont(family="SF Pro Text", size=12),
+                    fg_color="transparent",
+                    text_color=Theme.TEXT_SECONDARY,
+                    hover_color=Theme.BG_CARD,
+                    command=lambda key=view_key: self.show_view(key)
+                )
+                btn.pack(side="left", fill="x", expand=True)
+                self.nav_buttons[view_key] = btn
+
+        # Botón Importar CSV destacado
         btn_csv = ctk.CTkButton(
-            self.sidebar,
+            nav_scroll,
             text="📄  Importador CSV",
             anchor="w",
-            height=34,
+            height=32,
             corner_radius=8,
             font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
             fg_color=Theme.BG_CARD,
@@ -144,7 +186,7 @@ class FinancialApp(ctk.CTk):
             text_color=Theme.ACCENT_BLUE,
             command=self._open_csv_importer
         )
-        btn_csv.pack(fill="x", padx=14, pady=(10, 4))
+        btn_csv.pack(fill="x", padx=(13, 6), pady=(12, 6))
 
         # 3. Sección Inferior del Sidebar
         footer_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
@@ -288,10 +330,23 @@ class FinancialApp(ctk.CTk):
             view.refresh_data()
 
         for key, btn in self.nav_buttons.items():
+            pill = self.nav_pills.get(key)
             if key == view_key:
-                btn.configure(fg_color=Theme.BG_CARD, text_color=Theme.ACCENT_BLUE)
+                btn.configure(
+                    fg_color=Theme.BG_CARD,
+                    text_color=Theme.ACCENT_BLUE,
+                    font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold")
+                )
+                if pill:
+                    pill.configure(fg_color=Theme.ACCENT_BLUE)
             else:
-                btn.configure(fg_color="transparent", text_color=Theme.TEXT_SECONDARY)
+                btn.configure(
+                    fg_color="transparent",
+                    text_color=Theme.TEXT_SECONDARY,
+                    font=ctk.CTkFont(family="SF Pro Text", size=12, weight="normal")
+                )
+                if pill:
+                    pill.configure(fg_color="transparent")
 
         self._update_sidebar_balances()
 

@@ -37,9 +37,18 @@ class StatCard(ctk.CTkFrame):
         self.accent_color = accent_color
         self.grid_columnconfigure(0, weight=1)
 
+        # Barra superior de acento de color
+        self.accent_bar = ctk.CTkFrame(
+            self,
+            height=4,
+            corner_radius=2,
+            fg_color=accent_color
+        )
+        self.accent_bar.pack(fill="x", padx=14, pady=(10, 0))
+
         # Fila superior: Ícono y Título
         top_frame = ctk.CTkFrame(self, fg_color="transparent")
-        top_frame.pack(fill="x", padx=16, pady=(14, 4))
+        top_frame.pack(fill="x", padx=16, pady=(8, 4))
 
         self.icon_label = ctk.CTkLabel(
             top_frame,
@@ -88,3 +97,10 @@ class StatCard(ctk.CTkFrame):
     def set_subtitle(self, new_subtitle: str):
         """Alias para actualizar el subtítulo."""
         self.subtitle_label.configure(text=new_subtitle)
+
+    def update_accent(self, new_accent: Union[str, Tuple[str, str]]):
+        """Actualiza el color de acento y la barra superior."""
+        self.accent_color = new_accent
+        self.accent_bar.configure(fg_color=new_accent)
+        self.icon_label.configure(text_color=new_accent)
+

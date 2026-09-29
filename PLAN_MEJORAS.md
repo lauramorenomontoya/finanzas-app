@@ -106,9 +106,9 @@ Las mejoras están organizadas en **3 fases** de menor a mayor impacto visual.
 
 ---
 
-### 🟡 Fase 2 — Mejoras de UI de Alto Impacto *(~4-6 horas)*
+### 🟡 Fase 2 — Mejoras de UI de Alto Impacto ✅ *(Completada)*
 
-#### 2.1 · Sidebar rediseñada con grupos y jerarquía
+#### 2.1 · Sidebar rediseñada con grupos y jerarquía ✅ *(Completada)*
 
 **Propuesta:**
 ```
@@ -140,7 +140,7 @@ Las mejoras están organizadas en **3 fases** de menor a mayor impacto visual.
 - Cuando un botón está activo, mostrar una "píldora" lateral izquierda de 3px de color acento
 - Reducir la fuente de los botones a `size=12` (peso `normal`, no bold)
 
-#### 2.2 · StatCard con barra de acento superior
+#### 2.2 · StatCard con barra de acento superior ✅ *(Completada)*
 
 Agregar un `CTkFrame` de altura 4px al tope de cada tarjeta con el `accent_color`. Esto da identidad visual instantánea.
 
@@ -153,14 +153,14 @@ Agregar un `CTkFrame` de altura 4px al tope de cada tarjeta con el `accent_color
 └──────────────────────────┘
 ```
 
-#### 2.3 · Banner de salud financiera simplificado
+#### 2.3 · Banner de salud financiera simplificado ✅ *(Completada)*
 
 Reducir a **2 métricas core** visibles y mover el detalle a un acordeón expandible o tooltip:
 - Métrica 1: Resultado Neto del Mes (grande, con color semáforo)
 - Métrica 2: Liquidez Total
 - Botón "Ver detalle ▼" que expande la franja inferior
 
-#### 2.4 · Feed de actividades agrupado por fecha
+#### 2.4 · Feed de actividades agrupado por fecha ✅ *(Completada)*
 
 ```
 HOY — 28 sep
@@ -173,7 +173,7 @@ AYER — 27 sep
 
 Agregar separadores de grupo con fecha en `TEXT_MUTED`, tamaño pequeño.
 
-#### 2.5 · Sistema de botones unificado en Quick Actions
+#### 2.5 · Sistema de botones unificado en Quick Actions ✅ *(Completada)*
 
 En lugar de 6 colores distintos, usar **3 variantes semánticas**:
 - **Primario** (azul `#0284c7`): acción principal → + Ingreso
