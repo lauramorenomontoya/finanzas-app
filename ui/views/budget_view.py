@@ -42,14 +42,14 @@ class BudgetView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="🎯 Presupuesto & 3 Pilares Financieros",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Control visual de fijos (50%), protección y patrimonio (25%), y dinero libre para disfrutar (25%).",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -82,7 +82,7 @@ class BudgetView(ctk.CTkFrame):
         self.lbl_month = ctk.CTkLabel(
             controls_frame,
             text=self.current_ym,
-            font=ctk.CTkFont(family="SF Pro Display", size=14, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=14, weight="bold"),
             text_color=Theme.TEXT_PRIMARY,
             width=80
         )
@@ -134,14 +134,14 @@ class BudgetView(ctk.CTkFrame):
         ctk.CTkLabel(
             banner_left,
             text="🛡️ DINERO SEGURO PARA GASTAR LIBREMENTE (PILAR 3)",
-            font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         ).pack(anchor="w")
 
         self.lbl_safe_to_spend = ctk.CTkLabel(
             banner_left,
             text="$0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=32, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=32, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         self.lbl_safe_to_spend.pack(anchor="w", pady=(2, 0))
@@ -149,7 +149,7 @@ class BudgetView(ctk.CTkFrame):
         self.lbl_safe_desc = ctk.CTkLabel(
             banner_left,
             text="",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         )
         self.lbl_safe_desc.pack(anchor="w", pady=(2, 0))
@@ -218,14 +218,14 @@ class BudgetView(ctk.CTkFrame):
         ctk.CTkLabel(
             p1_title_box,
             text="🏠 PILAR 1: NECESIDADES & GASTOS FIJOS (50%)",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             p1_title_box,
             text="Arriendo/Hogar, mamá, servicios públicos, seguridad social, seguros y compromisos obligatorios.",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -294,14 +294,14 @@ class BudgetView(ctk.CTkFrame):
         ctk.CTkLabel(
             p2_title_box,
             text="💰 PILAR 2: AHORRO, PROVISIONES & INVERSIÓN (25%)",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             p2_title_box,
             text="Construcción patrimonial: Provisión moto en Fiducuenta ($150k fijos), Fondo de Emergencias e Inversiones (Fidurenta/Trii).",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -352,14 +352,14 @@ class BudgetView(ctk.CTkFrame):
         ctk.CTkLabel(
             p3_title_box,
             text="🎉 PILAR 3: DINERO LIBRE PARA DISFRUTAR (25%)",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             p3_title_box,
             text="¡Gastos de estilo de vida sin culpa! Restaurantes, salidas, entretenimiento, compras y gustos personales.",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -428,7 +428,7 @@ class BudgetView(ctk.CTkFrame):
         val_lbl = ctk.CTkLabel(
             inner,
             text=value,
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=color
         )
         val_lbl.pack(anchor="w", pady=(2, 0))

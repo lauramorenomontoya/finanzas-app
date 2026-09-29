@@ -18,7 +18,8 @@ from ui.components import (
     DatePickerWidget,
     ApplyRecurringModal,
     TagSelector,
-    PayRecurringDialog
+    PayRecurringDialog,
+    EmptyState
 )
 from ui.theme import Theme
 
@@ -47,14 +48,14 @@ class ExpensesView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="💸 Egresos & Gastos",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Control de gastos operativos en COP, consumos directos en USD y agenda de pagos fijos.",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -266,7 +267,7 @@ class ExpensesView(ctk.CTkFrame):
         self.lbl_checklist_month = ctk.CTkLabel(
             self.month_nav_frame,
             text=self._format_month_label(self.checklist_ym),
-            font=ctk.CTkFont(family="SF Pro Display", size=13, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=13, weight="bold"),
             text_color=Theme.TEXT_PRIMARY,
             width=115
         )
@@ -603,13 +604,13 @@ class ExpensesView(ctk.CTkFrame):
         self.btn_batch_apply.configure(text=f"⚡ Aplicar Gastos de {short_m}")
 
         if not checklist:
-            ctk.CTkLabel(
+            EmptyState(
                 self.checklist_scroll,
-                text="No hay gastos fijos configurados en la plantilla.\nPuedes agregarlos en ⚙️ Configuración.",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED,
-                justify="center"
-            ).pack(pady=30)
+                icon="📋",
+                title="Sin gastos fijos configurados",
+                message="Configura tu plantilla de gastos fijos y suscripciones en ⚙️ Configuración.",
+                compact=True
+            ).pack(fill="x", padx=10, pady=20)
             return
 
         self.checklist_vars = {}
@@ -745,12 +746,12 @@ class ExpensesView(ctk.CTkFrame):
         self.lbl_hist_count.configure(text=f"({len(expenses)} mostrados)")
 
         if not expenses:
-            ctk.CTkLabel(
+            EmptyState(
                 self.history_scroll,
-                text="No hay egresos para mostrar con estos filtros.",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED
-            ).pack(pady=40)
+                icon="💸",
+                title="Sin egresos para mostrar",
+                message="No se encontraron movimientos que coincidan con los filtros aplicados."
+            ).pack(fill="x", padx=10, pady=24)
             return
 
         for exp in expenses:

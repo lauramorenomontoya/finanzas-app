@@ -42,14 +42,14 @@ class AnalyticsView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="📈 Balance General & Analítica Financiera",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Consolidación patrimonial multimoneda (COP y USD a TRM en tiempo real), activos, pasivos y reportes.",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -105,13 +105,13 @@ class AnalyticsView(ctk.CTkFrame):
         ctk.CTkLabel(
             left_nw,
             text="💎 PATRIMONIO NETO GLOBAL CONSOLIDADO",
-            font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         ).pack(anchor="w")
         self.lbl_net_worth_cop = ctk.CTkLabel(
             left_nw,
             text="$0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=28, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=28, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         self.lbl_net_worth_cop.pack(anchor="w", pady=(2, 0))
@@ -119,7 +119,7 @@ class AnalyticsView(ctk.CTkFrame):
         self.lbl_net_worth_usd = ctk.CTkLabel(
             left_nw,
             text="≈ $0.00 USD",
-            font=ctk.CTkFont(family="SF Pro Text", size=14, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=14, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         )
         self.lbl_net_worth_usd.pack(anchor="w")
@@ -141,7 +141,7 @@ class AnalyticsView(ctk.CTkFrame):
         self.lbl_trm_applied = ctk.CTkLabel(
             trm_inner,
             text=f"💵 1 USD ≈ ${self.current_rate:,.0f} COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
         self.lbl_trm_applied.pack(anchor="w", pady=(2, 6))

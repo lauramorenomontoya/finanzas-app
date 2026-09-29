@@ -55,14 +55,14 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="⚙️ Configuración & Personalización",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Administra categorías (con paleta de color y emojis), cuentas de inversión y gastos fijos multimoneda.",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -127,7 +127,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             form_panel,
             text="➕ Añadir Nueva Categoría",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w", padx=18, pady=(16, 10))
 
@@ -236,7 +236,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             list_header,
             text="📋 Categorías Registradas",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -278,7 +278,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             p_header,
             text="🏦 Administración de Cuentas, Bolsillos y Fiducias",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -316,7 +316,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             form_panel,
             text="➕ Añadir Gasto Fijo Recurrente",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w", padx=18, pady=(16, 10))
 
@@ -405,7 +405,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(
             list_header,
             text="📋 Plantilla de Gastos Fijos Multimoneda",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 

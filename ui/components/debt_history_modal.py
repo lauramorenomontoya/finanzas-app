@@ -65,14 +65,14 @@ class DebtHistoryModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=hist_title,
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text=hist_sub,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
 
@@ -95,21 +95,21 @@ class DebtHistoryModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             row_nums,
             text=f"{total_lbl}: ${debt['total_amount']:,.0f} {debt['currency']}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(side="left")
 
         ctk.CTkLabel(
             row_nums,
             text=f"{paid_lbl}: ${debt['total_paid']:,.0f} ({debt['percent_paid']}%)",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         ).pack(side="left", padx=12)
 
         ctk.CTkLabel(
             row_nums,
             text=f"{rem_lbl}: ${debt['remaining_amount']:,.0f}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.ACCENT_ROSE
         ).pack(side="right")
 
@@ -152,7 +152,7 @@ class DebtHistoryModal(ctk.CTkToplevel):
             ctk.CTkLabel(
                 empty_frame,
                 text="ℹ️ No hay abonos registrados para esta deuda todavía.",
-                font=ctk.CTkFont(family="SF Pro Text", size=13),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
                 text_color=Theme.TEXT_MUTED
             ).pack()
             return
@@ -174,7 +174,7 @@ class DebtHistoryModal(ctk.CTkToplevel):
             ctk.CTkLabel(
                 row_top,
                 text=f"📅 {p['date']}",
-                font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
                 text_color=Theme.TEXT_PRIMARY
             ).pack(side="left")
 
@@ -195,7 +195,7 @@ class DebtHistoryModal(ctk.CTkToplevel):
             ctk.CTkLabel(
                 left,
                 text=note_text,
-                font=ctk.CTkFont(family="SF Pro Text", size=11),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
                 text_color=Theme.TEXT_MUTED
             ).pack(anchor="w", pady=(2, 0))
 
@@ -206,7 +206,7 @@ class DebtHistoryModal(ctk.CTkToplevel):
             ctk.CTkLabel(
                 right,
                 text=f"+${p['amount']:,.0f}",
-                font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
                 text_color=Theme.ACCENT_GREEN
             ).pack(side="left", padx=(0, 10))
 

@@ -14,7 +14,8 @@ from ui.components import (
     EditTransactionModal,
     DuplicateModal,
     DatePickerWidget,
-    TagSelector
+    TagSelector,
+    EmptyState
 )
 from ui.theme import Theme
 
@@ -42,14 +43,14 @@ class IncomesView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="📥 Gestión de Ingresos",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Registro y control de entradas de dinero multimoneda (USD y COP).",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -226,7 +227,7 @@ class IncomesView(ctk.CTkFrame):
         ctk.CTkLabel(
             hist_header,
             text="📋 Historial de Ingresos Registrados",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -343,12 +344,14 @@ class IncomesView(ctk.CTkFrame):
         incomes = self.db.get_all_incomes(limit=self.display_limit, currency_filter=filter_curr)
 
         if not incomes:
-            ctk.CTkLabel(
+            EmptyState(
                 self.incomes_scroll,
-                text="No hay ingresos registrados para mostrar.",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED
-            ).pack(pady=40)
+                icon="📥",
+                title="Sin ingresos registrados",
+                message="No hay entradas de dinero que coincidan con el filtro seleccionado.",
+                action_text="Limpiar Filtro" if filter_curr != "Todos" else None,
+                action_command=(lambda: self.hist_filter_seg.set("Todos")) if filter_curr != "Todos" else None
+            ).pack(fill="x", padx=10, pady=24)
             return
 
         for inc in incomes:

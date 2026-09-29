@@ -13,7 +13,8 @@ from ui.components import (
     ConfirmDialog,
     BalanceWarningDialog,
     EditTransactionModal,
-    DuplicateModal
+    DuplicateModal,
+    EmptyState
 )
 
 
@@ -52,14 +53,14 @@ class LedgerView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="📖 Libro Mayor Unificado",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Tabla consolidada cronológica tipo Excel con todos los movimientos (USD y COP).",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -171,7 +172,7 @@ class LedgerView(ctk.CTkFrame):
                 text=title,
                 width=width,
                 anchor=anchor_pos,
-                font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
                 text_color=Theme.TEXT_SECONDARY
             ).pack(side="left", padx=4, pady=6)
 
@@ -319,12 +320,12 @@ class LedgerView(ctk.CTkFrame):
         self.btn_next_page.configure(state="normal" if self.current_page < self.total_pages else "disabled")
 
         if not self.cached_rows:
-            ctk.CTkLabel(
+            EmptyState(
                 self.table_scroll,
-                text="No se encontraron registros con los filtros seleccionados.",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED
-            ).pack(pady=40)
+                icon="📖",
+                title="Sin movimientos contables",
+                message="No se encontraron registros que coincidan con los filtros seleccionados."
+            ).pack(fill="x", padx=10, pady=30)
             return
 
         start_idx = (self.current_page - 1) * self.page_size

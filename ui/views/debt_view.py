@@ -17,6 +17,7 @@ from ui.components.add_debt_modal import AddDebtModal
 from ui.components.debt_payment_modal import DebtPaymentModal
 from ui.components.debt_history_modal import DebtHistoryModal
 from ui.components.cc_payment_modal import CCPaymentModal
+from ui.components.empty_state import EmptyState
 
 
 class DebtView(ctk.CTkFrame):
@@ -43,14 +44,14 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="💳 Control de Deudas & Préstamos",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Seguimiento unificado de deudas personales, cuentas por cobrar a terceros y tarjeta de crédito.",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
 
@@ -68,7 +69,7 @@ class DebtView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY,
             border_width=1,
             border_color="#e11d48",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             command=self._open_cc_payment_modal
         )
         btn_cc_pay.pack(side="left", padx=(0, 8))
@@ -83,7 +84,7 @@ class DebtView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY,
             border_width=1,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             command=lambda: self._open_add_debt_modal(initial_type="PAYABLE")
         )
         btn_add_debt.pack(side="left", padx=(0, 8))
@@ -96,7 +97,7 @@ class DebtView(ctk.CTkFrame):
             fg_color=Theme.ACCENT_BLUE,
             hover_color="#0284c7",
             text_color="#ffffff",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             command=lambda: self._open_add_debt_modal(initial_type="RECEIVABLE")
         )
         btn_add_receivable.pack(side="left")
@@ -219,7 +220,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             left,
             text="💳 Tarjeta de Crédito (Saldo al Corte)",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
@@ -227,7 +228,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             left,
             text=status_desc,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
 
@@ -237,7 +238,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             right,
             text=f"${cc_debt:,.0f} COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=20, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
             text_color="#e11d48" if cc_debt > 0 else Theme.ACCENT_GREEN
         ).pack(side="left", padx=(0, 12))
 
@@ -250,7 +251,7 @@ class DebtView(ctk.CTkFrame):
             fg_color="#e11d48" if cc_debt > 0 else Theme.BG_CARD_SUBTLE,
             hover_color="#be123c" if cc_debt > 0 else Theme.BORDER_DEFAULT,
             text_color="#ffffff" if cc_debt > 0 else Theme.TEXT_MUTED,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             state="normal" if cc_debt > 0 else "disabled",
             command=self._open_cc_payment_modal
         )
@@ -271,7 +272,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             ctrl_bar,
             text=sec_title,
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -299,20 +300,31 @@ class DebtView(ctk.CTkFrame):
         debts = self.db.get_debts(status=status_param, debt_type=self.view_mode)
 
         if not debts:
-            empty_card = ctk.CTkFrame(self.personal_section, fg_color=Theme.BG_CARD, corner_radius=12, border_width=1, border_color=Theme.BORDER_DEFAULT)
-            empty_card.pack(fill="x", pady=10)
-            empty_msg = (
-                "🎉 No tienes préstamos por cobrar registrados en este estado.\nUsa el botón '+ Prestar / Por Cobrar' para registrar un préstamo o compra para un tercero."
+            empty_title = (
+                "No tienes préstamos por cobrar registrados"
                 if is_receivable else
-                "🎉 No tienes deudas por pagar registradas en este estado.\nUsa el botón '+ Nueva Deuda (Debo)' para registrar una obligación."
+                "No tienes deudas registradas"
             )
-            ctk.CTkLabel(
-                empty_card,
-                text=empty_msg,
-                font=ctk.CTkFont(family="SF Pro Text", size=13),
-                text_color=Theme.TEXT_MUTED,
-                justify="center"
-            ).pack(pady=32)
+            empty_msg = (
+                "Registra préstamos o compras hechas para terceros para controlar tus cobros."
+                if is_receivable else
+                "Registra compromisos u obligaciones pendientes para planificar su pago."
+            )
+            cta_text = "+ Prestar / Por Cobrar" if is_receivable else "+ Nueva Deuda (Debo)"
+            cta_cmd = (
+                (lambda: self._open_add_debt_modal(initial_type="RECEIVABLE"))
+                if is_receivable else
+                (lambda: self._open_add_debt_modal(initial_type="PAYABLE"))
+            )
+            EmptyState(
+                self.personal_section,
+                icon="📥" if is_receivable else "🤝",
+                title=empty_title,
+                message=empty_msg,
+                action_text=cta_text,
+                action_command=cta_cmd,
+                action_variant="primary" if is_receivable else "destructive"
+            ).pack(fill="x", padx=10, pady=20)
             return
 
         for d in debts:
@@ -340,7 +352,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_frame,
             text=f"{icon} {debt['creditor']}",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -356,7 +368,7 @@ class DebtView(ctk.CTkFrame):
         badge = ctk.CTkLabel(
             title_frame,
             text=f"  {badge_text}  ",
-            font=ctk.CTkFont(family="SF Pro Text", size=10, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"),
             text_color=badge_color,
             fg_color=badge_bg,
             corner_radius=4,
@@ -381,7 +393,7 @@ class DebtView(ctk.CTkFrame):
                 fg_color=btn_action_color,
                 hover_color=btn_hover_color,
                 text_color="#ffffff",
-                font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
                 command=lambda d=debt: self._open_payment_modal(d)
             )
             btn_pay.pack(side="left", padx=4)
@@ -396,7 +408,7 @@ class DebtView(ctk.CTkFrame):
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
-            font=ctk.CTkFont(family="SF Pro Text", size=11),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             command=lambda did=debt['id']: self._open_history_modal(did)
         )
         btn_history.pack(side="left", padx=4)
@@ -438,21 +450,21 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             mid_row,
             text=f"{lbl_total}: ${debt['total_amount']:,.0f} {debt['currency']}",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(side="left")
 
         ctk.CTkLabel(
             mid_row,
             text=f"{lbl_paid}: ${debt['total_paid']:,.0f} ({debt['percent_paid']}%)",
-            font=ctk.CTkFont(family="SF Pro Text", size=13, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         ).pack(side="left", padx=16)
 
         ctk.CTkLabel(
             mid_row,
             text=f"{lbl_remaining}: ${debt['remaining_amount']:,.0f} {debt['currency']}",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.ACCENT_ROSE if not is_paid else Theme.TEXT_MUTED
         ).pack(side="right")
 
@@ -483,7 +495,7 @@ class DebtView(ctk.CTkFrame):
         ctk.CTkLabel(
             bot_row,
             text=date_text,
-            font=ctk.CTkFont(family="SF Pro Text", size=11),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         ).pack(side="left")
 
@@ -491,7 +503,7 @@ class DebtView(ctk.CTkFrame):
             ctk.CTkLabel(
                 bot_row,
                 text=f"📝 {debt['notes']}",
-                font=ctk.CTkFont(family="SF Pro Text", size=11, slant="italic"),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, slant="italic"),
                 text_color=Theme.TEXT_SECONDARY
             ).pack(side="right")
 

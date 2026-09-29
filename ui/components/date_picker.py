@@ -68,7 +68,7 @@ class CalendarPopup(ctk.CTkToplevel):
         self.lbl_month_year = ctk.CTkLabel(
             header,
             text="",
-            font=ctk.CTkFont(family="SF Pro Display", size=13, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=13, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         self.lbl_month_year.pack(side="left", fill="x", expand=True)

@@ -61,7 +61,7 @@ class PayRecurringDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="📅 Registrar Pago de Gasto Fijo",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 

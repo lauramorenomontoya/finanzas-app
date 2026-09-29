@@ -56,14 +56,14 @@ class CategoryBudgetModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=f"🎯 Límite para {self.category}",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text=f"Periodo: {self.year_month} • Moneda: {self.currency}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -234,14 +234,14 @@ class MonthlyTargetsModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=f"🎯 Metas & Ahorro ({self.year_month})",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text="Define tus ingresos previstos, fondo de moto y metas de inversión.",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -400,14 +400,14 @@ class BudgetSettingsModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="⚖️ Distribución de los 4 Pilares",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text="Configura tus porcentajes ideales (inspirado en la regla 50/30/20). La suma debe ser 100%.",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 

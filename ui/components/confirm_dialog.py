@@ -50,14 +50,14 @@ class ConfirmDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header_frame,
             text=f"🗑️ {title}",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             content,
             text=message,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_SECONDARY,
             wraplength=350,
             justify="left"

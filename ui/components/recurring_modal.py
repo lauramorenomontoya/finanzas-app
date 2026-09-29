@@ -47,7 +47,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="⚡ Cargar Gastos Fijos Recurrentes",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
@@ -55,7 +55,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=f"Selecciona los gastos fijos que deseas registrar para {current_month}:",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(2, 0))
 
@@ -151,7 +151,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
         self.lbl_total = ctk.CTkLabel(
             footer,
             text="Total a Registrar: $0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=13, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=13, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         self.lbl_total.pack(side="left")

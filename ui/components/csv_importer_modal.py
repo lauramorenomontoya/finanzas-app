@@ -54,14 +54,14 @@ class CSVImporterModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             title_box,
             text="📥 Importador Masivo: CSV & Notion",
-            font=ctk.CTkFont(family="SF Pro Display", size=19, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=19, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Carga tus datos exportados de Notion o plantillas CSV estándar con fechas en formato día/mes/año.",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 

@@ -14,7 +14,8 @@ from ui.components import (
     AccountActionModal,
     EditAccountModal,
     ConfirmDialog,
-    EditTransactionModal
+    EditTransactionModal,
+    EmptyState
 )
 
 
@@ -41,14 +42,14 @@ class InvestmentsView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="📈 Cuentas e Inversiones",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Gestiona tus fiducias, cajitas de ahorro, billeteras y registro de rendimientos/intereses.",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -149,7 +150,7 @@ class InvestmentsView(ctk.CTkFrame):
         ctk.CTkLabel(
             acc_header,
             text="🏦 Cuentas, Fiducias y Bolsillos Activos",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -166,7 +167,7 @@ class InvestmentsView(ctk.CTkFrame):
         ctk.CTkLabel(
             hist_header,
             text="📜 Historial de Rendimientos, Aportes y Retiros",
-            font=ctk.CTkFont(family="SF Pro Display", size=14, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=14, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -248,13 +249,15 @@ class InvestmentsView(ctk.CTkFrame):
         accounts = self.db.get_accounts(currency=curr, only_active=True)
 
         if not accounts:
-            ctk.CTkLabel(
+            EmptyState(
                 self.accounts_scroll,
-                text="No hay cuentas registradas en este filtro.\n¡Crea una nueva fiducia o cuenta de ahorro!",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED,
-                justify="center"
-            ).pack(pady=30)
+                icon="🏦",
+                title="Sin cuentas registradas",
+                message="Crea una cuenta, fiducia o bolsillo para monitorear tu patrimonio.",
+                action_text="+ Nueva Cuenta",
+                action_command=self._open_new_account_modal,
+                action_variant="primary"
+            ).pack(fill="x", padx=10, pady=20)
             return
 
         for acc in accounts:
@@ -307,7 +310,7 @@ class InvestmentsView(ctk.CTkFrame):
             ctk.CTkLabel(
                 bal_col,
                 text=bal_str,
-                font=ctk.CTkFont(family="SF Pro Display", size=17, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=17, weight="bold"),
                 text_color=Theme.ACCENT_GREEN if currency == "COP" else Theme.ACCENT_BLUE
             ).pack(anchor="e")
 
@@ -377,12 +380,13 @@ class InvestmentsView(ctk.CTkFrame):
         transactions = self.db.get_account_transactions(limit=25)
 
         if not transactions:
-            ctk.CTkLabel(
+            EmptyState(
                 self.history_scroll,
-                text="No hay movimientos de inversión registrados aún.",
-                font=ctk.CTkFont(size=11),
-                text_color=Theme.TEXT_MUTED
-            ).pack(pady=20)
+                icon="📈",
+                title="Sin movimientos registrados",
+                message="Los aportes, retiros y rendimientos que registres aparecerán aquí.",
+                compact=True
+            ).pack(fill="x", padx=10, pady=16)
             return
 
         for tx in transactions:

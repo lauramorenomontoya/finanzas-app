@@ -42,7 +42,7 @@ class BalanceWarningDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="⚠️ Saldo Insuficiente para Revertir",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.ACCENT_ROSE
         ).pack(anchor="w")
 
@@ -59,7 +59,7 @@ class BalanceWarningDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=f"Operación: {desc}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED,
             wraplength=440,
             justify="left"

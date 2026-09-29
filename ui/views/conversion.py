@@ -12,7 +12,8 @@ from ui.components import (
     ToastNotification,
     ConfirmDialog,
     BalanceWarningDialog,
-    EditTransactionModal
+    EditTransactionModal,
+    EmptyState
 )
 from services.currency_service import CurrencyService
 from ui.theme import Theme
@@ -41,14 +42,14 @@ class ConversionView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="🔄 Puente de Conversión (USD ➔ COP)",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             title_box,
             text="Retira fondos de tu Bóveda USD e inyéctalos a tu Presupuesto COP a la tasa pactada",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -81,7 +82,7 @@ class ConversionView(ctk.CTkFrame):
         self.lbl_available_usd = ctk.CTkLabel(
             status_row,
             text="$0.00 USD",
-            font=ctk.CTkFont(family="SF Pro Display", size=14, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=14, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
         self.lbl_available_usd.pack(side="right")
@@ -172,7 +173,7 @@ class ConversionView(ctk.CTkFrame):
         self.lbl_preview_cop = ctk.CTkLabel(
             preview_inner,
             text="$0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=22, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         )
         self.lbl_preview_cop.pack(anchor="w", pady=(2, 0))
@@ -222,7 +223,7 @@ class ConversionView(ctk.CTkFrame):
         ctk.CTkLabel(
             hist_header,
             text="📜 Historial de Conversiones",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -339,14 +340,12 @@ class ConversionView(ctk.CTkFrame):
             self.lbl_conv_count.configure(text=f"{total_count} conversiones")
 
         if not conversions:
-            empty_lbl = ctk.CTkLabel(
+            EmptyState(
                 self.history_scroll,
-                text="No hay conversiones registradas aún.\nUsa el formulario para transferir fondos a COP.",
-                font=ctk.CTkFont(size=13),
-                text_color=Theme.TEXT_MUTED,
-                justify="center"
-            )
-            empty_lbl.pack(pady=40)
+                icon="🔄",
+                title="Sin conversiones registradas",
+                message="Usa el formulario superior para monetizar dólares hacia tu cuenta en COP."
+            ).pack(fill="x", padx=10, pady=30)
             return
 
         for conv in conversions:

@@ -66,7 +66,7 @@ class EditCategoryModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="✏️ Modificar Categoría",
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
@@ -81,7 +81,7 @@ class EditCategoryModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=f"Módulo: {type_str}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 

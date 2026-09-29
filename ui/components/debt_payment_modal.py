@@ -55,14 +55,14 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=header_title,
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text=header_sub,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
 
@@ -127,14 +127,14 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             row1,
             text=f"Deuda Total: ${self.debt['total_amount']:,.0f} {self.debt['currency']}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(side="left")
 
         ctk.CTkLabel(
             row1,
             text=f"Ya Abonado: ${self.debt['total_paid']:,.0f}",
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.ACCENT_BLUE
         ).pack(side="right")
 
@@ -145,14 +145,14 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             row2,
             text="Saldo Pendiente:",
-            font=ctk.CTkFont(family="SF Pro Text", size=13, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
         ctk.CTkLabel(
             row2,
             text=f"${self.debt['remaining_amount']:,.0f} {self.debt['currency']}",
-            font=ctk.CTkFont(family="SF Pro Display", size=16, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.ACCENT_ROSE
         ).pack(side="right")
 
@@ -161,7 +161,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             info_inner,
             text=f"💰 Tu saldo disponible en cuenta: ${cop_balance:,.0f} COP",
-            font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             text_color=Theme.ACCENT_GREEN
         ).pack(anchor="w", pady=(4, 0))
 
@@ -169,7 +169,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Monto a Abonar *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -180,7 +180,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_amount.pack(fill="x", pady=(0, 6))
 
@@ -231,7 +231,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Fecha del Abono *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -242,7 +242,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Notas / Detalle (Opcional)",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -254,7 +254,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_notes.pack(fill="x", pady=(0, 14))
 
@@ -265,7 +265,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             scroll,
             text=chk_text,
             variable=self.var_deduct,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_PRIMARY,
             fg_color=Theme.ACCENT_GREEN,
             hover_color="#059669"

@@ -10,6 +10,7 @@ from typing import Callable, Optional
 from ui.components.stat_card import StatCard
 from ui.components.cc_payment_modal import CCPaymentModal
 from ui.components.csv_importer_modal import CSVImporterModal
+from ui.components.empty_state import EmptyState
 from ui.theme import Theme
 from services.currency_service import CurrencyService
 
@@ -606,13 +607,14 @@ class DashboardView(ctk.CTkFrame):
         budgets_map = {b["category"]: b["budget"] for b in self.db.get_category_budgets()}
 
         if not categories:
-            empty_lbl = ctk.CTkLabel(
+            empty_state = EmptyState(
                 self.categories_scroll,
-                text="No hay gastos registrados este mes 🎉",
-                font=ctk.CTkFont(size=12),
-                text_color="#64748b"
+                icon="📊",
+                title="Sin gastos este mes",
+                message="Aún no se registran egresos para el periodo actual.",
+                compact=True
             )
-            empty_lbl.pack(pady=30)
+            empty_state.pack(fill="x", padx=10, pady=16)
             return
 
         for item in categories:
@@ -691,14 +693,16 @@ class DashboardView(ctk.CTkFrame):
 
         activities = self.db.get_recent_activities(limit=12)
         if not activities:
-            empty_lbl = ctk.CTkLabel(
+            empty_state = EmptyState(
                 self.activities_scroll,
-                text="Aún no hay movimientos registrados.\n¡Usa las acciones rápidas para comenzar!",
-                font=ctk.CTkFont(size=12),
-                text_color=Theme.TEXT_MUTED,
-                justify="center"
+                icon="🕒",
+                title="Sin movimientos recientes",
+                message="Comienza registrando un ingreso o egreso para activar tus métricas.",
+                action_text="+ Registrar Ingreso",
+                action_command=lambda: self._trigger_nav("incomes"),
+                action_variant="primary"
             )
-            empty_lbl.pack(pady=40)
+            empty_state.pack(fill="x", padx=10, pady=20)
             return
 
         last_date_group = None

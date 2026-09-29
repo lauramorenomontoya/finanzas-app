@@ -56,7 +56,7 @@ class AddDebtModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=title_text,
-            font=ctk.CTkFont(family="SF Pro Display", size=18, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
@@ -64,7 +64,7 @@ class AddDebtModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text=subtitle_text,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w", pady=(2, 0))
 
@@ -119,7 +119,7 @@ class AddDebtModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Tipo de Registro *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(2, 2))
 
@@ -134,11 +134,17 @@ class AddDebtModal(ctk.CTkToplevel):
         self.seg_type.set(init_val)
         self.seg_type.pack(fill="x", pady=(0, 12))
 
+        # Sección 1: Datos Básicos
+        sec1 = ctk.CTkFrame(scroll, fg_color="transparent")
+        sec1.pack(fill="x", pady=(4, 6))
+        ctk.CTkLabel(sec1, text="1. DATOS PRINCIPALES & MONTO", font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"), text_color=Theme.ACCENT_BLUE).pack(side="left")
+        ctk.CTkFrame(sec1, height=1, fg_color=Theme.BORDER_SUBTLE).pack(side="left", fill="x", expand=True, padx=(8, 0))
+
         # Campo: Acreedor o Deudor
         self.lbl_creditor = ctk.CTkLabel(
             scroll,
             text="Acreedor / Prestamista *" if init_val == "Debo (Pasivo)" else "Deudor / ¿Quién te debe? *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
         self.lbl_creditor.pack(anchor="w", pady=(0, 2))
@@ -151,7 +157,7 @@ class AddDebtModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_creditor.pack(fill="x", pady=(0, 12))
         if self.debt:
@@ -161,7 +167,7 @@ class AddDebtModal(ctk.CTkToplevel):
         self.lbl_amount = ctk.CTkLabel(
             scroll,
             text="Monto Total Prestado *" if init_val == "Debo (Pasivo)" else "Monto Total por Cobrar *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
         self.lbl_amount.pack(anchor="w", pady=(0, 2))
@@ -173,7 +179,7 @@ class AddDebtModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_amount.pack(fill="x", pady=(0, 12))
         if self.debt:
@@ -183,7 +189,7 @@ class AddDebtModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Moneda",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -197,11 +203,17 @@ class AddDebtModal(ctk.CTkToplevel):
         self.seg_currency.set(current_curr)
         self.seg_currency.pack(fill="x", pady=(0, 12))
 
+        # Sección 2: Plazos y Fechas
+        sec2 = ctk.CTkFrame(scroll, fg_color="transparent")
+        sec2.pack(fill="x", pady=(8, 6))
+        ctk.CTkLabel(sec2, text="2. CALENDARIO & PLAZOS", font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"), text_color=Theme.ACCENT_BLUE).pack(side="left")
+        ctk.CTkFrame(sec2, height=1, fg_color=Theme.BORDER_SUBTLE).pack(side="left", fill="x", expand=True, padx=(8, 0))
+
         # Campo: Fecha de Inicio / Adquisición
         ctk.CTkLabel(
             scroll,
             text="Fecha de Adquisición *",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -213,7 +225,7 @@ class AddDebtModal(ctk.CTkToplevel):
         ctk.CTkLabel(
             scroll,
             text="Fecha Límite Estimada (Opcional)",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -224,17 +236,23 @@ class AddDebtModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_due_date.pack(fill="x", pady=(0, 12))
         if self.debt and self.debt.get("due_date"):
             self.entry_due_date.insert(0, str(self.debt["due_date"]))
 
+        # Sección 3: Notas
+        sec3 = ctk.CTkFrame(scroll, fg_color="transparent")
+        sec3.pack(fill="x", pady=(8, 6))
+        ctk.CTkLabel(sec3, text="3. OBSERVACIONES ADICIONALES", font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"), text_color=Theme.ACCENT_BLUE).pack(side="left")
+        ctk.CTkFrame(sec3, height=1, fg_color=Theme.BORDER_SUBTLE).pack(side="left", fill="x", expand=True, padx=(8, 0))
+
         # Campo: Notas
         ctk.CTkLabel(
             scroll,
             text="Notas / Motivo (Opcional)",
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", pady=(0, 2))
 
@@ -245,7 +263,7 @@ class AddDebtModal(ctk.CTkToplevel):
             corner_radius=8,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
-            font=ctk.CTkFont(family="SF Pro Text", size=13)
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
         self.entry_notes.pack(fill="x", pady=(0, 14))
         if self.debt and self.debt.get("notes"):

@@ -184,65 +184,26 @@ Y estandarizar: todos 32px de altura, `corner_radius=8`, misma fuente `size=12`.
 
 ---
 
-### 🟢 Fase 3 — Refinamiento Premium *(~3-5 horas)*
+### 🟢 Fase 3 — Refinamiento Premium *(En curso)*
 
-#### 3.1 · Fuente multiplataforma
+#### 3.1 · Fuente multiplataforma ✅ *(Completada)*
+- Creado `ui/utils/font_helper.py` con detección automática de SO (macOS: `SF Pro`, Windows: `Segoe UI`, Linux: `Ubuntu`).
+- Definidos `Theme.FONT_DISPLAY` y `Theme.FONT_TEXT` en `ui/theme.py`.
+- Migradas todas las vistas (Dashboard, Incomes, Expenses, Budget, Debts, Investments, Conversion, Ledger, Settings) y los 18 modales/componentes a las fuentes de `Theme`.
 
-Reemplazar `"SF Pro Display"` / `"SF Pro Text"` por una fuente disponible multiplataforma:
-- **Opción A (sin instalación):** `"Segoe UI"` en Windows, `"Helvetica Neue"` en macOS, `"Ubuntu"` en Linux — con detección automática
-- **Opción B (recomendada):** Empaquetar `Inter` o `DM Sans` como TTF dentro del proyecto y cargarla con `tkfont`
+#### 3.2 · Estados vacíos elegantes (`EmptyState`) ✅ *(Completada)*
+- Creado componente reutilizable `ui/components/empty_state.py` con badge de icono grande, título contrastado en `FONT_DISPLAY`, descripción explicativa en `FONT_TEXT` y botón de llamada a la acción (CTA) opcional.
+- Integrado en Dashboard (categorías y feed de movimientos), Ingresos, Egresos (agenda fija e historial), Control de Deudas (préstamos y obligaciones), Inversiones (cuentas e historial), Conversión y Libro Mayor.
 
-```python
-# ui/utils/fonts.py
-import platform
-def get_system_font():
-    sys = platform.system()
-    if sys == "Darwin": return "SF Pro Display"
-    if sys == "Windows": return "Segoe UI"
-    return "Ubuntu"
-```
+#### 3.3 · Micro-animaciones en vistas y sidebar
+Al activar una vista o expandir acordeones, añadir transiciones y animaciones sutiles.
 
-#### 3.2 · Estados vacíos elegantes
+#### 3.4 · Estructura e indicadores de sección en formularios extensos ✅ *(Completada)*
+- Añadidos divisores y encabezados numéricos de sección (`1. DATOS PRINCIPALES & MONTO`, `2. CALENDARIO & PLAZOS`, `3. OBSERVACIONES ADICIONALES`) para organizar visualmente los campos en modales extensos como `AddDebtModal`.
 
-Para pantallas sin datos, reemplazar el label de texto plano por un componente visual:
-
-```
-        📭
-   Sin movimientos aún
-   Registra tu primer ingreso
-   para empezar a ver tus métricas.
-
-   [📥 + Agregar Ingreso]
-```
-
-Crear `ui/components/empty_state.py` reutilizable.
-
-#### 3.3 · Micro-animaciones en el sidebar
-
-Al activar una vista, hacer un fade suave del contenido en lugar de un swap abrupto:
-
-```python
-def _fade_in(self, widget, steps=6, delay=16):
-    """Incrementa opacity simulando un fade-in."""
-    # ... implementar con .after() y alpha
-```
-
-> En CTK/Tkinter en macOS se puede usar `self.attributes("-alpha", value)` a nivel de toplevel; para frames internos se simula con color interpolation.
-
-#### 3.4 · Indicadores de progreso en formularios multi-paso
-
-Para modales largos como `AddDebtModal` o `EditBudgetModal`, agregar un stepper simple en el header:
-
-```
-● Datos básicos  ——  ○ Calendario  ——  ○ Confirmar
-```
-
-#### 3.5 · Toast notifications mejoradas
-
-El sistema de toasts actual (`toast.py`) es un label simple. Mejorar con:
-- Icono de tipo (✅ éxito, ❌ error, ⚠️ advertencia)
-- Barra de progreso de duración visible
-- Animación de entrada desde abajo
+#### 3.5 · Toast notifications mejoradas ✅ *(Completada)*
+- Modernizado `ui/components/toast.py` con soporte para variantes semánticas: éxito (✅), error (❌), advertencia (⚠️) e información (ℹ️).
+- Paletas armónicas adaptadas a modo claro y oscuro, bordes coloreados y descarte automático seguro con temporizador.
 
 ---
 
