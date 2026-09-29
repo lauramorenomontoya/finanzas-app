@@ -4,7 +4,14 @@ Usa tuplas de CustomTkinter: (color_modo_claro, color_modo_oscuro)
 """
 
 
+from ui.utils.font_helper import get_font_family
+
+
 class Theme:
+    # Tipografía Multiplataforma
+    FONT_DISPLAY = get_font_family("display")
+    FONT_TEXT = get_font_family("text")
+
     # Fondos
     BG_WINDOW = ("#f8fafc", "#0f172a")       # Fondo de ventana principal
     BG_SIDEBAR = ("#f1f5f9", "#090d16")      # Fondo de barra lateral

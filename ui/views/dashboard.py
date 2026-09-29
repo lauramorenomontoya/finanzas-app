@@ -37,7 +37,7 @@ class DashboardView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text="Panel Financiero Principal",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
@@ -45,7 +45,7 @@ class DashboardView(ctk.CTkFrame):
         ctk.CTkLabel(
             title_box,
             text=f"Resumen general y métricas de {current_date_str}",
-            font=ctk.CTkFont(family="SF Pro Text", size=13),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
@@ -97,7 +97,7 @@ class DashboardView(ctk.CTkFrame):
         self.lbl_banner_title = ctk.CTkLabel(
             banner_top,
             text="🌟 SALUD FINANCIERA & BALANCE REAL DEL MES (COP + USD)",
-            font=ctk.CTkFont(family="SF Pro Text", size=11, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
         self.lbl_banner_title.pack(side="left")
@@ -150,7 +150,7 @@ class DashboardView(ctk.CTkFrame):
         self.lbl_net_result = ctk.CTkLabel(
             col_net,
             text="+$0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color="#10b981"
         )
         self.lbl_net_result.pack(anchor="w", pady=(2, 2))
@@ -177,7 +177,7 @@ class DashboardView(ctk.CTkFrame):
         self.lbl_real_liquidity = ctk.CTkLabel(
             col_liq,
             text="+$0 COP",
-            font=ctk.CTkFont(family="SF Pro Display", size=24, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color="#38bdf8"
         )
         self.lbl_real_liquidity.pack(anchor="w", pady=(2, 2))
@@ -284,7 +284,7 @@ class DashboardView(ctk.CTkFrame):
         ctk.CTkLabel(
             left_header,
             text="📊 Gastos por Categoría (Mes Actual)",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -330,7 +330,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color="#0369a1",
             text_color="#ffffff",
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=lambda: self._trigger_nav("incomes")
         )
@@ -344,7 +344,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color="#0369a1",
             text_color="#ffffff",
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=lambda: self._trigger_nav("conversion")
         )
@@ -358,7 +358,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color="#be123c",
             text_color="#ffffff",
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=lambda: self._trigger_nav("expenses")
         )
@@ -377,7 +377,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color="#be123c",
             text_color="#ffffff",
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=self._open_cc_payment
         )
@@ -391,7 +391,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color=("#94a3b8", "#475569"),
             text_color=("#0f172a", "#f8fafc"),
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=lambda: self._trigger_nav("ledger")
         )
@@ -405,7 +405,7 @@ class DashboardView(ctk.CTkFrame):
             hover_color=("#94a3b8", "#475569"),
             text_color=("#0f172a", "#f8fafc"),
             height=32,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             corner_radius=8,
             command=lambda: self._trigger_nav("investments")
         )
@@ -421,7 +421,7 @@ class DashboardView(ctk.CTkFrame):
         ctk.CTkLabel(
             right_header,
             text="🕒 Últimos Movimientos",
-            font=ctk.CTkFont(family="SF Pro Display", size=15, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
@@ -712,7 +712,7 @@ class DashboardView(ctk.CTkFrame):
                 ctk.CTkLabel(
                     group_frame,
                     text=self._format_date_heading(act_date).upper(),
-                    font=ctk.CTkFont(family="SF Pro Text", size=10, weight="bold"),
+                    font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"),
                     text_color=Theme.TEXT_MUTED
                 ).pack(side="left")
 

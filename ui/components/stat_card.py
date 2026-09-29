@@ -61,7 +61,7 @@ class StatCard(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(
             top_frame,
             text=title.upper(),
-            font=ctk.CTkFont(family="SF Pro Display", size=11, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=11, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
         self.title_label.pack(side="left")
@@ -70,7 +70,7 @@ class StatCard(ctk.CTkFrame):
         self.value_label = ctk.CTkLabel(
             self,
             text=value,
-            font=ctk.CTkFont(family="SF Pro Display", size=22, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         self.value_label.pack(anchor="w", padx=16, pady=(0, 2))
@@ -79,7 +79,7 @@ class StatCard(ctk.CTkFrame):
         self.subtitle_label = ctk.CTkLabel(
             self,
             text=subtitle,
-            font=ctk.CTkFont(family="SF Pro Text", size=11),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         )
         self.subtitle_label.pack(anchor="w", padx=16, pady=(0, 12))

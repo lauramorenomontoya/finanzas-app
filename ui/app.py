@@ -67,7 +67,7 @@ class FinancialApp(ctk.CTk):
         app_title = ctk.CTkLabel(
             brand_frame,
             text="💎 Finanzas Pro",
-            font=ctk.CTkFont(family="SF Pro Display", size=19, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=19, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         app_title.pack(anchor="w")
@@ -75,7 +75,7 @@ class FinancialApp(ctk.CTk):
         app_subtitle = ctk.CTkLabel(
             brand_frame,
             text="Gestor Multimoneda USD & COP",
-            font=ctk.CTkFont(family="SF Pro Text", size=11),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         )
         app_subtitle.pack(anchor="w", pady=(2, 0))
@@ -87,7 +87,7 @@ class FinancialApp(ctk.CTk):
             anchor="w",
             height=32,
             corner_radius=8,
-            font=ctk.CTkFont(family="SF Pro Text", size=12),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BG_CARD,
             text_color=Theme.TEXT_MUTED,
@@ -137,7 +137,7 @@ class FinancialApp(ctk.CTk):
             group_lbl = ctk.CTkLabel(
                 nav_scroll,
                 text=group_title,
-                font=ctk.CTkFont(family="SF Pro Text", size=10, weight="bold"),
+                font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10, weight="bold"),
                 text_color=Theme.TEXT_MUTED
             )
             top_pad = 4 if group_idx == 0 else 12
@@ -164,7 +164,7 @@ class FinancialApp(ctk.CTk):
                     anchor="w",
                     height=32,
                     corner_radius=8,
-                    font=ctk.CTkFont(family="SF Pro Text", size=12),
+                    font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
                     fg_color="transparent",
                     text_color=Theme.TEXT_SECONDARY,
                     hover_color=Theme.BG_CARD,
@@ -180,7 +180,7 @@ class FinancialApp(ctk.CTk):
             anchor="w",
             height=32,
             corner_radius=8,
-            font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
@@ -335,7 +335,7 @@ class FinancialApp(ctk.CTk):
                 btn.configure(
                     fg_color=Theme.BG_CARD,
                     text_color=Theme.ACCENT_BLUE,
-                    font=ctk.CTkFont(family="SF Pro Text", size=12, weight="bold")
+                    font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold")
                 )
                 if pill:
                     pill.configure(fg_color=Theme.ACCENT_BLUE)
@@ -343,7 +343,7 @@ class FinancialApp(ctk.CTk):
                 btn.configure(
                     fg_color="transparent",
                     text_color=Theme.TEXT_SECONDARY,
-                    font=ctk.CTkFont(family="SF Pro Text", size=12, weight="normal")
+                    font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="normal")
                 )
                 if pill:
                     pill.configure(fg_color="transparent")
