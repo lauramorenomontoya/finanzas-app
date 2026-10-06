@@ -156,14 +156,17 @@ class CategoryService:
         ("Educación & Cursos", "EXPENSE_COP", "📚", "#6366f1", 1),
         ("Imprevistos & Emergencias", "EXPENSE_COP", "⚠️", "#d97706", 1),
         ("Otros Gastos", "EXPENSE_COP", "📦", "#94a3b8", 1),
+        ("Préstamos / Cuentas por Cobrar", "EXPENSE_COP", "🤝", "#38bdf8", 1),
+        ("Abono a Deudas", "EXPENSE_COP", "🤝", "#6366f1", 1),
 
-        # INCOME_COP (6)
+        # INCOME_COP (7)
         ("Nómina / Salario", "INCOME_COP", "👔", "#10b981", 1),
         ("Negocios Personales", "INCOME_COP", "💼", "#38bdf8", 1),
         ("Honorarios / Freelance COP", "INCOME_COP", "💻", "#059669", 1),
         ("Transferencias & Reembolsos", "INCOME_COP", "💳", "#059669", 1),
         ("Rendimientos & Ahorros COP", "INCOME_COP", "📈", "#34d399", 1),
         ("Otros Ingresos COP", "INCOME_COP", "💰", "#6ee7b7", 1),
+        ("Cobro de Préstamos", "INCOME_COP", "📥", "#10b981", 1),
 
         # INCOME_USD (5)
         ("Clientes Internacionales USD", "INCOME_USD", "💼", "#38bdf8", 1),

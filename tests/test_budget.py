@@ -143,6 +143,35 @@ class TestBudgetModule(unittest.TestCase):
         self.assertIn("safe_to_spend", overview)
         self.assertIn("daily_safe_budget", overview)
 
+    def test_pillar_classification_and_third_party_exclusion(self):
+        ym = "2026-10"
+        self.db.add_cop_income("2026-10-01", "Nómina", 5000000.0)
+
+        # 1. Gasto Fijo obligatorio (Pilar 1)
+        self.db.add_cop_expense("2026-10-01", "Hogar & Servicios", 400000.0, is_fixed=True)
+
+        # 2. Gasto de Mercado y Moto no fijos (deben ir a Pilar 1)
+        self.db.add_cop_expense("2026-10-02", "Mercado & Supermercado", 80000.0, is_fixed=False)
+        self.db.add_cop_expense("2026-10-03", "Moto & Mantenimiento", 45000.0, is_fixed=False)
+
+        # 3. Compra para un tercero / puente financiero (debe excluirse de Pilar 3)
+        self.db.add_cop_expense("2026-10-03", "Préstamos / Cuentas por Cobrar", 120000.0, is_fixed=False, payment_method="CREDIT_CARD")
+
+        # 4. Gasto de Estilo de Vida / Ocio (Pilar 3)
+        self.db.add_cop_expense("2026-10-04", "Restaurantes / Salidas", 150000.0, is_fixed=False)
+
+        overview = self.db.get_budget_overview(ym)
+
+        # Pilar 1: Debe incluir el fijo ($400k) + mercado ($80k) + moto ($45k) = $525k
+        self.assertEqual(overview["p1_var_spent"], 125000.0)
+        self.assertEqual(overview["fixed_paid"], 525000.0)
+
+        # Pilar 3: Debe contener ÚNICAMENTE Restaurantes ($150k), excluyendo Préstamos y Pilar 1
+        self.assertEqual(overview["actual_var_spent"], 150000.0)
+
+        # Total gastado personal: Pilar 1 ($525k) + Pilar 3 ($150k) = $675k (no incluye los $120k de préstamos)
+        self.assertEqual(overview["total_actual_spent"], 675000.0)
+
 
 if __name__ == "__main__":
     unittest.main()

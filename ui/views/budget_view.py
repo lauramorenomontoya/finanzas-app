@@ -224,7 +224,7 @@ class BudgetView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             p1_title_box,
-            text="Arriendo/Hogar, mamá, servicios públicos, seguridad social, seguros y compromisos obligatorios.",
+            text="Necesidades básicas y compromisos: Mercado & alimentación, arriendo, servicios, moto & movilidad, seguridad social y compromisos mensuales.",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
@@ -358,7 +358,7 @@ class BudgetView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             p3_title_box,
-            text="¡Gastos de estilo de vida sin culpa! Restaurantes, salidas, entretenimiento, compras y gustos personales.",
+            text="¡Gastos de estilo de vida sin culpa! Restaurantes, salidas, entretenimiento, compras y gustos personales (excluye mercado, moto y préstamos a terceros).",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
@@ -691,22 +691,126 @@ class BudgetView(ctk.CTkFrame):
         checklist = self.db.get_recurring_checklist_status(self.current_ym)
         cop_items = [i for i in checklist if i.get("currency") == "COP"]
 
+        ctk.CTkLabel(
+            self.p1_details_box,
+            text="📋 Checklist de Gastos Fijos Obligatorios (Plantilla Mensual):",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=Theme.TEXT_PRIMARY
+        ).pack(anchor="w", padx=14, pady=(10, 6))
+
         if not cop_items:
-            ctk.CTkLabel(self.p1_details_box, text="No hay gastos fijos registrados en la plantilla.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=12)
-            return
+            ctk.CTkLabel(self.p1_details_box, text="No hay gastos fijos registrados en la plantilla.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=4)
+        else:
+            for item in cop_items:
+                row = ctk.CTkFrame(self.p1_details_box, fg_color="transparent")
+                row.pack(fill="x", padx=14, pady=3)
 
-        ctk.CTkLabel(self.p1_details_box, text="📋 Checklist de Gastos Fijos de este Mes:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(anchor="w", padx=14, pady=(10, 6))
+                is_paid = item.get("is_paid", False)
+                status_dot = "🟢 Pagado" if is_paid else f"🟡 Pendiente (Vence día {item.get('due_day', '')})"
+                status_clr = "#10b981" if is_paid else "#f59e0b"
 
-        for item in cop_items:
-            row = ctk.CTkFrame(self.p1_details_box, fg_color="transparent")
-            row.pack(fill="x", padx=14, pady=3)
+                ctk.CTkLabel(row, text=f"• {item.get('description')} ({item.get('category')})", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_PRIMARY).pack(side="left")
+                ctk.CTkLabel(row, text=f"${item.get('amount', 0):,.0f} COP • {status_dot}", font=ctk.CTkFont(size=12, weight="bold"), text_color=status_clr).pack(side="right")
 
-            is_paid = item.get("is_paid", False)
-            status_dot = "🟢 Pagado" if is_paid else f"🟡 Pendiente (Vence día {item.get('due_day', '')})"
-            status_clr = "#10b981" if is_paid else "#f59e0b"
+        # Necesidades Básicas del Mes (Mercado, Moto y Hogar)
+        p1_cats_names = {
+            "Mercado & Supermercado", "Alimentación / Mercado",
+            "Moto & Mantenimiento", "Hogar & Servicios",
+            "Servicios Públicos", "Salud & Cuidado Personal",
+            "Transporte Público"
+        }
+        cats = self.db.get_category_budgets(self.current_ym, self.active_currency)
+        p1_var_cats = [c for c in cats if c["category"] in p1_cats_names and c.get("spent", 0.0) > 0]
 
-            ctk.CTkLabel(row, text=f"• {item.get('description')} ({item.get('category')})", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_PRIMARY).pack(side="left")
-            ctk.CTkLabel(row, text=f"${item.get('amount', 0):,.0f} COP • {status_dot}", font=ctk.CTkFont(size=12, weight="bold"), text_color=status_clr).pack(side="right")
+        if p1_var_cats:
+            ctk.CTkLabel(
+                self.p1_details_box,
+                text="🛒 Necesidades Básicas del Mes (Mercado, Moto & Hogar):",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=Theme.TEXT_PRIMARY
+            ).pack(anchor="w", padx=14, pady=(14, 6))
+
+            p1_var_cats.sort(key=lambda c: c.get("spent", 0.0), reverse=True)
+
+            for cat in p1_var_cats:
+                cat_name = cat.get("category", "")
+                spent = cat.get("spent", 0.0)
+                tx_count = cat.get("tx_count", 0)
+                icon = cat.get("icon", "🛒")
+
+                card_cat = ctk.CTkFrame(self.p1_details_box, fg_color=Theme.BG_CARD, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
+                card_cat.pack(fill="x", padx=12, pady=4)
+
+                head_row = ctk.CTkFrame(card_cat, fg_color="transparent")
+                head_row.pack(fill="x", padx=12, pady=8)
+
+                ctk.CTkLabel(
+                    head_row,
+                    text=f"{icon}  {cat_name}",
+                    font=ctk.CTkFont(size=13, weight="bold"),
+                    text_color=Theme.TEXT_PRIMARY
+                ).pack(side="left")
+
+                is_expanded = cat_name in self.expanded_categories
+                btn_toggle = ctk.CTkButton(
+                    head_row,
+                    text="🔼 Ocultar compras" if is_expanded else "👁️ Ver compras ▾",
+                    width=130,
+                    height=24,
+                    corner_radius=6,
+                    fg_color=Theme.BG_CARD_SUBTLE,
+                    hover_color=Theme.BORDER_DEFAULT,
+                    text_color=Theme.ACCENT_BLUE,
+                    font=ctk.CTkFont(size=11, weight="bold"),
+                    command=lambda cn=cat_name: self._toggle_category_expansion(cn)
+                )
+                btn_toggle.pack(side="right", padx=(8, 0))
+
+                ctk.CTkLabel(
+                    head_row,
+                    text=f"${spent:,.0f} COP ({tx_count} compras)",
+                    font=ctk.CTkFont(size=13, weight="bold"),
+                    text_color=Theme.ACCENT_GREEN
+                ).pack(side="right")
+
+                if is_expanded:
+                    tx_box = ctk.CTkFrame(card_cat, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=6)
+                    tx_box.pack(fill="x", padx=10, pady=(0, 10))
+
+                    tx_list = self.db.get_category_expenses_detail(self.current_ym, cat_name, self.active_currency)
+                    if not tx_list:
+                        ctk.CTkLabel(tx_box, text="No se encontraron detalles.", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(pady=6)
+                    else:
+                        for tx in tx_list:
+                            tx_row = ctk.CTkFrame(tx_box, fg_color="transparent")
+                            tx_row.pack(fill="x", padx=12, pady=3)
+
+                            dt_raw = tx.get("date", "")
+                            try:
+                                dt_obj = datetime.strptime(dt_raw, "%Y-%m-%d")
+                                dt_str = dt_obj.strftime("%d %b")
+                            except Exception:
+                                dt_str = dt_raw
+
+                            pm = tx.get("payment_method", "DEBIT")
+                            pm_str = "💳 TC" if pm == "CREDIT_CARD" else "🏦 Débito"
+                            notes = tx.get("notes", "").strip()
+                            desc_text = notes if notes else "Gasto sin nota"
+
+                            ctk.CTkLabel(
+                                tx_row,
+                                text=f"• {dt_str} | {desc_text}  ({pm_str})",
+                                font=ctk.CTkFont(size=12),
+                                text_color=Theme.TEXT_SECONDARY
+                            ).pack(side="left")
+
+                            amt = tx.get("amount", 0.0)
+                            ctk.CTkLabel(
+                                tx_row,
+                                text=f"${amt:,.0f} COP",
+                                font=ctk.CTkFont(size=12, weight="bold"),
+                                text_color=Theme.TEXT_PRIMARY
+                            ).pack(side="right")
 
     # ==========================================
     # DESGLOSE CON PREVISUALIZACIÓN DE COMPRAS (PILAR 3)
@@ -717,8 +821,13 @@ class BudgetView(ctk.CTkFrame):
             widget.destroy()
 
         cats = self.db.get_category_budgets(self.current_ym, self.active_currency)
-        fixed_cats = {"Hogar & Servicios", "Servicios Públicos", "Arriendo / Hipoteca", "Imprevistos & Emergencias"}
-        var_cats = [c for c in cats if c["category"] not in fixed_cats and c.get("spent", 0.0) > 0]
+        excluded_from_p3 = {
+            "Hogar & Servicios", "Servicios Públicos", "Arriendo / Hipoteca",
+            "Mercado & Supermercado", "Alimentación / Mercado", "Moto & Mantenimiento",
+            "Salud & Cuidado Personal", "Transporte Público", "Imprevistos & Emergencias",
+            "Préstamos / Cuentas por Cobrar", "Abono a Deudas", "Cobro de Préstamos"
+        }
+        var_cats = [c for c in cats if c["category"] not in excluded_from_p3 and c.get("spent", 0.0) > 0]
 
         if not var_cats:
             ctk.CTkLabel(self.p3_details_box, text="No hay gastos variables registrados en este mes.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=12)
@@ -726,7 +835,7 @@ class BudgetView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             self.p3_details_box,
-            text="🏷️ Desglose de Gastos Variables (Haz clic en '👁️ Ver compras' para auditar cada gasto):",
+            text="🏷️ Desglose de Gastos Variables de Estilo de Vida (Haz clic en '👁️ Ver compras' para auditar cada gasto):",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w", padx=14, pady=(10, 8))
@@ -825,7 +934,10 @@ class BudgetView(ctk.CTkFrame):
             self.expanded_categories.remove(cat_name)
         else:
             self.expanded_categories.add(cat_name)
-        self._render_p3_details()
+        if self.show_p1_details:
+            self._render_p1_details()
+        if self.show_p3_details:
+            self._render_p3_details()
 
     # ==========================================
     # MODALES

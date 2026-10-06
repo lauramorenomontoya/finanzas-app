@@ -503,16 +503,56 @@ class BudgetMixin:
             """, (year_month,))
             total_budget_assigned = float(cursor.fetchone()["total_var_budget"])
 
-            # Gastos variables reales en el mes (no fijos)
-            cursor.execute("""
+            # Categorías del Pilar 1 (Necesidades Básicas & Responsabilidades Fijas/Mensuales)
+            p1_categories = (
+                "Hogar & Servicios",
+                "Servicios Públicos",
+                "Arriendo / Hipoteca",
+                "Mercado & Supermercado",
+                "Alimentación / Mercado",
+                "Moto & Mantenimiento",
+                "Salud & Cuidado Personal",
+                "Transporte Público"
+            )
+
+            # Categorías de Deudas o Cuentas por Cobrar a Terceros (Excluidas de gastos de consumo personal)
+            excluded_debt_categories = (
+                "Préstamos / Cuentas por Cobrar",
+                "Abono a Deudas",
+                "Cobro de Préstamos"
+            )
+
+            # Gastos corrientes de necesidades básicas del Pilar 1 ejecutados en el mes (no fijos en plantilla)
+            p1_cat_ph = ",".join(["?"] * len(p1_categories))
+            cursor.execute(f"""
+                SELECT COALESCE(SUM(amount), 0) AS p1_var_spent
+                FROM cop_transactions
+                WHERE is_fixed = 0 AND type = 'EXPENSE'
+                  AND category IN ({p1_cat_ph})
+                  AND strftime('%Y-%m', date) = ?;
+            """, (*p1_categories, year_month))
+            p1_var_spent = float(cursor.fetchone()["p1_var_spent"])
+
+            # Pilar 1 Totales:
+            p1_total_spent = fixed_paid + p1_var_spent
+            p1_committed_total = total_fixed_obligations + p1_var_spent
+
+            # Gastos variables reales del Pilar 3 (Dinero Libre para Disfrutar / Estilo de Vida):
+            # Solo compras discrecionales de vida. Excluye Pilar 1, deudas de terceros y ajustes.
+            all_non_p3 = p1_categories + excluded_debt_categories
+            all_non_p3_ph = ",".join(["?"] * len(all_non_p3))
+            cursor.execute(f"""
                 SELECT COALESCE(SUM(amount), 0) AS var_spent
                 FROM cop_transactions
-                WHERE is_fixed = 0 AND type = 'EXPENSE' AND category NOT LIKE 'Ajuste%' AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE is_fixed = 0 AND type = 'EXPENSE'
+                  AND category NOT LIKE 'Ajuste%'
+                  AND category NOT IN ({all_non_p3_ph})
+                  AND strftime('%Y-%m', date) = ?;
+            """, (*all_non_p3, year_month))
             actual_var_spent = float(cursor.fetchone()["var_spent"])
 
-            # Total de egresos reales del mes (Fijos + Variables)
-            total_actual_spent = fixed_paid + actual_var_spent
+            # Total de egresos reales del mes (Pilar 1 + Pilar 3)
+            total_actual_spent = p1_total_spent + actual_var_spent
 
             # 6. CÁLCULO DEL "DINERO SEGURO PARA GASTAR" (Safe-to-Spend)
             # Fondos Totales Disponibles del mes - Gastos Fijos Pendientes - Metas de Ahorro/Inversión Pendientes - Gastos Variables ya realizados
@@ -521,7 +561,7 @@ class BudgetMixin:
             total_protected = pending_fixed + pending_moto + savings_target + pending_invest
 
             # Safe-to-spend teórico restante en el mes
-            safe_to_spend = max(0.0, base_income - total_fixed_obligations - total_savings_and_invest - actual_var_spent)
+            safe_to_spend = max(0.0, base_income - p1_committed_total - total_savings_and_invest - actual_var_spent)
 
             # Capacidad diaria sugerida (para el resto de días del mes)
             now = datetime.now()
@@ -552,9 +592,14 @@ class BudgetMixin:
                 "p2_target": p2_target,
                 "p3_target": p3_target,
                 "p4_target": p4_target,
-                "total_fixed_obligations": total_fixed_obligations,
-                "fixed_paid": fixed_paid,
+                "total_fixed_obligations": p1_committed_total,
+                "fixed_paid": p1_total_spent,
                 "pending_fixed": pending_fixed,
+                "p1_template_obligations": total_fixed_obligations,
+                "p1_template_paid": fixed_paid,
+                "p1_var_spent": p1_var_spent,
+                "p1_committed_total": p1_committed_total,
+                "p1_total_spent": p1_total_spent,
                 "moto_target": moto_target,
                 "moto_contributed": moto_contributed,
                 "pending_moto": pending_moto,
@@ -606,12 +651,12 @@ class BudgetMixin:
             p4_budget = 800000.0
 
         weights = {
-            "Mercado & Supermercado": 0.35,
-            "Restaurantes / Salidas": 0.20,
-            "Moto & Mantenimiento": 0.15,
-            "Entretenimiento & Ocio": 0.10,
-            "Moda & Vestuario": 0.10,
+            "Restaurantes / Salidas": 0.35,
+            "Moda & Vestuario": 0.20,
+            "Entretenimiento & Ocio": 0.20,
+            "Regalos & Detalles": 0.10,
             "Otros Gastos": 0.10,
+            "Taxi & Apps": 0.05,
         }
 
         with self._write_lock:

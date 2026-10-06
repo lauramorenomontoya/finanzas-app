@@ -1,0 +1,40 @@
+@echo off
+REM ===================================================
+REM Compilación de Control Financiero para Windows
+REM ===================================================
+
+echo =============================================
+echo   Compilando Control Financiero para Windows
+echo =============================================
+
+REM Verificar Python
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Python no está instalado o no se encuentra en el PATH.
+    pause
+    exit /b 1
+)
+
+REM Instalar dependencias
+echo Instalando dependencias necesarias...
+pip install -r requirements.txt
+pip install pyinstaller
+
+REM Limpiar builds previos
+if exist build rmdir /s /q build
+if exist dist rmdir /s /q dist
+
+REM Compilar con PyInstaller
+echo Empaquetando aplicación ejecutable (.exe)...
+pyinstaller ControlFinanciero.spec --noconfirm --clean
+
+REM Comprimir carpeta de distribución en ZIP
+echo Generando archivo ZIP para compartir...
+powershell -Command "Compress-Archive -Path 'dist\ControlFinanciero' -DestinationPath 'dist\ControlFinanciero_Windows.zip' -Force"
+
+echo =============================================
+echo [OK] ¡Compilación completada exitosamente!
+echo Archivo listo para compartir:
+echo dist\ControlFinanciero_Windows.zip
+echo =============================================
+pause

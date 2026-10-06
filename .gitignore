@@ -34,3 +34,8 @@ Thumbs.db
 # Logs y temporales
 *.log
 scratch/
+
+# PyInstaller builds
+build/
+dist/
+

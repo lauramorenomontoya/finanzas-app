@@ -21,10 +21,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-# Auto-relanzar usando el entorno virtual si se ejecutó con el Python del sistema
-venv_python = os.path.join(BASE_DIR, "venv", "bin", "python3")
-if sys.prefix == sys.base_prefix and os.path.exists(venv_python) and sys.executable != venv_python:
-    os.execv(venv_python, [venv_python] + sys.argv)
+# Auto-relanzar usando el entorno virtual si se ejecutó con el Python del sistema (solo en modo desarrollo)
+if not getattr(sys, "frozen", False):
+    venv_python = os.path.join(BASE_DIR, "venv", "bin", "python3")
+    if sys.prefix == sys.base_prefix and os.path.exists(venv_python) and sys.executable != venv_python:
+        os.execv(venv_python, [venv_python] + sys.argv)
 
 try:
     import customtkinter as ctk

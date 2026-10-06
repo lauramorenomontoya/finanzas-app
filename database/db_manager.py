@@ -6,6 +6,7 @@ y control de concurrencia thread-safe.
 
 import sqlite3
 import os
+import sys
 import shutil
 import threading
 from datetime import datetime
@@ -48,8 +49,18 @@ class DatabaseManager(
         self._write_lock = threading.RLock()
 
         if db_path is None:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            self.db_path = os.path.join(base_dir, "finanzas.db")
+            if getattr(sys, "frozen", False):
+                if sys.platform == "darwin":
+                    data_dir = os.path.expanduser("~/Library/Application Support/ControlFinanciero")
+                elif sys.platform == "win32":
+                    data_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ControlFinanciero")
+                else:
+                    data_dir = os.path.expanduser("~/.local/share/ControlFinanciero")
+                os.makedirs(data_dir, exist_ok=True)
+                self.db_path = os.path.join(data_dir, "finanzas.db")
+            else:
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                self.db_path = os.path.join(base_dir, "finanzas.db")
         else:
             self.db_path = db_path
 
