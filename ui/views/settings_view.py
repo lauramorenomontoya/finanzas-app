@@ -11,7 +11,7 @@ from ui.theme import Theme
 from core.constants import SettingsTabs
 from controllers.settings_controller import SettingsController
 from ui.components import ToastNotification, CSVImporterModal
-from ui.views.settings import CategoriesTab, AccountsTab, RecurringTab
+from ui.views.settings import CategoriesTab, AccountsTab, RecurringTab, AITab
 from core.event_bus import EventBus
 
 class SettingsView(ctk.CTkFrame):
@@ -93,6 +93,7 @@ class SettingsView(ctk.CTkFrame):
         self.categories_tab = CategoriesTab(self.content_box, self.controller, self.toast)
         self.accounts_tab = AccountsTab(self.content_box, self.controller, self.toast)
         self.recurring_tab = RecurringTab(self.content_box, self.controller, self.toast)
+        self.ai_tab = AITab(self.content_box, self.controller, self.toast)
 
         self._show_active_section()
 
@@ -124,6 +125,7 @@ class SettingsView(ctk.CTkFrame):
         self.categories_tab.pack_forget()
         self.accounts_tab.pack_forget()
         self.recurring_tab.pack_forget()
+        self.ai_tab.pack_forget()
 
         if "Categorías" in choice:
             self.categories_tab.pack(fill="both", expand=True)
@@ -131,12 +133,16 @@ class SettingsView(ctk.CTkFrame):
         elif "Cuentas" in choice:
             self.accounts_tab.pack(fill="both", expand=True)
             self.accounts_tab.refresh_data()
-        else:
+        elif "Gastos Fijos" in choice:
             self.recurring_tab.pack(fill="both", expand=True)
             self.recurring_tab.refresh_data()
+        elif "Asistente" in choice or "IA" in choice:
+            self.ai_tab.pack(fill="both", expand=True)
+            self.ai_tab.refresh_data()
 
     def refresh_data(self):
         """Delega el refresh a cada una de las pestañas activas/inactivas."""
         self.categories_tab.refresh_data()
         self.accounts_tab.refresh_data()
         self.recurring_tab.refresh_data()
+        self.ai_tab.refresh_data()

@@ -1,6 +1,6 @@
 # core/constants.py
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 class Currencies:
     COP = "COP"
@@ -36,5 +36,5 @@ class FilterOptions:
     TAB_EXPENSES = ["📋 Checklist Gastos Fijos (Agenda)", "📑 Movimientos de Egresos"]
 
 class SettingsTabs:
-    OPTIONS = ["🏷️  Categorías", "🏦  Cuentas & Fiducias", "📋  Gastos Fijos Multimoneda"]
+    OPTIONS = ["🏷️  Categorías", "🏦  Cuentas & Fiducias", "📋  Gastos Fijos Multimoneda", "🤖  Asistente IA (MCP)"]
     CATEGORY_TYPES = ["Ingresos USD", "Gastos Directos USD", "Ingresos COP", "Gastos COP"]

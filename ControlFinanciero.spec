@@ -12,6 +12,8 @@ if SRC_DIR != '.' and os.path.abspath(SRC_DIR) not in sys.path:
 
 # Recolectar datos y temas de CustomTkinter
 datas = collect_data_files('customtkinter')
+if os.path.exists('mcp_server.py'):
+    datas.append(('mcp_server.py', '.'))
 
 # Módulos ocultos requeridos (estándar y terceros para soportar ofuscación)
 hiddenimports = [
@@ -116,8 +118,8 @@ if sys.platform == 'darwin':
             'CFBundleDisplayName': 'Control Financiero',
             'CFBundleGetInfoString': 'Gestor Financiero Multimoneda',
             'CFBundleIdentifier': 'com.controlfinanciero.app',
-            'CFBundleVersion': '1.1.0',
-            'CFBundleShortVersionString': '1.1.0',
+            'CFBundleVersion': '1.2.0',
+            'CFBundleShortVersionString': '1.2.0',
             'NSHighResolutionCapable': 'True',
         },
     )
