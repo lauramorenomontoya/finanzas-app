@@ -5,6 +5,7 @@ incluyendo el Checklist Interactivo de Gastos Fijos Multimoneda (Agenda To-Do co
 pagos con Tarjeta de Crédito, widget de calendario y CRUD total.
 """
 
+from core.constants import Currencies, CurrencyLabels, Platforms, Categories, PaymentMethods, FilterOptions, SettingsTabs
 import customtkinter as ctk
 from datetime import datetime
 from typing import Callable, Optional, Dict, Any, List
@@ -21,14 +22,16 @@ from ui.components import (
     PayRecurringDialog,
     EmptyState
 )
+from controllers.expense_controller import ExpenseController
 from ui.theme import Theme
+from core.event_bus import EventBus
 
 
 class ExpensesView(ctk.CTkFrame):
-    def __init__(self, master, db_manager, on_data_changed: Optional[Callable[[], None]] = None, **kwargs):
+    def __init__(self, master, db_manager, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.db = db_manager
-        self.on_data_changed = on_data_changed
+        self.controller = ExpenseController(db_manager)
         self.display_limit = 25
         self.checklist_ym = datetime.now().strftime("%Y-%m")
 
@@ -40,7 +43,7 @@ class ExpensesView(ctk.CTkFrame):
 
         # 1. Cabecera
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 14))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -64,46 +67,46 @@ class ExpensesView(ctk.CTkFrame):
         banners_box.pack(side="right")
 
         # Banner COP
-        b_cop = ctk.CTkFrame(banners_box, fg_color=Theme.COP_BANNER_BG, corner_radius=10, border_width=1, border_color=Theme.COP_BANNER_BORDER)
-        b_cop.pack(side="left", padx=(0, 8))
+        b_cop = ctk.CTkFrame(banners_box, fg_color=Theme.COP_BANNER_BG, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.COP_BANNER_BORDER)
+        b_cop.pack(side="left", padx=(0, Theme.SPACING_SM))
         b_cop_in = ctk.CTkFrame(b_cop, fg_color="transparent")
-        b_cop_in.pack(padx=12, pady=6)
+        b_cop_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_cop_in, text="DISPONIBLE COP", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.COP_BANNER_TEXT).pack(anchor="e")
         self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_GREEN)
         self.lbl_cop_bal.pack(anchor="e")
 
         # Banner USD
-        b_usd = ctk.CTkFrame(banners_box, fg_color=Theme.USD_BANNER_BG, corner_radius=10, border_width=1, border_color=Theme.USD_BANNER_BORDER)
+        b_usd = ctk.CTkFrame(banners_box, fg_color=Theme.USD_BANNER_BG, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.USD_BANNER_BORDER)
         b_usd.pack(side="left")
         b_usd_in = ctk.CTkFrame(b_usd, fg_color="transparent")
-        b_usd_in.pack(padx=12, pady=6)
+        b_usd_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_usd_in, text="DISPONIBLE USD", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.USD_BANNER_TEXT).pack(anchor="e")
         self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_BLUE)
         self.lbl_usd_bal.pack(anchor="e")
 
         # 2. Contenedor Principal (Formulario Izquierda + Panel Derecho con Pestañas)
         content_grid = ctk.CTkFrame(self, fg_color="transparent")
-        content_grid.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        content_grid.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
         content_grid.grid_columnconfigure(0, weight=45, uniform="expenses_cols")
         content_grid.grid_columnconfigure(1, weight=55, uniform="expenses_cols")
         content_grid.grid_rowconfigure(0, weight=1)
 
 
         # PANEL IZQUIERDO: Formulario de Registro de Gasto
-        form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, Theme.SPACING_SM))
 
         # Selector de Moneda de Gasto
         self.currency_seg = ctk.CTkSegmentedButton(
             form_panel,
-            values=["🇨🇴 Gasto en COP", "💵 Gasto Directo USD"],
-            selected_color="#e11d48",
-            selected_hover_color="#be123c",
+            values=[CurrencyLabels.EXPENSE_COP, CurrencyLabels.EXPENSE_USD],
+            selected_color=Theme.ERROR,
+            selected_hover_color=Theme.ERROR_HOVER,
             height=34,
             command=self._on_currency_changed
         )
         self.currency_seg.set("🇨🇴 Gasto en COP")
-        self.currency_seg.pack(fill="x", padx=18, pady=(16, 10))
+        self.currency_seg.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         # Campo: Categoría
         self.lbl_category = ctk.CTkLabel(
@@ -112,18 +115,18 @@ class ExpensesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_category.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_category.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.category_combo = ctk.CTkComboBox(
             form_panel,
-            values=["Arriendo / Hipoteca", "Servicios Públicos", "Alimentación / Mercado", "Otros Gastos"],
+            values=Categories.EXPENSE_DEFAULT,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
-        self.category_combo.pack(fill="x", padx=18, pady=(0, 10))
+        self.category_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Método de Pago (solo aplica para COP)
         self.lbl_payment = ctk.CTkLabel(
@@ -132,19 +135,19 @@ class ExpensesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_payment.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_payment.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.payment_combo = ctk.CTkComboBox(
             form_panel,
-            values=["💳 Débito / Cuenta Operativa", "💳 Tarjeta de Crédito", "💵 Efectivo"],
+            values=PaymentMethods.OPTIONS,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
         self.payment_combo.set("💳 Débito / Cuenta Operativa")
-        self.payment_combo.pack(fill="x", padx=18, pady=(0, 10))
+        self.payment_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Monto
         self.lbl_amount = ctk.CTkLabel(
@@ -153,18 +156,18 @@ class ExpensesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_amount.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_amount.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.amount_entry = ctk.CTkEntry(
             form_panel,
             placeholder_text="Ej: 250000",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=13)
         )
-        self.amount_entry.pack(fill="x", padx=18, pady=(0, 10))
+        self.amount_entry.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Fecha con DatePicker interactivo
         ctk.CTkLabel(
@@ -172,10 +175,10 @@ class ExpensesView(ctk.CTkFrame):
             text="Fecha de Gasto:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.date_picker = DatePickerWidget(form_panel, height=34)
-        self.date_picker.pack(fill="x", padx=18, pady=(0, 10))
+        self.date_picker.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Switch: Gasto Fijo Mensual
         self.fixed_switch = ctk.CTkSwitch(
@@ -183,9 +186,9 @@ class ExpensesView(ctk.CTkFrame):
             text="Marcar como Gasto Fijo Mensual",
             font=ctk.CTkFont(size=12),
             text_color=Theme.TEXT_SECONDARY,
-            progress_color="#f43f5e"
+            progress_color=Theme.ERROR
         )
-        self.fixed_switch.pack(anchor="w", padx=18, pady=(0, 10))
+        self.fixed_switch.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Notas / Detalle
         ctk.CTkLabel(
@@ -193,18 +196,18 @@ class ExpensesView(ctk.CTkFrame):
             text="Detalle / Notas:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.notes_entry = ctk.CTkEntry(
             form_panel,
             placeholder_text="Ej: Mercado semanal / Suscripción",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
         )
-        self.notes_entry.pack(fill="x", padx=18, pady=(0, 10))
+        self.notes_entry.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Selector de Etiquetas (Tags)
         ctk.CTkLabel(
@@ -212,10 +215,10 @@ class ExpensesView(ctk.CTkFrame):
             text="🏷️ Etiquetas / Tags:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.tag_selector = TagSelector(form_panel, self.db)
-        self.tag_selector.pack(fill="x", padx=18, pady=(0, 14))
+        self.tag_selector.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
@@ -223,24 +226,24 @@ class ExpensesView(ctk.CTkFrame):
             text="💸 Registrar Egreso COP",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
-            corner_radius=8,
-            fg_color="#e11d48",
-            hover_color="#be123c",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_SM,
+            fg_color=Theme.ERROR,
+            hover_color=Theme.ERROR_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             command=self._handle_submit
         )
-        self.btn_submit.pack(fill="x", padx=18, pady=(0, 16))
+        self.btn_submit.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # PANEL DERECHO: Pestañas de (Checklist Gastos Fijos Multimoneda vs Historial Egresos)
-        right_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        right_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        right_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        right_panel.grid(row=0, column=1, sticky="nsew", padx=(Theme.SPACING_SM, 0))
 
         right_header = ctk.CTkFrame(right_panel, fg_color="transparent")
-        right_header.pack(fill="x", padx=16, pady=(14, 8))
+        right_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         self.right_view_seg = ctk.CTkSegmentedButton(
             right_header,
-            values=["📋 Checklist Gastos Fijos (Agenda)", "📑 Movimientos de Egresos"],
+            values=FilterOptions.TAB_EXPENSES,
             height=32,
             command=self._on_right_view_changed
         )
@@ -256,13 +259,13 @@ class ExpensesView(ctk.CTkFrame):
             text="◀",
             width=28,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=self._prev_checklist_month
         )
-        btn_prev.pack(side="left", padx=1)
+        btn_prev.pack(side="left", padx=Theme.SPACING_XS)
 
         self.lbl_checklist_month = ctk.CTkLabel(
             self.month_nav_frame,
@@ -271,47 +274,47 @@ class ExpensesView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY,
             width=115
         )
-        self.lbl_checklist_month.pack(side="left", padx=3)
+        self.lbl_checklist_month.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_next = ctk.CTkButton(
             self.month_nav_frame,
             text="▶",
             width=28,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=self._next_checklist_month
         )
-        btn_next.pack(side="left", padx=1)
+        btn_next.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_today = ctk.CTkButton(
             self.month_nav_frame,
             text="Hoy",
             width=42,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._current_checklist_month
         )
-        btn_today.pack(side="left", padx=(3, 0))
+        btn_today.pack(side="left", padx=(Theme.SPACING_XS, 0))
 
         # Contenedor de Vistas Derechas
         self.right_content = ctk.CTkFrame(right_panel, fg_color="transparent")
-        self.right_content.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.right_content.pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
         # 1. Sub-Panel Checklist Gastos Fijos (Agenda To-Do Multimoneda)
         self.checklist_frame = ctk.CTkFrame(self.right_content, fg_color="transparent")
 
-        self.progress_box = ctk.CTkFrame(self.checklist_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        self.progress_box.pack(fill="x", pady=(0, 8), padx=4)
+        self.progress_box = ctk.CTkFrame(self.checklist_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        self.progress_box.pack(fill="x", pady=(0, Theme.SPACING_SM), padx=Theme.SPACING_XS)
 
         p_inner = ctk.CTkFrame(self.progress_box, fg_color="transparent")
-        p_inner.pack(fill="x", padx=12, pady=10)
+        p_inner.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         p_top = ctk.CTkFrame(p_inner, fg_color="transparent")
         p_top.pack(fill="x")
@@ -328,17 +331,17 @@ class ExpensesView(ctk.CTkFrame):
             p_top,
             text="⚡ Aplicar Gastos del Mes",
             height=26,
-            corner_radius=6,
-            fg_color="#10b981",
-            hover_color="#059669",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_XS,
+            fg_color=Theme.SUCCESS,
+            hover_color=Theme.SUCCESS,
+            text_color=Theme.TEXT_ON_COLOR,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._open_apply_recurring_modal
         )
         self.btn_batch_apply.pack(side="right")
 
-        self.checklist_progress_bar = ctk.CTkProgressBar(p_inner, height=8, corner_radius=4, fg_color=Theme.BORDER_DEFAULT, progress_color="#10b981")
-        self.checklist_progress_bar.pack(fill="x", pady=(6, 4))
+        self.checklist_progress_bar = ctk.CTkProgressBar(p_inner, height=8, corner_radius=Theme.SPACING_XS, fg_color=Theme.BORDER_DEFAULT, progress_color=Theme.SUCCESS)
+        self.checklist_progress_bar.pack(fill="x", pady=(Theme.SPACING_XS, Theme.SPACING_XS))
         self.checklist_progress_bar.set(0.0)
 
         self.lbl_checklist_pending_amt = ctk.CTkLabel(
@@ -350,13 +353,13 @@ class ExpensesView(ctk.CTkFrame):
         self.lbl_checklist_pending_amt.pack(anchor="w")
 
         self.checklist_scroll = ctk.CTkScrollableFrame(self.checklist_frame, fg_color="transparent")
-        self.checklist_scroll.pack(fill="both", expand=True, padx=2, pady=(0, 6))
+        self.checklist_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
         # 2. Sub-Panel Historial de Movimientos
         self.history_frame = ctk.CTkFrame(self.right_content, fg_color="transparent")
 
         hist_filter_bar = ctk.CTkFrame(self.history_frame, fg_color="transparent")
-        hist_filter_bar.pack(fill="x", pady=(0, 8))
+        hist_filter_bar.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         self.lbl_hist_count = ctk.CTkLabel(hist_filter_bar, text="0 egresos", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED)
         self.lbl_hist_count.pack(side="left")
@@ -366,24 +369,24 @@ class ExpensesView(ctk.CTkFrame):
 
         self.filter_curr_combo = ctk.CTkComboBox(
             filter_box,
-            values=["Todas", "COP", "USD"],
+            values=FilterOptions.CURRENCY,
             width=80,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD,
             command=lambda _: self._refresh_history_feed()
         )
         self.filter_curr_combo.set("Todas")
-        self.filter_curr_combo.pack(side="left", padx=(0, 6))
+        self.filter_curr_combo.pack(side="left", padx=(0, Theme.SPACING_XS))
 
         self.filter_pm_combo = ctk.CTkComboBox(
             filter_box,
-            values=["Todos", "Débito", "TC"],
+            values=PaymentMethods.FILTER,
             width=80,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD,
@@ -393,30 +396,30 @@ class ExpensesView(ctk.CTkFrame):
         self.filter_pm_combo.pack(side="left")
 
         self.history_scroll = ctk.CTkScrollableFrame(self.history_frame, fg_color="transparent")
-        self.history_scroll.pack(fill="both", expand=True, padx=2, pady=(0, 6))
+        self.history_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
         self._on_right_view_changed("📋 Checklist Gastos Fijos (Agenda)")
 
     def _on_currency_changed(self, choice: str):
         if "COP" in choice:
-            self.btn_submit.configure(text="💸 Registrar Egreso COP", fg_color="#e11d48", hover_color="#be123c")
+            self.btn_submit.configure(text="💸 Registrar Egreso COP", fg_color=Theme.ERROR, hover_color=Theme.ERROR_HOVER)
             self.lbl_amount.configure(text="Monto en Pesos ($ COP):")
             self.amount_entry.configure(placeholder_text="Ej: 250000")
-            self.lbl_payment.pack(anchor="w", padx=18, pady=(0, 4))
-            self.payment_combo.pack(fill="x", padx=18, pady=(0, 10))
+            self.lbl_payment.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
+            self.payment_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
             self.fixed_switch.configure(state="normal")
-            cats = [c["name"] for c in self.db.get_categories("EXPENSE_COP")]
+            cats = self.controller.get_categories(is_usd_or_type=False)
             if cats:
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
         else:
-            self.btn_submit.configure(text="💸 Registrar Egreso USD", fg_color="#0284c7", hover_color="#0369a1")
+            self.btn_submit.configure(text="💸 Registrar Egreso USD", fg_color=Theme.INFO, hover_color=Theme.INFO_HOVER)
             self.lbl_amount.configure(text="Monto en Dólares ($ USD):")
             self.amount_entry.configure(placeholder_text="Ej: 20.00")
             self.payment_combo.pack_forget()
             self.lbl_payment.pack_forget()
             self.fixed_switch.configure(state="disabled")
-            cats = [c["name"] for c in self.db.get_categories("EXPENSE_USD")]
+            cats = self.controller.get_categories(is_usd_or_type=True)
             if cats:
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
@@ -436,63 +439,35 @@ class ExpensesView(ctk.CTkFrame):
 
     def _handle_submit(self):
         curr_choice = self.currency_seg.get()
-        is_cop = ("COP" in curr_choice)
+        is_usd = ("USD" in curr_choice)
         category = self.category_combo.get().strip()
-        amount_raw = self.amount_entry.get().strip().replace(".", "").replace(",", ".") if is_cop else self.amount_entry.get().strip().replace(",", ".")
         date_str = self.date_picker.get().strip()
         notes = self.notes_entry.get().strip()
-        is_fixed = bool(self.fixed_switch.get()) if is_cop else False
-        pm_choice = self.payment_combo.get()
+        is_fixed = bool(self.fixed_switch.get()) if not is_usd else False
+        pm_choice = self.payment_combo.get() if not is_usd else ""
+        selected_tag_ids = self.tag_selector.get_selected_tag_ids() if hasattr(self, "tag_selector") else []
 
-        pm_code = "DEBIT"
-        if "Tarjeta de Crédito" in pm_choice:
-            pm_code = "CREDIT_CARD"
-        elif "Efectivo" in pm_choice:
-            pm_code = "CASH"
+        success, msg = self.controller.add_expense(
+            amount_str=self.amount_entry.get(),
+            category=category,
+            date_str=date_str,
+            notes=notes,
+            is_fixed=is_fixed,
+            is_usd=is_usd,
+            payment_method_label=pm_choice,
+            selected_tag_ids=selected_tag_ids
+        )
 
-        try:
-            amount = float(amount_raw)
-            if amount <= 0:
-                raise ValueError()
-        except ValueError:
-            self.toast.show("Ingresa un monto válido mayor a 0.", is_error=True)
-            return
-
-        try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            self.toast.show("Fecha inválida. Usa el selector de calendario.", is_error=True)
-            return
-
-        try:
-            selected_tag_ids = self.tag_selector.get_selected_tag_ids() if hasattr(self, "tag_selector") else []
-
-            if is_cop:
-                tx_id = self.db.add_cop_expense(date_str, category, amount, is_fixed=is_fixed, payment_method=pm_code, notes=notes)
-                if selected_tag_ids and tx_id:
-                    self.db.set_tags_for_record("cop_transactions", tx_id, selected_tag_ids)
-                tipo_str = "Fijo" if is_fixed else "Variable"
-                pm_label = " (TC)" if pm_code == "CREDIT_CARD" else ""
-                self.toast.show(f"Egreso COP {tipo_str}{pm_label} de ${amount:,.0f} registrado.", is_error=False)
-            else:
-                current_bal = self.db.get_usd_balance()
-                if amount > current_bal:
-                    self.toast.show(f"⚠️ Saldo insuficiente en USD (${current_bal:,.2f}) para gastar ${amount:,.2f}.", is_error=True)
-                    return
-                tx_id = self.db.add_usd_expense(date_str, category, amount, notes=notes)
-                if selected_tag_ids and tx_id:
-                    self.db.set_tags_for_record("usd_transactions", tx_id, selected_tag_ids)
-                self.toast.show(f"Egreso USD de ${amount:,.2f} registrado en '{category}'.", is_error=False)
-
+        if success:
+            self.toast.show(msg, is_error=False)
             self.amount_entry.delete(0, "end")
             self.notes_entry.delete(0, "end")
             if hasattr(self, "tag_selector"):
                 self.tag_selector.clear()
             self.refresh_data()
-            if self.on_data_changed:
-                self.on_data_changed()
-        except Exception as e:
-            self.toast.show(f"Error al registrar: {str(e)}", is_error=True)
+            EventBus.publish("DATA_UPDATED")
+        else:
+            self.toast.show(msg, is_error=True)
 
     def _open_apply_recurring_modal(self):
         ApplyRecurringModal(
@@ -503,19 +478,18 @@ class ExpensesView(ctk.CTkFrame):
 
     def _on_recurring_applied(self):
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")
         self.toast.show("¡Gastos fijos aplicados y reflejados en tu balance!", is_error=False)
 
     def refresh_data(self):
-        cop_bal = self.db.get_cop_balance()
-        usd_bal = self.db.get_usd_balance()
+        balances = self.controller.get_balances()
+        cop_bal = balances["cop"]
+        usd_bal = balances["usd"]
         self.lbl_cop_bal.configure(text=f"${cop_bal:,.0f} COP")
         self.lbl_usd_bal.configure(text=f"${usd_bal:,.2f} USD")
 
         curr_choice = self.currency_seg.get()
-        cat_type = "EXPENSE_COP" if "COP" in curr_choice else "EXPENSE_USD"
-        cats = [c["name"] for c in self.db.get_categories(cat_type)]
+        cats = self.controller.get_categories(is_usd_or_type=("USD" in curr_choice))
         if cats:
             current = self.category_combo.get()
             self.category_combo.configure(values=cats)
@@ -578,7 +552,7 @@ class ExpensesView(ctk.CTkFrame):
         for widget in self.checklist_scroll.winfo_children():
             widget.destroy()
 
-        checklist = self.db.get_recurring_checklist_status(self.checklist_ym)
+        checklist = self.controller.get_checklist(self.checklist_ym)
 
         total_items = len(checklist)
         paid_items = sum(1 for i in checklist if i["is_paid"])
@@ -610,7 +584,7 @@ class ExpensesView(ctk.CTkFrame):
                 title="Sin gastos fijos configurados",
                 message="Configura tu plantilla de gastos fijos y suscripciones en ⚙️ Configuración.",
                 compact=True
-            ).pack(fill="x", padx=10, pady=20)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
 
         self.checklist_vars = {}
@@ -620,11 +594,11 @@ class ExpensesView(ctk.CTkFrame):
             card_bg = "#064e3b" if is_paid else Theme.BG_CARD_SUBTLE
             border_col = "#059669" if is_paid else Theme.BORDER_SUBTLE
 
-            card = ctk.CTkFrame(self.checklist_scroll, fg_color=card_bg, corner_radius=10, border_width=1, border_color=border_col)
-            card.pack(fill="x", pady=3, padx=2)
+            card = ctk.CTkFrame(self.checklist_scroll, fg_color=card_bg, corner_radius=Theme.SPACING_SM, border_width=1, border_color=border_col)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             row = ctk.CTkFrame(card, fg_color="transparent")
-            row.pack(fill="x", padx=12, pady=10)
+            row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
             # Checkbox interactivo
             chk_var = ctk.IntVar(value=1 if is_paid else 0)
@@ -637,12 +611,12 @@ class ExpensesView(ctk.CTkFrame):
                 variable=chk_var,
                 checkbox_height=20,
                 checkbox_width=20,
-                corner_radius=5,
-                fg_color="#10b981",
-                hover_color="#059669",
+                corner_radius=Theme.SPACING_XS,
+                fg_color=Theme.SUCCESS,
+                hover_color=Theme.SUCCESS,
                 command=lambda i=item, v=chk_var: self._toggle_checklist_item(i, v.get())
             )
-            chk.pack(side="left", padx=(0, 10))
+            chk.pack(side="left", padx=(0, Theme.SPACING_SM))
 
             # Monto a la derecha (empaquetado antes para reservar su espacio completo)
             amt_str = f"${item['amount']:,.2f} USD" if curr == "USD" else f"${item['amount']:,.0f} COP"
@@ -653,7 +627,7 @@ class ExpensesView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=13, weight="bold"),
                 text_color=amt_color
             )
-            amt_lbl.pack(side="right", padx=(8, 6))
+            amt_lbl.pack(side="right", padx=(Theme.SPACING_SM, Theme.SPACING_XS))
 
             # Info del gasto en el centro
             info_box = ctk.CTkFrame(row, fg_color="transparent")
@@ -682,7 +656,7 @@ class ExpensesView(ctk.CTkFrame):
                 info_box,
                 text=sub_info,
                 font=ctk.CTkFont(size=10),
-                text_color="#94a3b8" if not is_paid else "#6ee7b7"
+                text_color=Theme.TEXT_SECONDARY if not is_paid else "#6ee7b7"
             ).pack(anchor="w")
 
     def _toggle_checklist_item(self, item: Dict[str, Any], new_state: int):
@@ -713,18 +687,16 @@ class ExpensesView(ctk.CTkFrame):
                 self._refresh_checklist()
 
     def _execute_pay(self, item_id: int, date_str: str, target_month: str):
-        success, msg, _ = self.db.pay_recurring_item(item_id, date_str=date_str, target_month=target_month)
+        success, msg, _ = self.controller.pay_recurring(item_id, date_str=date_str, target_month=target_month)
         self.toast.show(msg, is_error=not success)
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")
 
     def _execute_unpay(self, tx_id: int, currency: str):
-        success, msg = self.db.unpay_recurring_item(tx_id, currency=currency)
+        success, msg = self.controller.unpay_recurring(tx_id, currency=currency)
         self.toast.show(msg, is_error=not success)
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")
 
     # ==========================================
     # HISTORIAL DE EGRESOS
@@ -736,13 +708,7 @@ class ExpensesView(ctk.CTkFrame):
 
         curr_filter = self.filter_curr_combo.get()
         pm_filter = self.filter_pm_combo.get()
-        pm_code = None
-        if pm_filter == "TC":
-            pm_code = "CREDIT_CARD"
-        elif pm_filter == "Débito":
-            pm_code = "DEBIT"
-
-        expenses = self.db.get_all_expenses(limit=self.display_limit, currency_filter=curr_filter, payment_method=pm_code)
+        expenses = self.controller.get_expenses(limit=self.display_limit, currency_filter=curr_filter, payment_method_label=pm_filter)
         self.lbl_hist_count.configure(text=f"({len(expenses)} mostrados)")
 
         if not expenses:
@@ -751,7 +717,7 @@ class ExpensesView(ctk.CTkFrame):
                 icon="💸",
                 title="Sin egresos para mostrar",
                 message="No se encontraron movimientos que coincidan con los filtros aplicados."
-            ).pack(fill="x", padx=10, pady=24)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
 
         for exp in expenses:
@@ -762,17 +728,17 @@ class ExpensesView(ctk.CTkFrame):
             badge = "💵 USD" if is_usd else ("💳 TC" if exp.get("payment_method") == "CREDIT_CARD" else "🇨🇴 COP")
             source_tbl = "usd_transactions" if is_usd else "cop_transactions"
 
-            card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=3, padx=2)
+            card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             top = ctk.CTkFrame(card, fg_color="transparent")
-            top.pack(fill="x", padx=12, pady=(8, 2))
+            top.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, 2))
 
             ctk.CTkLabel(top, text=f"💸 {exp['category']} [{badge}]", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
             ctk.CTkLabel(top, text=amt_str, font=ctk.CTkFont(size=13, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(side="right")
 
             bottom = ctk.CTkFrame(card, fg_color="transparent")
-            bottom.pack(fill="x", padx=12, pady=(0, 8))
+            bottom.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
             btn_box = ctk.CTkFrame(bottom, fg_color="transparent")
             btn_box.pack(side="right")
@@ -781,7 +747,7 @@ class ExpensesView(ctk.CTkFrame):
             if exp.get("notes"):
                 info += f" • {exp['notes']}"
 
-            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, 6))
+            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
 
             btn_edit = ctk.CTkButton(
@@ -794,7 +760,7 @@ class ExpensesView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._handle_edit(r, st)
             )
-            btn_edit.pack(side="left", padx=1)
+            btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
@@ -806,7 +772,7 @@ class ExpensesView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._handle_duplicate(r, st)
             )
-            btn_dup.pack(side="left", padx=1)
+            btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_del = ctk.CTkButton(
                 btn_box,
@@ -814,11 +780,11 @@ class ExpensesView(ctk.CTkFrame):
                 width=24,
                 height=20,
                 fg_color="transparent",
-                hover_color="#450a0a",
+                hover_color=Theme.ERROR_HOVER,
                 font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._prompt_delete(r, st)
             )
-            btn_del.pack(side="left", padx=1)
+            btn_del.pack(side="left", padx=Theme.SPACING_XS)
 
     def _handle_edit(self, record: Dict[str, Any], source_table: str):
         EditTransactionModal(
@@ -851,10 +817,7 @@ class ExpensesView(ctk.CTkFrame):
         )
 
     def _execute_delete(self, record_id: int, source_table: str, force: bool = False):
-        if source_table == "usd_transactions":
-            success, msg, warn_data = self.db.delete_usd_transaction(record_id, force=force)
-        else:
-            success, msg, warn_data = self.db.delete_cop_transaction(record_id, force=force)
+        success, msg, warn_data = self.controller.delete_expense(record_id, source_table, force=force)
 
         if success:
             self.toast.show(msg, is_error=False)
@@ -870,5 +833,4 @@ class ExpensesView(ctk.CTkFrame):
 
     def _on_action_success(self):
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")

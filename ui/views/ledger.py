@@ -16,7 +16,8 @@ from ui.components import (
     DuplicateModal,
     EmptyState
 )
-
+from controllers.ledger_controller import LedgerController
+from core.event_bus import EventBus
 
 class LedgerView(ctk.CTkFrame):
     # Anchos fijos en píxeles para garantizar alineación perfecta
@@ -32,10 +33,9 @@ class LedgerView(ctk.CTkFrame):
         "actions": 85
     }
 
-    def __init__(self, master, db_manager, on_data_changed: Optional[Callable[[], None]] = None, **kwargs):
+    def __init__(self, master, db_manager, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
-        self.db = db_manager
-        self.on_data_changed = on_data_changed
+        self.controller = LedgerController(db_manager)
 
         self._build_ui()
         self.refresh_data()
@@ -45,7 +45,7 @@ class LedgerView(ctk.CTkFrame):
 
         # 1. Cabecera
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 12))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_SM))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -65,11 +65,11 @@ class LedgerView(ctk.CTkFrame):
         ).pack(anchor="w")
 
         # 2. Barra de Filtros y Búsqueda
-        filter_card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=12, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        filter_card.pack(fill="x", padx=24, pady=(0, 10))
+        filter_card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        filter_card.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         filter_inner = ctk.CTkFrame(filter_card, fg_color="transparent")
-        filter_inner.pack(fill="x", padx=16, pady=10)
+        filter_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
         self._search_timer = None
 
@@ -79,45 +79,45 @@ class LedgerView(ctk.CTkFrame):
             placeholder_text="🔍 Buscar concepto, cliente o notas...",
             width=260,
             height=32,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
         )
-        self.search_entry.pack(side="left", padx=(0, 10))
+        self.search_entry.pack(side="left", padx=(0, Theme.SPACING_SM))
         self.search_entry.bind("<KeyRelease>", lambda _: self._on_search_key())
 
         # Filtro de Módulo
-        ctk.CTkLabel(filter_inner, text="Módulo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(filter_inner, text="Módulo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, Theme.SPACING_XS))
         self.module_combo = ctk.CTkComboBox(
             filter_inner,
             values=["Todos", "Ingresos USD", "Egresos USD", "Ingresos COP", "Egresos COP", "Conversión", "Inversiones", "Rendimientos"],
             width=135,
             height=32,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD,
             command=lambda _: self._refresh_table()
         )
         self.module_combo.set("Todos")
-        self.module_combo.pack(side="left", padx=(0, 8))
+        self.module_combo.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         # Filtro de Etiquetas (Tags)
-        ctk.CTkLabel(filter_inner, text="Tag:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(filter_inner, text="Tag:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, Theme.SPACING_XS))
         self.tag_filter_combo = ctk.CTkComboBox(
             filter_inner,
             values=["Todos"],
             width=115,
             height=32,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD,
             command=lambda _: self._refresh_table()
         )
         self.tag_filter_combo.set("Todos")
-        self.tag_filter_combo.pack(side="left", padx=(0, 10))
+        self.tag_filter_combo.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         # Filtro Temporal Rápido (Por defecto Mes Actual para máximo rendimiento)
         self.date_range_seg = ctk.CTkSegmentedButton(
@@ -131,28 +131,28 @@ class LedgerView(ctk.CTkFrame):
 
 
         # 3. Barra de Resumen de Totales
-        self.summary_bar = ctk.CTkFrame(self, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, height=32)
-        self.summary_bar.pack(fill="x", padx=24, pady=(0, 8))
+        self.summary_bar = ctk.CTkFrame(self, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, height=32)
+        self.summary_bar.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         summary_inner = ctk.CTkFrame(self.summary_bar, fg_color="transparent")
-        summary_inner.pack(fill="x", padx=14, pady=6)
+        summary_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_XS)
 
         self.lbl_stats_count = ctk.CTkLabel(summary_inner, text="0 registros", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_PRIMARY)
         self.lbl_stats_count.pack(side="left")
 
         self.lbl_stats_cop = ctk.CTkLabel(summary_inner, text="COP: +$0 / -$0", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_GREEN)
-        self.lbl_stats_cop.pack(side="left", padx=(20, 0))
+        self.lbl_stats_cop.pack(side="left", padx=(Theme.SPACING_LG, 0))
 
         self.lbl_stats_usd = ctk.CTkLabel(summary_inner, text="USD: +$0.00 / -$0.00", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_BLUE)
-        self.lbl_stats_usd.pack(side="left", padx=(20, 0))
+        self.lbl_stats_usd.pack(side="left", padx=(Theme.SPACING_LG, 0))
 
         # 4. Tabla Principal con Encabezados estilo Excel
-        table_container = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=12, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        table_container.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        table_container = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        table_container.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
 
         # Encabezados de Columna con anchos fijos
-        header_row = ctk.CTkFrame(table_container, fg_color=Theme.BG_CARD_SUBTLE, height=36, corner_radius=8)
-        header_row.pack(fill="x", padx=8, pady=(8, 4))
+        header_row = ctk.CTkFrame(table_container, fg_color=Theme.BG_CARD_SUBTLE, height=36, corner_radius=Theme.SPACING_SM)
+        header_row.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
         cols = [
             ("Fecha", self.COL_WIDTHS["date"], "w"),
@@ -174,22 +174,22 @@ class LedgerView(ctk.CTkFrame):
                 anchor=anchor_pos,
                 font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
                 text_color=Theme.TEXT_SECONDARY
-            ).pack(side="left", padx=4, pady=6)
+            ).pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
 
         # Contenedor Scrollable para las Filas
         self.table_scroll = ctk.CTkScrollableFrame(table_container, fg_color="transparent")
-        self.table_scroll.pack(fill="both", expand=True, padx=8, pady=(0, 4))
+        self.table_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_XS))
 
         # 5. Barra de Paginación en el pie de la tabla
         self.pagination_frame = ctk.CTkFrame(table_container, fg_color="transparent", height=36)
-        self.pagination_frame.pack(fill="x", padx=12, pady=(2, 8))
+        self.pagination_frame.pack(fill="x", padx=Theme.SPACING_SM, pady=(2, Theme.SPACING_SM))
 
         self.btn_prev_page = ctk.CTkButton(
             self.pagination_frame,
             text="◀ Anterior",
             width=80,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
@@ -204,14 +204,14 @@ class LedgerView(ctk.CTkFrame):
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color=Theme.TEXT_MUTED
         )
-        self.lbl_page_info.pack(side="left", padx=14)
+        self.lbl_page_info.pack(side="left", padx=Theme.SPACING_MD)
 
         self.btn_next_page = ctk.CTkButton(
             self.pagination_frame,
             text="Siguiente ▶",
             width=80,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
@@ -258,7 +258,7 @@ class LedgerView(ctk.CTkFrame):
 
     def refresh_data(self):
         # Actualizar lista de tags en el combo
-        tags = self.db.get_tags() if hasattr(self.db, "get_tags") else []
+        tags = self.controller.get_tags()
         tag_names = ["Todos"] + [t["name"] for t in tags]
         current_tag = self.tag_filter_combo.get()
         self.tag_filter_combo.configure(values=tag_names)
@@ -277,8 +277,8 @@ class LedgerView(ctk.CTkFrame):
 
         tag_choice = self.tag_filter_combo.get()
         tag_id = None
-        if tag_choice != "Todos" and hasattr(self.db, "get_tags"):
-            tags = self.db.get_tags()
+        if tag_choice != "Todos":
+            tags = self.controller.get_tags()
             for t in tags:
                 if t["name"] == tag_choice:
                     tag_id = t["id"]
@@ -287,7 +287,7 @@ class LedgerView(ctk.CTkFrame):
         date_from, date_to = self._get_date_filters()
         search_q = self.search_entry.get().strip()
 
-        self.cached_rows = self.db.get_unified_ledger(
+        self.cached_rows = self.controller.get_unified_ledger(
             limit=500,
             module_filter=mod_filter,
             date_from=date_from,
@@ -325,7 +325,7 @@ class LedgerView(ctk.CTkFrame):
                 icon="📖",
                 title="Sin movimientos contables",
                 message="No se encontraron registros que coincidan con los filtros seleccionados."
-            ).pack(fill="x", padx=10, pady=30)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XL)
             return
 
         start_idx = (self.current_page - 1) * self.page_size
@@ -341,41 +341,41 @@ class LedgerView(ctk.CTkFrame):
             out_str = f"-${outflow:,.2f}" if (outflow > 0 and curr == "USD") else (f"-${outflow:,.0f}" if outflow > 0 else "-")
 
             bg_col = Theme.BG_CARD_SUBTLE if idx % 2 == 0 else "transparent"
-            row_frame = ctk.CTkFrame(self.table_scroll, fg_color=bg_col, corner_radius=6, height=32)
-            row_frame.pack(fill="x", pady=1, padx=2)
+            row_frame = ctk.CTkFrame(self.table_scroll, fg_color=bg_col, corner_radius=Theme.SPACING_XS, height=32)
+            row_frame.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             # Doble clic en la fila para editar
             row_frame.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 0. Fecha
             lbl_d = ctk.CTkLabel(row_frame, text=item["date"], width=self.COL_WIDTHS["date"], anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_PRIMARY)
-            lbl_d.pack(side="left", padx=4, pady=4)
+            lbl_d.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_d.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 1. Módulo
             lbl_m = ctk.CTkLabel(row_frame, text=item["module"], width=self.COL_WIDTHS["module"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_MUTED)
-            lbl_m.pack(side="left", padx=4, pady=4)
+            lbl_m.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_m.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 2. Concepto
             lbl_c = ctk.CTkLabel(row_frame, text=item["concept"][:26], width=self.COL_WIDTHS["concept"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_PRIMARY)
-            lbl_c.pack(side="left", padx=4, pady=4)
+            lbl_c.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_c.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 3. Moneda
             curr_col = Theme.ACCENT_GREEN if curr == "COP" else Theme.ACCENT_BLUE
             lbl_cur = ctk.CTkLabel(row_frame, text=curr, width=self.COL_WIDTHS["currency"], anchor="center", font=ctk.CTkFont(size=10, weight="bold"), text_color=curr_col)
-            lbl_cur.pack(side="left", padx=4, pady=4)
+            lbl_cur.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_cur.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 4. Ingreso
             lbl_in = ctk.CTkLabel(row_frame, text=in_str, width=self.COL_WIDTHS["inflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.ACCENT_GREEN if inflow > 0 else Theme.TEXT_MUTED)
-            lbl_in.pack(side="left", padx=4, pady=4)
+            lbl_in.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_in.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 5. Egreso
             lbl_out = ctk.CTkLabel(row_frame, text=out_str, width=self.COL_WIDTHS["outflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.ACCENT_ROSE if outflow > 0 else Theme.TEXT_MUTED)
-            lbl_out.pack(side="left", padx=4, pady=4)
+            lbl_out.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_out.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 6. Detalle & Tags
@@ -383,56 +383,56 @@ class LedgerView(ctk.CTkFrame):
             tag_str = f" [{', '.join([t['name'] for t in item_tags])}]" if item_tags else ""
             det_text = f"{item['extra_info']}{tag_str}"[:20]
             lbl_det = ctk.CTkLabel(row_frame, text=det_text, width=self.COL_WIDTHS["detail"], anchor="w", font=ctk.CTkFont(size=10), text_color=Theme.ACCENT_INDIGO if item_tags else Theme.TEXT_MUTED)
-            lbl_det.pack(side="left", padx=4, pady=4)
+            lbl_det.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_det.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 7. Notas
             lbl_not = ctk.CTkLabel(row_frame, text=item["notes"][:22], width=self.COL_WIDTHS["notes"], anchor="w", font=ctk.CTkFont(size=10, slant="italic"), text_color=Theme.TEXT_MUTED)
-            lbl_not.pack(side="left", padx=4, pady=4)
+            lbl_not.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             lbl_not.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
             # 8. Botones de Acción
             btn_box = ctk.CTkFrame(row_frame, width=self.COL_WIDTHS["actions"], fg_color="transparent")
-            btn_box.pack(side="left", padx=4, pady=2)
+            btn_box.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
 
             btn_e = ctk.CTkButton(
                 btn_box,
                 text="✏️",
                 width=24,
                 height=22,
-                corner_radius=4,
+                corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
                 font=ctk.CTkFont(size=11),
                 command=lambda it=item: self._handle_edit(it)
             )
-            btn_e.pack(side="left", padx=1)
+            btn_e.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
                 text="📋",
                 width=24,
                 height=22,
-                corner_radius=4,
+                corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
                 font=ctk.CTkFont(size=11),
                 command=lambda it=item: self._handle_duplicate(it)
             )
-            btn_dup.pack(side="left", padx=1)
+            btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_d = ctk.CTkButton(
                 btn_box,
                 text="🗑️",
                 width=24,
                 height=22,
-                corner_radius=4,
+                corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
-                hover_color="#450a0a",
+                hover_color=Theme.ERROR_HOVER,
                 font=ctk.CTkFont(size=11),
                 command=lambda it=item: self._prompt_delete(it)
             )
-            btn_d.pack(side="left", padx=1)
+            btn_d.pack(side="left", padx=Theme.SPACING_XS)
 
     def _handle_edit(self, item: Dict[str, Any]):
         table_name = item["source_table"]
@@ -443,7 +443,7 @@ class LedgerView(ctk.CTkFrame):
 
         EditTransactionModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,  # Pasamos db_manager interno hasta refactorizar los modales
             source_table=table_name,
             record=record,
             on_success=self._on_action_success
@@ -457,7 +457,7 @@ class LedgerView(ctk.CTkFrame):
 
         DuplicateModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,  # Pasamos db_manager interno hasta refactorizar los modales
             source_table=table_name,
             record=record,
             on_success=self._on_action_success
@@ -480,16 +480,7 @@ class LedgerView(ctk.CTkFrame):
         )
 
     def _execute_delete(self, table_name: str, record_id: int, force: bool = False):
-        if table_name == "usd_transactions":
-            success, msg, warn_data = self.db.delete_usd_transaction(record_id, force=force)
-        elif table_name == "cop_transactions":
-            success, msg, warn_data = self.db.delete_cop_transaction(record_id, force=force)
-        elif table_name == "account_transactions":
-            success, msg, warn_data = self.db.delete_account_transaction(record_id, force=force)
-        elif table_name == "conversions":
-            success, msg, warn_data = self.db.delete_conversion(record_id, force=force)
-        else:
-            success, msg, warn_data = False, "Tipo de tabla desconocido.", None
+        success, msg, warn_data = self.controller.delete_transaction(table_name, record_id, force=force)
 
         if success:
             self.toast.show(msg, is_error=False)
@@ -504,13 +495,8 @@ class LedgerView(ctk.CTkFrame):
             self.toast.show(msg, is_error=True)
 
     def _fetch_full_record(self, table_name: str, record_id: int) -> Optional[Dict[str, Any]]:
-        with self.db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {table_name} WHERE id = ?;", (record_id,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
+        return self.controller.fetch_full_record(table_name, record_id)
 
     def _on_action_success(self):
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")

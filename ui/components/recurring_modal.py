@@ -9,47 +9,28 @@ from ui.theme import Theme
 from ui.utils.modal_helper import center_window
 
 
-class RecurringModalDialog(ctk.CTkToplevel):
+from ui.components.base_modal import BaseModal
+
+class RecurringModalDialog(BaseModal):
     def __init__(
         self,
         parent,
         db_manager,
         on_applied: Optional[Callable[[int, float], None]] = None
     ):
-        super().__init__(parent)
         self.db = db_manager
         self.on_applied_cb = on_applied
         self.checkbox_vars: Dict[int, ctk.BooleanVar] = {}
 
-        self.title("Aplicar Gastos Fijos del Mes")
-        self.geometry("520x480")
-        self.minsize(480, 400)
-        self.configure(fg_color=Theme.BG_WINDOW)
-
-        # Modal
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
+        super().__init__(parent, title="Aplicar Gastos Fijos del Mes", width=520, height=480, min_width=480, min_height=400, resizable_x=False, resizable_y=False)
 
         self._build_ui()
 
-    def _center_window(self, parent):
-        center_window(self, parent, 520, 480)
-
     def _build_ui(self):
-        container = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        container.pack(fill="both", expand=True, padx=16, pady=16)
+        container = self.create_standard_frame()
 
         # Encabezado
-        header = ctk.CTkFrame(container, fg_color="transparent")
-        header.pack(fill="x", padx=18, pady=(18, 10))
-
-        ctk.CTkLabel(
-            header,
-            text="⚡ Cargar Gastos Fijos Recurrentes",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w")
+        header = self.create_header(container, "Cargar Gastos Fijos Recurrentes", icon="⚡")
 
         current_month = datetime.now().strftime("%B %Y").capitalize()
         ctk.CTkLabel(
@@ -57,18 +38,18 @@ class RecurringModalDialog(ctk.CTkToplevel):
             text=f"Selecciona los gastos fijos que deseas registrar para {current_month}:",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(2, 0))
+        ).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         # Campo de fecha para registrar los gastos
         date_row = ctk.CTkFrame(container, fg_color="transparent")
-        date_row.pack(fill="x", padx=18, pady=(0, 10))
+        date_row.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         ctk.CTkLabel(
             date_row,
             text="Fecha de Registro:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(side="left", padx=(0, 8))
+        ).pack(side="left", padx=(0, Theme.SPACING_SM))
 
         from ui.components.date_picker import DatePickerWidget
         self.date_entry = DatePickerWidget(date_row, height=30)
@@ -76,7 +57,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
 
         # Selector rápido Todos / Ninguno
         quick_select = ctk.CTkFrame(container, fg_color="transparent")
-        quick_select.pack(fill="x", padx=18, pady=(0, 6))
+        quick_select.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         btn_all = ctk.CTkButton(
             quick_select,
@@ -89,7 +70,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=10),
             command=self._select_all
         )
-        btn_all.pack(side="left", padx=(0, 6))
+        btn_all.pack(side="left", padx=(0, Theme.SPACING_XS))
 
         btn_none = ctk.CTkButton(
             quick_select,
@@ -106,7 +87,7 @@ class RecurringModalDialog(ctk.CTkToplevel):
 
         # Lista de gastos fijos con scroll
         self.scroll_frame = ctk.CTkScrollableFrame(container, fg_color="transparent", height=200)
-        self.scroll_frame.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+        self.scroll_frame.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         recurring_list = self.db.get_recurring_expenses(only_active=True)
 
@@ -117,15 +98,15 @@ class RecurringModalDialog(ctk.CTkToplevel):
                 font=ctk.CTkFont(size=12),
                 text_color=Theme.TEXT_MUTED,
                 justify="center"
-            ).pack(pady=30)
+            ).pack(pady=Theme.SPACING_XL)
         else:
             for item in recurring_list:
                 rec_id = item["id"]
                 var = ctk.BooleanVar(value=True)
                 self.checkbox_vars[rec_id] = var
 
-                card = ctk.CTkFrame(self.scroll_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-                card.pack(fill="x", pady=3, padx=2)
+                card = ctk.CTkFrame(self.scroll_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+                card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
                 chk = ctk.CTkCheckBox(
                     card,
@@ -135,18 +116,18 @@ class RecurringModalDialog(ctk.CTkToplevel):
                     text_color=Theme.TEXT_PRIMARY,
                     command=self._recalculate_total
                 )
-                chk.pack(side="left", padx=10, pady=8)
+                chk.pack(side="left", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
                 ctk.CTkLabel(
                     card,
                     text=f"${item['amount']:,.0f} COP",
                     font=ctk.CTkFont(size=12, weight="bold"),
                     text_color=Theme.ACCENT_ROSE
-                ).pack(side="right", padx=10, pady=8)
+                ).pack(side="right", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         # Pie con total y botón de aplicar
         footer = ctk.CTkFrame(container, fg_color="transparent")
-        footer.pack(fill="x", padx=18, pady=(0, 16), side="bottom")
+        footer.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD), side="bottom")
 
         self.lbl_total = ctk.CTkLabel(
             footer,
@@ -156,27 +137,30 @@ class RecurringModalDialog(ctk.CTkToplevel):
         )
         self.lbl_total.pack(side="left")
 
+        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
+        btn_row.pack(side="right")
+
         btn_cancel = ctk.CTkButton(
-            footer,
+            btn_row,
             text="Cancelar",
             fg_color=Theme.BORDER_DEFAULT,
             hover_color=Theme.TEXT_MUTED,
             text_color=Theme.TEXT_PRIMARY,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self.destroy
         )
-        btn_cancel.pack(side="right", padx=(8, 0))
+        btn_cancel.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         self.btn_apply = ctk.CTkButton(
-            footer,
+            btn_row,
             text="⚡ Aplicar Gastos",
-            fg_color="#e11d48",
-            hover_color="#be123c",
-            text_color="#ffffff",
+            fg_color=Theme.ERROR,
+            hover_color=Theme.ERROR_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._handle_apply
         )

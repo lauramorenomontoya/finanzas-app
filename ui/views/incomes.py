@@ -4,9 +4,11 @@ Permite registrar y gestionar de forma clara todas las fuentes de ingresos tanto
 con visualizador de balance disponible, widget de calendario interactivo y opciones de edición/duplicación/eliminación.
 """
 
+from core.constants import Currencies, CurrencyLabels, Platforms, Categories, PaymentMethods, FilterOptions, SettingsTabs
 import customtkinter as ctk
 from datetime import datetime
 from typing import Callable, Optional, Dict, Any, List
+from controllers.income_controller import IncomeController
 from ui.components import (
     ToastNotification,
     ConfirmDialog,
@@ -18,13 +20,14 @@ from ui.components import (
     EmptyState
 )
 from ui.theme import Theme
+from core.event_bus import EventBus
 
 
 class IncomesView(ctk.CTkFrame):
-    def __init__(self, master, db_manager, on_data_changed: Optional[Callable[[], None]] = None, **kwargs):
+    def __init__(self, master, db_manager, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.db = db_manager
-        self.on_data_changed = on_data_changed
+        self.controller = IncomeController(db_manager)
         self.display_limit = 25
 
         self._build_ui()
@@ -35,7 +38,7 @@ class IncomesView(ctk.CTkFrame):
 
         # 1. Cabecera
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 14))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -59,46 +62,46 @@ class IncomesView(ctk.CTkFrame):
         banners_box.pack(side="right")
 
         # Banner USD
-        b_usd = ctk.CTkFrame(banners_box, fg_color=Theme.USD_BANNER_BG, corner_radius=10, border_width=1, border_color=Theme.USD_BANNER_BORDER)
-        b_usd.pack(side="left", padx=(0, 8))
+        b_usd = ctk.CTkFrame(banners_box, fg_color=Theme.USD_BANNER_BG, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.USD_BANNER_BORDER)
+        b_usd.pack(side="left", padx=(0, Theme.SPACING_SM))
         b_usd_in = ctk.CTkFrame(b_usd, fg_color="transparent")
-        b_usd_in.pack(padx=12, pady=6)
+        b_usd_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_usd_in, text="BÓVEDA USD", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.USD_BANNER_TEXT).pack(anchor="e")
         self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_BLUE)
         self.lbl_usd_bal.pack(anchor="e")
 
         # Banner COP
-        b_cop = ctk.CTkFrame(banners_box, fg_color=Theme.COP_BANNER_BG, corner_radius=10, border_width=1, border_color=Theme.COP_BANNER_BORDER)
+        b_cop = ctk.CTkFrame(banners_box, fg_color=Theme.COP_BANNER_BG, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.COP_BANNER_BORDER)
         b_cop.pack(side="left")
         b_cop_in = ctk.CTkFrame(b_cop, fg_color="transparent")
-        b_cop_in.pack(padx=12, pady=6)
+        b_cop_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_cop_in, text="DISPONIBLE COP", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.COP_BANNER_TEXT).pack(anchor="e")
         self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_GREEN)
         self.lbl_cop_bal.pack(anchor="e")
 
         # 2. Contenedor Principal (Formulario Izquierda + Historial Derecha)
         content_grid = ctk.CTkFrame(self, fg_color="transparent")
-        content_grid.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        content_grid.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
         content_grid.grid_columnconfigure(0, weight=45, uniform="incomes_cols")
         content_grid.grid_columnconfigure(1, weight=55, uniform="incomes_cols")
         content_grid.grid_rowconfigure(0, weight=1)
 
 
         # PANEL IZQUIERDO: Formulario de Registro
-        form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        form_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, Theme.SPACING_SM))
 
         # Selector de Moneda
         self.currency_seg = ctk.CTkSegmentedButton(
             form_panel,
-            values=["💵 Ingreso USD", "🇨🇴 Ingreso COP"],
-            selected_color="#0284c7",
-            selected_hover_color="#0369a1",
+            values=[CurrencyLabels.INCOME_USD, CurrencyLabels.INCOME_COP],
+            selected_color=Theme.INFO,
+            selected_hover_color=Theme.INFO_HOVER,
             height=34,
             command=self._on_currency_changed
         )
         self.currency_seg.set("💵 Ingreso USD")
-        self.currency_seg.pack(fill="x", padx=18, pady=(16, 12))
+        self.currency_seg.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         # Campo: Categoría / Concepto
         self.lbl_category = ctk.CTkLabel(
@@ -107,18 +110,18 @@ class IncomesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_category.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_category.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.category_combo = ctk.CTkComboBox(
             form_panel,
-            values=["Clientes Internacionales USD", "Consultoría / Freelance USD", "Otros Ingresos USD"],
+            values=Categories.INCOME_USD,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
-        self.category_combo.pack(fill="x", padx=18, pady=(0, 10))
+        self.category_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Plataforma / Cuenta Receptora
         self.lbl_platform = ctk.CTkLabel(
@@ -127,19 +130,19 @@ class IncomesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_platform.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_platform.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.platform_combo = ctk.CTkComboBox(
             form_panel,
-            values=["Wenia", "ARQ", "Deel", "Binance", "Bancolombia", "Nu", "Transferencia Bancaria", "Otro"],
+            values=Platforms.ALL,
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
         self.platform_combo.set("Wenia")
-        self.platform_combo.pack(fill="x", padx=18, pady=(0, 10))
+        self.platform_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
 
         # Campo: Monto
@@ -149,18 +152,18 @@ class IncomesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_amount.pack(anchor="w", padx=18, pady=(0, 4))
+        self.lbl_amount.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.amount_entry = ctk.CTkEntry(
             form_panel,
             placeholder_text="Ej: 1500.00",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=13)
         )
-        self.amount_entry.pack(fill="x", padx=18, pady=(0, 10))
+        self.amount_entry.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Fecha con Widget Interactivo DatePicker
         ctk.CTkLabel(
@@ -168,10 +171,10 @@ class IncomesView(ctk.CTkFrame):
             text="Fecha de Ingreso:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.date_picker = DatePickerWidget(form_panel, height=34)
-        self.date_picker.pack(fill="x", padx=18, pady=(0, 10))
+        self.date_picker.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Notas / Descripción
         ctk.CTkLabel(
@@ -179,18 +182,18 @@ class IncomesView(ctk.CTkFrame):
             text="Detalle / Notas:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.notes_entry = ctk.CTkEntry(
             form_panel,
             placeholder_text="Ej: Pago de honorarios / Proyecto",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
         )
-        self.notes_entry.pack(fill="x", padx=18, pady=(0, 10))
+        self.notes_entry.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Selector de Etiquetas (Tags)
         ctk.CTkLabel(
@@ -198,10 +201,10 @@ class IncomesView(ctk.CTkFrame):
             text="🏷️ Etiquetas / Tags:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=18, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.tag_selector = TagSelector(form_panel, self.db)
-        self.tag_selector.pack(fill="x", padx=18, pady=(0, 14))
+        self.tag_selector.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
@@ -209,20 +212,20 @@ class IncomesView(ctk.CTkFrame):
             text="📥 Registrar Ingreso USD",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_SM,
+            fg_color=Theme.INFO,
+            hover_color=Theme.INFO_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             command=self._handle_submit
         )
-        self.btn_submit.pack(fill="x", padx=18, pady=(0, 16))
+        self.btn_submit.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # PANEL DERECHO: Historial Unificado de Ingresos
-        history_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        history_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        history_panel = ctk.CTkFrame(content_grid, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        history_panel.grid(row=0, column=1, sticky="nsew", padx=(Theme.SPACING_SM, 0))
 
         hist_header = ctk.CTkFrame(history_panel, fg_color="transparent")
-        hist_header.pack(fill="x", padx=18, pady=(16, 10))
+        hist_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         ctk.CTkLabel(
             hist_header,
@@ -234,7 +237,7 @@ class IncomesView(ctk.CTkFrame):
         # Filtro de Moneda en Historial
         self.hist_filter_seg = ctk.CTkSegmentedButton(
             hist_header,
-            values=["Todas", "USD", "COP"],
+            values=FilterOptions.CURRENCY_INCOMES,
             height=28,
             command=lambda _: self._refresh_incomes_list()
         )
@@ -242,90 +245,70 @@ class IncomesView(ctk.CTkFrame):
         self.hist_filter_seg.pack(side="right")
 
         self.incomes_scroll = ctk.CTkScrollableFrame(history_panel, fg_color="transparent")
-        self.incomes_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 16))
+        self.incomes_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
     def _on_currency_changed(self, choice: str):
         if "USD" in choice:
-            self.btn_submit.configure(text="💾 Guardar Ingreso USD", fg_color="#0284c7", hover_color="#0369a1")
+            self.btn_submit.configure(text="💾 Guardar Ingreso USD", fg_color=Theme.INFO, hover_color=Theme.INFO_HOVER)
             self.lbl_amount.configure(text="Monto a Ingresar ($ USD):")
             self.amount_entry.configure(placeholder_text="Ej: 1500.00")
-            cats = [c["name"] for c in self.db.get_categories("INCOME_USD")]
+            cats = self.controller.get_categories(is_usd_or_type=True)
             if cats:
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
-            self.platform_combo.configure(values=["Wenia", "ARQ", "Deel", "Binance", "Transferencia Bancaria", "Otro"])
+            self.platform_combo.configure(values=Platforms.USD)
 
             self.platform_combo.set("Wenia")
         else:
-            self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color="#10b981", hover_color="#059669")
+            self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color=Theme.SUCCESS, hover_color=Theme.SUCCESS)
             self.lbl_amount.configure(text="Monto a Ingresar ($ COP):")
             self.amount_entry.configure(placeholder_text="Ej: 3500000")
-            cats = [c["name"] for c in self.db.get_categories("INCOME_COP")]
+            cats = self.controller.get_categories(is_usd_or_type=False)
             if cats:
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
-            self.platform_combo.configure(values=["Bancolombia", "Nu Colombia", "Davivienda", "Efectivo", "Otro"])
+            self.platform_combo.configure(values=Platforms.COP)
             self.platform_combo.set("Bancolombia")
 
     def _handle_submit(self):
         curr_choice = self.currency_seg.get()
+        is_usd = ("USD" in curr_choice)
         category = self.category_combo.get().strip()
         platform = self.platform_combo.get().strip()
-        amount_raw = self.amount_entry.get().strip().replace(".", "").replace(",", ".") if "COP" in curr_choice else self.amount_entry.get().strip().replace(",", ".")
         date_str = self.date_picker.get().strip()
         notes = self.notes_entry.get().strip()
+        selected_tag_ids = self.tag_selector.get_selected_tag_ids() if hasattr(self, "tag_selector") else []
 
-        try:
-            amount = float(amount_raw)
-            if amount <= 0:
-                raise ValueError()
-        except ValueError:
-            self.toast.show("Por favor ingresa un monto válido mayor a 0.", is_error=True)
-            return
+        success, msg = self.controller.add_income(
+            amount_str=self.amount_entry.get(),
+            is_usd=is_usd,
+            platform=platform,
+            category=category,
+            date_str=date_str,
+            notes=notes,
+            selected_tag_ids=selected_tag_ids
+        )
 
-        try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            self.toast.show("Fecha inválida. Usa el calendario interactivo.", is_error=True)
-            return
-
-        try:
-            selected_tag_ids = self.tag_selector.get_selected_tag_ids() if hasattr(self, "tag_selector") else []
-
-            if "USD" in curr_choice:
-                desc_platform = f"{platform} ({category})" if category else platform
-                tx_id = self.db.add_usd_deposit(date_str, desc_platform, amount, notes)
-                if selected_tag_ids and tx_id:
-                    self.db.set_tags_for_record("usd_transactions", tx_id, selected_tag_ids)
-                self.toast.show(f"¡Ingreso de +${amount:,.2f} USD guardado en {platform}!", is_error=False)
-            else:
-                desc_cat = f"{category} • {platform}" if platform else category
-                tx_id = self.db.add_cop_income(date_str, desc_cat, amount, notes)
-                if selected_tag_ids and tx_id:
-                    self.db.set_tags_for_record("cop_transactions", tx_id, selected_tag_ids)
-                self.toast.show(f"¡Ingreso de +${amount:,.0f} COP registrado con éxito!", is_error=False)
-
+        if success:
+            self.toast.show(msg, is_error=False)
             self.amount_entry.delete(0, "end")
             self.notes_entry.delete(0, "end")
             if hasattr(self, "tag_selector"):
                 self.tag_selector.clear()
             self.refresh_data()
-            if self.on_data_changed:
-                self.on_data_changed()
-        except Exception as e:
-            self.toast.show(f"Error al registrar: {str(e)}", is_error=True)
+            EventBus.publish("DATA_UPDATED")
+        else:
+            self.toast.show(msg, is_error=True)
 
     def refresh_data(self):
         # Actualizar balances
-        usd_bal = self.db.get_usd_balance()
-        cop_bal = self.db.get_cop_balance()
-        self.lbl_usd_bal.configure(text=f"${usd_bal:,.2f} USD")
-        self.lbl_cop_bal.configure(text=f"${cop_bal:,.0f} COP")
+        balances = self.controller.get_balances()
+        self.lbl_usd_bal.configure(text=f"${balances['usd']:,.2f} USD")
+        self.lbl_cop_bal.configure(text=f"${balances['cop']:,.0f} COP")
 
         # Refrescar categorías
         curr_choice = self.currency_seg.get()
-        cat_type = "INCOME_USD" if "USD" in curr_choice else "INCOME_COP"
-        cats = [c["name"] for c in self.db.get_categories(cat_type)]
+        cats = self.controller.get_categories(is_usd_or_type=("USD" in curr_choice))
         if cats:
             current = self.category_combo.get()
             self.category_combo.configure(values=cats)
@@ -341,7 +324,7 @@ class IncomesView(ctk.CTkFrame):
             widget.destroy()
 
         filter_curr = self.hist_filter_seg.get()
-        incomes = self.db.get_all_incomes(limit=self.display_limit, currency_filter=filter_curr)
+        incomes = self.controller.get_incomes(limit=self.display_limit, currency_filter=filter_curr)
 
         if not incomes:
             EmptyState(
@@ -351,7 +334,7 @@ class IncomesView(ctk.CTkFrame):
                 message="No hay entradas de dinero que coincidan con el filtro seleccionado.",
                 action_text="Limpiar Filtro" if filter_curr != "Todos" else None,
                 action_command=(lambda: self.hist_filter_seg.set("Todos")) if filter_curr != "Todos" else None
-            ).pack(fill="x", padx=10, pady=24)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
 
         for inc in incomes:
@@ -363,17 +346,17 @@ class IncomesView(ctk.CTkFrame):
             accent_col = Theme.ACCENT_BLUE if is_usd else Theme.ACCENT_GREEN
             source_tbl = "usd_transactions" if is_usd else "cop_transactions"
 
-            card = ctk.CTkFrame(self.incomes_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=3, padx=2)
+            card = ctk.CTkFrame(self.incomes_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             top = ctk.CTkFrame(card, fg_color="transparent")
-            top.pack(fill="x", padx=12, pady=(8, 2))
+            top.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, 2))
 
             ctk.CTkLabel(top, text=f"📥 {inc['concept']} [{badge}]", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
             ctk.CTkLabel(top, text=amt_str, font=ctk.CTkFont(size=13, weight="bold"), text_color=accent_col).pack(side="right")
 
             bottom = ctk.CTkFrame(card, fg_color="transparent")
-            bottom.pack(fill="x", padx=12, pady=(0, 8))
+            bottom.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
             btn_box = ctk.CTkFrame(bottom, fg_color="transparent")
             btn_box.pack(side="right")
@@ -382,7 +365,7 @@ class IncomesView(ctk.CTkFrame):
             if inc.get("notes"):
                 info += f" • {inc['notes']}"
 
-            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, 6))
+            ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
 
             btn_edit = ctk.CTkButton(
@@ -395,7 +378,7 @@ class IncomesView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._handle_edit(r, st)
             )
-            btn_edit.pack(side="left", padx=1)
+            btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
@@ -407,7 +390,7 @@ class IncomesView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._handle_duplicate(r, st)
             )
-            btn_dup.pack(side="left", padx=1)
+            btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_del = ctk.CTkButton(
                 btn_box,
@@ -415,11 +398,11 @@ class IncomesView(ctk.CTkFrame):
                 width=24,
                 height=20,
                 fg_color="transparent",
-                hover_color="#450a0a",
+                hover_color=Theme.ERROR_HOVER,
                 font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._prompt_delete(r, st)
             )
-            btn_del.pack(side="left", padx=1)
+            btn_del.pack(side="left", padx=Theme.SPACING_XS)
 
     def _handle_edit(self, record: Dict[str, Any], source_table: str):
         EditTransactionModal(
@@ -452,10 +435,7 @@ class IncomesView(ctk.CTkFrame):
         )
 
     def _execute_delete(self, record_id: int, source_table: str, force: bool = False):
-        if source_table == "usd_transactions":
-            success, msg, warn_data = self.db.delete_usd_transaction(record_id, force=force)
-        else:
-            success, msg, warn_data = self.db.delete_cop_transaction(record_id, force=force)
+        success, msg, warn_data = self.controller.delete_income(record_id, source_table, force=force)
 
         if success:
             self.toast.show(msg, is_error=False)
@@ -471,5 +451,4 @@ class IncomesView(ctk.CTkFrame):
 
     def _on_action_success(self):
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")

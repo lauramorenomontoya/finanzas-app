@@ -23,7 +23,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller pyarmor
+
+      - name: Ofuscar código fuente con PyArmor
+        run: |
+          pyarmor gen -O build/obf -r main.py controllers core database services ui
 
       - name: Compilar con PyInstaller
         run: |
@@ -55,7 +59,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller pyarmor
+
+      - name: Ofuscar código fuente con PyArmor
+        run: |
+          pyarmor gen -O build/obf -r main.py controllers core database services ui
 
       - name: Compilar con PyInstaller
         run: |

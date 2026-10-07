@@ -30,7 +30,7 @@ class TagSelector(ctk.CTkFrame):
         tags = self.db.get_tags()
 
         row_frame = ctk.CTkFrame(self.chips_container, fg_color="transparent")
-        row_frame.pack(fill="x", pady=2)
+        row_frame.pack(fill="x", pady=Theme.SPACING_XS)
 
         for tag in tags:
             tag_id = tag["id"]
@@ -42,16 +42,16 @@ class TagSelector(ctk.CTkFrame):
                 row_frame,
                 text=f"{name}",
                 height=26,
-                corner_radius=13,
+                corner_radius=Theme.SPACING_SM,
                 fg_color=color if is_selected else Theme.BG_CARD_SUBTLE,
                 hover_color=color,
-                text_color="#ffffff" if is_selected else Theme.TEXT_PRIMARY,
+                text_color=Theme.TEXT_ON_COLOR if is_selected else Theme.TEXT_PRIMARY,
                 border_width=1,
                 border_color=color if is_selected else Theme.BORDER_SUBTLE,
                 font=ctk.CTkFont(size=11, weight="bold" if is_selected else "normal"),
                 command=lambda t_id=tag_id: self._toggle_tag(t_id)
             )
-            btn.pack(side="left", padx=3, pady=2)
+            btn.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
             self.tag_buttons[tag_id] = (btn, color, name)
 
         # Botón para añadir nueva etiqueta
@@ -60,7 +60,7 @@ class TagSelector(ctk.CTkFrame):
             text="+ Tag",
             height=26,
             width=50,
-            corner_radius=13,
+            corner_radius=Theme.SPACING_SM,
             fg_color="transparent",
             hover_color=Theme.BG_CARD_SUBTLE,
             text_color=Theme.ACCENT_BLUE,
@@ -69,7 +69,7 @@ class TagSelector(ctk.CTkFrame):
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._prompt_new_tag
         )
-        btn_add.pack(side="left", padx=3, pady=2)
+        btn_add.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
 
     def _toggle_tag(self, tag_id: int):
         if tag_id in self.selected_tag_ids:
@@ -83,7 +83,7 @@ class TagSelector(ctk.CTkFrame):
             is_selected = tag_id in self.selected_tag_ids
             btn.configure(
                 fg_color=color if is_selected else Theme.BG_CARD_SUBTLE,
-                text_color="#ffffff" if is_selected else Theme.TEXT_PRIMARY,
+                text_color=Theme.TEXT_ON_COLOR if is_selected else Theme.TEXT_PRIMARY,
                 border_color=color if is_selected else Theme.BORDER_SUBTLE,
                 font=ctk.CTkFont(size=11, weight="bold" if is_selected else "normal")
             )

@@ -16,9 +16,11 @@ from ui.views.conversion import ConversionView
 from ui.views.investments import InvestmentsView
 from ui.views.ledger import LedgerView
 from ui.views.analytics import AnalyticsView
-from ui.views.settings import SettingsView
+from ui.views.settings_view import SettingsView
 from ui.views.budget_view import BudgetView
 from ui.views.debt_view import DebtView
+from core.event_bus import EventBus
+from core.constants import APP_VERSION
 
 
 class FinancialApp(ctk.CTk):
@@ -32,9 +34,27 @@ class FinancialApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.title("Control Financiero | Ingresos, Egresos & Patrimonio Multimoneda")
-        self.geometry("1240x790")
-        self.minsize(1050, 660)
+        self.title(f"Control Financiero v{APP_VERSION} | Ingresos, Egresos & Patrimonio Multimoneda")
+
+        # Configuración de Ventana Adaptativa y Centrada
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
+
+        target_w = int(screen_w * 0.86)
+        target_h = int(screen_h * 0.85)
+        default_w = min(1420, max(1200, target_w))
+        default_h = min(920, max(780, target_h))
+
+        # Ajuste de seguridad si la pantalla es menor al tamaño ideal
+        if default_w >= screen_w:
+            default_w = max(1000, screen_w - 40)
+        if default_h >= screen_h:
+            default_h = max(660, screen_h - 70)
+
+        self.minsize(1080, 680)
+        pos_x = max(0, (screen_w - default_w) // 2)
+        pos_y = max(0, (screen_h - default_h) // 2)
+        self.geometry(f"{default_w}x{default_h}+{pos_x}+{pos_y}")
 
         # Inicialización de la Base de Datos y Respaldo Automático
         self.db = DatabaseManager()
@@ -51,6 +71,9 @@ class FinancialApp(ctk.CTk):
         self.bind_all("<Command-k>", lambda e: self._open_global_search())
         self.bind_all("<Control-k>", lambda e: self._open_global_search())
 
+        # Suscribirse al bus de eventos globales
+        EventBus.subscribe("DATA_UPDATED", self.on_data_updated)
+
         # Iniciar en el Dashboard
         self.show_view("dashboard")
 
@@ -62,7 +85,7 @@ class FinancialApp(ctk.CTk):
 
         # 1. Logotipo y Título de la Aplicación
         brand_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        brand_frame.pack(fill="x", padx=18, pady=(22, 14))
+        brand_frame.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
         app_title = ctk.CTkLabel(
             brand_frame,
@@ -74,11 +97,11 @@ class FinancialApp(ctk.CTk):
 
         app_subtitle = ctk.CTkLabel(
             brand_frame,
-            text="Gestor Multimoneda USD & COP",
+            text=f"Gestor Multimoneda v{APP_VERSION} (USD & COP)",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         )
-        app_subtitle.pack(anchor="w", pady=(2, 0))
+        app_subtitle.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         # Botón de Búsqueda Rápida Spotlight (Cmd+K)
         btn_search = ctk.CTkButton(
@@ -86,7 +109,7 @@ class FinancialApp(ctk.CTk):
             text="🔍  Buscar... (⌘K)",
             anchor="w",
             height=32,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BG_CARD,
@@ -95,9 +118,9 @@ class FinancialApp(ctk.CTk):
             border_color=Theme.BORDER_SUBTLE,
             command=self._open_global_search
         )
-        btn_search.pack(fill="x", padx=14, pady=(0, 10))
+        btn_search.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
-        ctk.CTkFrame(self.sidebar, height=1, fg_color=Theme.BORDER_SIDEBAR).pack(fill="x", padx=16, pady=(0, 10))
+        ctk.CTkFrame(self.sidebar, height=1, fg_color=Theme.BORDER_SIDEBAR).pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # 2. Contenedor de Navegación por Grupos (Scrollable para pantallas de cualquier tamaño)
         self.nav_buttons: Dict[str, ctk.CTkButton] = {}
@@ -109,7 +132,7 @@ class FinancialApp(ctk.CTk):
             scrollbar_button_color=Theme.BORDER_DEFAULT,
             scrollbar_button_hover_color=Theme.TEXT_MUTED
         )
-        nav_scroll.pack(fill="both", expand=True, padx=4, pady=(0, 6))
+        nav_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
         nav_groups = [
             ("FINANZAS", [
@@ -141,21 +164,21 @@ class FinancialApp(ctk.CTk):
                 text_color=Theme.TEXT_MUTED
             )
             top_pad = 4 if group_idx == 0 else 12
-            group_lbl.pack(anchor="w", padx=14, pady=(top_pad, 2))
+            group_lbl.pack(anchor="w", padx=Theme.SPACING_MD, pady=(top_pad, 2))
 
             for view_key, label in items:
                 item_row = ctk.CTkFrame(nav_scroll, fg_color="transparent")
-                item_row.pack(fill="x", padx=6, pady=1)
+                item_row.pack(fill="x", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
 
                 # Píldora indicadora lateral de selección activa
                 pill = ctk.CTkFrame(
                     item_row,
                     width=3,
                     height=20,
-                    corner_radius=2,
+                    corner_radius=Theme.SPACING_XS,
                     fg_color="transparent"
                 )
-                pill.pack(side="left", padx=(0, 4))
+                pill.pack(side="left", padx=(0, Theme.SPACING_XS))
                 self.nav_pills[view_key] = pill
 
                 btn = ctk.CTkButton(
@@ -163,7 +186,7 @@ class FinancialApp(ctk.CTk):
                     text=label,
                     anchor="w",
                     height=32,
-                    corner_radius=8,
+                    corner_radius=Theme.SPACING_SM,
                     font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
                     fg_color="transparent",
                     text_color=Theme.TEXT_SECONDARY,
@@ -179,25 +202,25 @@ class FinancialApp(ctk.CTk):
             text="📄  Importador CSV",
             anchor="w",
             height=32,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
             command=self._open_csv_importer
         )
-        btn_csv.pack(fill="x", padx=(13, 6), pady=(12, 6))
+        btn_csv.pack(fill="x", padx=(Theme.SPACING_SM, Theme.SPACING_XS), pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
         # 3. Sección Inferior del Sidebar
         footer_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        footer_frame.pack(side="bottom", fill="x", padx=16, pady=16)
+        footer_frame.pack(side="bottom", fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_MD)
 
         # Widget de Balance Rápido
-        self.quick_balance_box = ctk.CTkFrame(footer_frame, fg_color=Theme.BG_CARD, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        self.quick_balance_box.pack(fill="x", pady=(0, 10))
+        self.quick_balance_box = ctk.CTkFrame(footer_frame, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        self.quick_balance_box.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         quick_inner = ctk.CTkFrame(self.quick_balance_box, fg_color="transparent")
-        quick_inner.pack(fill="x", padx=12, pady=8)
+        quick_inner.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(
             quick_inner,
@@ -212,7 +235,7 @@ class FinancialApp(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
-        self.lbl_sidebar_usd.pack(anchor="w", pady=(2, 0))
+        self.lbl_sidebar_usd.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         self.lbl_sidebar_cop = ctk.CTkLabel(
             quick_inner,
@@ -224,7 +247,7 @@ class FinancialApp(ctk.CTk):
 
         # Selector de Modo Oscuro / Claro
         theme_row = ctk.CTkFrame(footer_frame, fg_color="transparent")
-        theme_row.pack(fill="x", pady=(0, 8))
+        theme_row.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         ctk.CTkLabel(
             theme_row,
@@ -279,23 +302,23 @@ class FinancialApp(ctk.CTk):
         if view_key == "dashboard":
             view = DashboardView(self.content_container, self.db, navigate_to=self.show_view)
         elif view_key == "incomes":
-            view = IncomesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = IncomesView(self.content_container, self.db)
         elif view_key == "expenses":
-            view = ExpensesView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = ExpensesView(self.content_container, self.db)
         elif view_key == "budget":
             view = BudgetView(self.content_container, self.db)
         elif view_key == "debts":
-            view = DebtView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = DebtView(self.content_container, self.db)
         elif view_key == "conversion":
-            view = ConversionView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = ConversionView(self.content_container, self.db)
         elif view_key == "investments":
-            view = InvestmentsView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = InvestmentsView(self.content_container, self.db)
         elif view_key == "ledger":
-            view = LedgerView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = LedgerView(self.content_container, self.db)
         elif view_key == "analytics":
             view = AnalyticsView(self.content_container, self.db)
         elif view_key == "settings":
-            view = SettingsView(self.content_container, self.db, on_data_changed=self.on_data_updated)
+            view = SettingsView(self.content_container, self.db)
 
         if view:
             self.views[view_key] = view
@@ -378,7 +401,7 @@ class FinancialApp(ctk.CTk):
         CSVImporterModal(
             self,
             self.db,
-            on_success=self.on_data_updated
+            on_success=lambda: EventBus.publish("DATA_UPDATED")
         )
 
     def _toggle_theme(self):

@@ -5,24 +5,63 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
+# Detectar si existe código ofuscado previamente por PyArmor
+SRC_DIR = 'build/obf' if os.path.exists('build/obf/main.py') else '.'
+if SRC_DIR != '.' and os.path.abspath(SRC_DIR) not in sys.path:
+    sys.path.insert(0, os.path.abspath(SRC_DIR))
+
 # Recolectar datos y temas de CustomTkinter
 datas = collect_data_files('customtkinter')
 
-# Módulos ocultos requeridos
+# Módulos ocultos requeridos (estándar y terceros para soportar ofuscación)
 hiddenimports = [
+    'sqlite3',
+    'json',
+    'csv',
+    'calendar',
+    'datetime',
+    'logging',
+    're',
+    'shutil',
+    'ssl',
+    'tempfile',
+    'threading',
+    'tkinter',
+    'tkinter.ttk',
+    'tkinter.filedialog',
+    'tkinter.messagebox',
+    'urllib',
+    'urllib.request',
+    'urllib.error',
+    'unicodedata',
+    'platform',
+    'numpy',
+    'darkdetect',
     'customtkinter',
     'PIL',
     'PIL._tkinter_finder',
     'matplotlib',
     'matplotlib.backends.backend_tkagg',
 ]
+
+# Incluir runtime de PyArmor si existe
+if os.path.exists(SRC_DIR):
+    for item in os.listdir(SRC_DIR):
+        if item.startswith('pyarmor_runtime_'):
+            hiddenimports.append(item)
+            datas.append((os.path.join(SRC_DIR, item), item))
+
 hiddenimports += collect_submodules('ui')
 hiddenimports += collect_submodules('database')
 hiddenimports += collect_submodules('services')
+hiddenimports += collect_submodules('controllers')
+hiddenimports += collect_submodules('core')
+
+entry_script = os.path.join(SRC_DIR, 'main.py')
 
 a = Analysis(
-    ['main.py'],
-    pathex=['.'],
+    [entry_script],
+    pathex=[SRC_DIR, '.'],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
@@ -77,8 +116,8 @@ if sys.platform == 'darwin':
             'CFBundleDisplayName': 'Control Financiero',
             'CFBundleGetInfoString': 'Gestor Financiero Multimoneda',
             'CFBundleIdentifier': 'com.controlfinanciero.app',
-            'CFBundleVersion': '1.0.0',
-            'CFBundleShortVersionString': '1.0.0',
+            'CFBundleVersion': '1.1.0',
+            'CFBundleShortVersionString': '1.1.0',
             'NSHighResolutionCapable': 'True',
         },
     )

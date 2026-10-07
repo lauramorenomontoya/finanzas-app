@@ -11,8 +11,9 @@ from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
 from ui.utils.modal_helper import center_window
 
+from ui.components.base_modal import BaseModal
 
-class DuplicateModal(ctk.CTkToplevel):
+class DuplicateModal(BaseModal):
     def __init__(
         self,
         parent,
@@ -21,47 +22,24 @@ class DuplicateModal(ctk.CTkToplevel):
         record: Dict[str, Any],
         on_success: Optional[Callable[[], None]] = None
     ):
-        super().__init__(parent)
+        super().__init__(parent, title="Duplicar Registro", width=480, height=480, min_width=440, min_height=420, resizable_x=True, resizable_y=True)
         self.db = db_manager
         self.source_table = source_table
         self.record = record
         self.on_success = on_success
 
-        self.title("Duplicar Registro")
-        self.geometry("480x480")
-        self.minsize(440, 420)
-        self.resizable(True, True)
-        self.configure(fg_color=Theme.BG_WINDOW)
-
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
-
         self._build_ui()
 
-    def _center_window(self, parent):
-        center_window(self, parent, 480, 480)
-
     def _build_ui(self):
-        main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
+        main_frame = self.create_standard_frame()
 
         # 1. Encabezado Fijo Superior
-        header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(16, 10))
-
-        ctk.CTkLabel(
-            header,
-            text="📋 Duplicar Movimiento",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w")
-
         concept = self.record.get("category") or self.record.get("platform") or self.record.get("concept") or "Movimiento"
         amt = self.record.get("amount") or self.record.get("inflow") or self.record.get("outflow") or 0.0
         curr = self.record.get("currency", "COP")
         amt_str = f"${amt:,.2f} USD" if curr == "USD" else f"${amt:,.0f} COP"
 
+        header = self.create_header(main_frame, "Duplicar Movimiento", icon="📋")
         ctk.CTkLabel(
             header,
             text=f"Base: {concept} ({amt_str})",
@@ -69,56 +47,37 @@ class DuplicateModal(ctk.CTkToplevel):
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
 
-        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
-        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
-        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
-
-        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", pady=(0, 6))
-
-        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
-        btn_row.pack(fill="x")
-
-        btn_cancel = ctk.CTkButton(
-            btn_row,
-            text="Cancelar",
-            font=ctk.CTkFont(size=12),
-            height=38,
-            corner_radius=8,
-            fg_color=Theme.BG_INPUT,
-            hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.TEXT_SECONDARY,
-            command=self.destroy
+        # 2. Pie Fijo Inferior con Botones
+        self.create_footer_buttons(
+            main_frame,
+            on_confirm=self._handle_duplicate,
+            on_cancel=self.destroy,
+            confirm_text="📋 Clonar y Guardar",
+            cancel_text="Cancelar",
+            is_destructive=False
         )
-        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        btn_clone = ctk.CTkButton(
-            btn_row,
-            text="📋 Clonar y Guardar",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#10b981",
-            hover_color="#059669",
-            text_color="#ffffff",
-            command=self._handle_duplicate
-        )
-        btn_clone.pack(side="right", fill="x", expand=True, padx=(8, 0))
+        # Label de error (se posiciona justo encima de los botones)
+        footer_container = ctk.CTkFrame(main_frame, fg_color="transparent")
+        footer_container.pack(side="bottom", fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
+
+        self.lbl_error = ctk.CTkLabel(footer_container, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, 0))
 
         # 3. Cuerpo Desplazable Central
         scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
-        scroll_body.pack(fill="both", expand=True, padx=12, pady=(0, 10))
+        scroll_body.pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
         # Campo Nueva Fecha con DatePickerWidget
-        ctk.CTkLabel(scroll_body, text="Nueva Fecha de Registro:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Nueva Fecha de Registro:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         self.date_entry = DatePickerWidget(scroll_body, height=36)
-        self.date_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.date_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Campo Notas
-        ctk.CTkLabel(scroll_body, text="Nota o Concepto:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
-        self.notes_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=8, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
+        ctk.CTkLabel(scroll_body, text="Nota o Concepto:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
+        self.notes_entry = ctk.CTkEntry(scroll_body, height=36, corner_radius=Theme.SPACING_SM, fg_color=Theme.BG_INPUT, border_color=Theme.BORDER_DEFAULT, font=ctk.CTkFont(size=13))
         self.notes_entry.insert(0, str(self.record.get("notes", "") or ""))
-        self.notes_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.notes_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
     def _handle_duplicate(self):
         new_date = self.date_entry.get().strip()

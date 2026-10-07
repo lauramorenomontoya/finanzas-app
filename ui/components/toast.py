@@ -40,7 +40,7 @@ class ToastNotification(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
-            corner_radius=10,
+            corner_radius=Theme.SPACING_SM,
             border_width=1,
             fg_color=("#f1f5f9", "#1e293b"),
             border_color=("#cbd5e1", "#334155"),
@@ -53,7 +53,7 @@ class ToastNotification(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
-        self.label.pack(padx=16, pady=8)
+        self.label.pack(padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
         self._after_id = None
 
     def show(self, message: str, is_error: bool = False, variant: Optional[str] = None, duration_ms: int = 3500):
@@ -70,7 +70,7 @@ class ToastNotification(ctk.CTkFrame):
         self.configure(fg_color=cfg["bg"], border_color=cfg["border"])
         self.label.configure(text=display_text, text_color=cfg["text"])
 
-        self.pack(fill="x", padx=20, pady=(0, 10))
+        self.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         if self._after_id:
             self.after_cancel(self._after_id)

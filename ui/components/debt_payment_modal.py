@@ -43,12 +43,12 @@ class DebtPaymentModal(ctk.CTkToplevel):
 
     def _build_ui(self):
         is_receivable = self.debt.get("debt_type") == "RECEIVABLE"
-        main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
+        main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        main_frame.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=Theme.SPACING_MD)
 
         # 1. Encabezado Fijo
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(16, 8))
+        header.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         header_title = f"📥 Registrar Pago de {self.debt['creditor']}" if is_receivable else f"💰 Registrar Abono a {self.debt['creditor']}"
         header_sub = "Registra un cobro o abono recibido para amortizar lo que te deben" if is_receivable else "Registra un pago parcial o total para amortizar tu deuda"
@@ -64,13 +64,13 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text=header_sub,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", pady=(2, 0))
+        ).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
-        ctk.CTkFrame(main_frame, height=1, fg_color=Theme.BORDER_SUBTLE).pack(fill="x", padx=20, pady=(4, 10))
+        ctk.CTkFrame(main_frame, height=1, fg_color=Theme.BORDER_SUBTLE).pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
 
         # 2. Pie Fijo de Botones
         footer = ctk.CTkFrame(main_frame, fg_color="transparent")
-        footer.pack(side="bottom", fill="x", padx=20, pady=(10, 16))
+        footer.pack(side="bottom", fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_SM, Theme.SPACING_MD))
 
         self.lbl_error = ctk.CTkLabel(
             footer,
@@ -78,7 +78,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             font=ctk.CTkFont(size=11),
             text_color=Theme.ACCENT_ROSE
         )
-        self.lbl_error.pack(anchor="w", pady=(0, 6))
+        self.lbl_error.pack(anchor="w", pady=(0, Theme.SPACING_XS))
 
         btn_box = ctk.CTkFrame(footer, fg_color="transparent")
         btn_box.pack(fill="x")
@@ -90,39 +90,39 @@ class DebtPaymentModal(ctk.CTkToplevel):
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             height=36,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             command=self.destroy
         )
-        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
         btn_label = "Confirmar Pago Recibido" if is_receivable else "Confirmar Abono"
         btn_save = ctk.CTkButton(
             btn_box,
             text=btn_label,
             fg_color=Theme.ACCENT_GREEN,
-            hover_color="#059669",
-            text_color="#ffffff",
+            hover_color=Theme.SUCCESS,
+            text_color=Theme.TEXT_ON_COLOR,
             height=36,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(weight="bold"),
             command=self._confirm_payment
         )
-        btn_save.pack(side="right", fill="x", expand=True, padx=(6, 0))
+        btn_save.pack(side="right", fill="x", expand=True, padx=(Theme.SPACING_XS, 0))
 
         # 3. Contenedor Desplazable del Formulario
         scroll = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=20, pady=0)
+        scroll.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=0)
 
         # Tarjeta informativa de Saldos
-        card_info = ctk.CTkFrame(scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        card_info.pack(fill="x", pady=(0, 14), padx=2)
+        card_info = ctk.CTkFrame(scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        card_info.pack(fill="x", pady=(0, Theme.SPACING_MD), padx=Theme.SPACING_XS)
 
         info_inner = ctk.CTkFrame(card_info, fg_color="transparent")
-        info_inner.pack(fill="x", padx=14, pady=12)
+        info_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
         # Fila 1: Total y Pendiente
         row1 = ctk.CTkFrame(info_inner, fg_color="transparent")
-        row1.pack(fill="x", pady=(0, 6))
+        row1.pack(fill="x", pady=(0, Theme.SPACING_XS))
 
         ctk.CTkLabel(
             row1,
@@ -140,7 +140,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
 
         # Fila 2: Saldo Restante en Grande
         row2 = ctk.CTkFrame(info_inner, fg_color="transparent")
-        row2.pack(fill="x", pady=(2, 6))
+        row2.pack(fill="x", pady=(2, Theme.SPACING_XS))
 
         ctk.CTkLabel(
             row2,
@@ -163,7 +163,7 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text=f"💰 Tu saldo disponible en cuenta: ${cop_balance:,.0f} COP",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             text_color=Theme.ACCENT_GREEN
-        ).pack(anchor="w", pady=(4, 0))
+        ).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         # Campo: Monto a Abonar
         ctk.CTkLabel(
@@ -171,22 +171,22 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text="Monto a Abonar *",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(0, 2))
+        ).pack(anchor="w", pady=(0, Theme.SPACING_XS))
 
         self.entry_amount = ctk.CTkEntry(
             scroll,
             placeholder_text="Ej: 500000",
             height=35,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
-        self.entry_amount.pack(fill="x", pady=(0, 6))
+        self.entry_amount.pack(fill="x", pady=(0, Theme.SPACING_XS))
 
         # Botones Rápidos de Monto (Atajos)
         quick_box = ctk.CTkFrame(scroll, fg_color="transparent")
-        quick_box.pack(fill="x", pady=(0, 12))
+        quick_box.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         rem = self.debt["remaining_amount"]
         btn_25 = ctk.CTkButton(
@@ -194,38 +194,38 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text="25%",
             width=65,
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=lambda: self._set_quick_amount(rem * 0.25)
         )
-        btn_25.pack(side="left", padx=(0, 4))
+        btn_25.pack(side="left", padx=(0, Theme.SPACING_XS))
 
         btn_50 = ctk.CTkButton(
             quick_box,
             text="50%",
             width=65,
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=lambda: self._set_quick_amount(rem * 0.50)
         )
-        btn_50.pack(side="left", padx=4)
+        btn_50.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_all = ctk.CTkButton(
             quick_box,
             text="Total Pendiente",
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=lambda: self._set_quick_amount(rem)
         )
-        btn_all.pack(side="left", padx=4)
+        btn_all.pack(side="left", padx=Theme.SPACING_XS)
 
         # Campo: Fecha del Abono
         ctk.CTkLabel(
@@ -233,10 +233,10 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text="Fecha del Abono *",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(0, 2))
+        ).pack(anchor="w", pady=(0, Theme.SPACING_XS))
 
         self.date_picker = DatePickerWidget(scroll, initial_date=datetime.now().strftime("%Y-%m-%d"))
-        self.date_picker.pack(fill="x", pady=(0, 12))
+        self.date_picker.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         # Campo: Notas del Abono / Pago
         ctk.CTkLabel(
@@ -244,19 +244,19 @@ class DebtPaymentModal(ctk.CTkToplevel):
             text="Notas / Detalle (Opcional)",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", pady=(0, 2))
+        ).pack(anchor="w", pady=(0, Theme.SPACING_XS))
 
         ph_notes = "Ej: Transferencia Bancolombia, pago en efectivo..." if is_receivable else "Ej: Abono de quincena, transferencia Bancolombia..."
         self.entry_notes = ctk.CTkEntry(
             scroll,
             placeholder_text=ph_notes,
             height=35,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=13)
         )
-        self.entry_notes.pack(fill="x", pady=(0, 14))
+        self.entry_notes.pack(fill="x", pady=(0, Theme.SPACING_MD))
 
         # Casilla: Afectar Saldo COP
         self.var_deduct = ctk.BooleanVar(value=True)
@@ -268,9 +268,9 @@ class DebtPaymentModal(ctk.CTkToplevel):
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_PRIMARY,
             fg_color=Theme.ACCENT_GREEN,
-            hover_color="#059669"
+            hover_color=Theme.SUCCESS
         )
-        self.chk_deduct.pack(anchor="w", pady=(0, 10))
+        self.chk_deduct.pack(anchor="w", pady=(0, Theme.SPACING_SM))
 
     def _set_quick_amount(self, amount: float):
         amount = round(amount)

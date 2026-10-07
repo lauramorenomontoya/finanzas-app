@@ -11,7 +11,9 @@ from ui.components.date_picker import DatePickerWidget
 from ui.utils.modal_helper import center_window
 
 
-class PayRecurringDialog(ctk.CTkToplevel):
+from ui.components.base_modal import BaseModal
+
+class PayRecurringDialog(BaseModal):
     def __init__(
         self,
         parent,
@@ -20,24 +22,14 @@ class PayRecurringDialog(ctk.CTkToplevel):
         on_confirm: Callable[[str], None],
         on_cancel: Optional[Callable[[], None]] = None
     ):
-        super().__init__(parent)
         self.item = item
         self.target_ym = target_ym
         self.on_confirm = on_confirm
         self.on_cancel = on_cancel
 
-        self.title("Registrar Pago de Gasto Fijo")
-        self.geometry("460x340")
-        self.minsize(420, 320)
-        self.configure(fg_color=Theme.BG_WINDOW)
+        super().__init__(parent, title="Registrar Pago de Gasto Fijo", width=460, height=340, min_width=420, min_height=320)
 
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
         self._build_ui()
-
-    def _center_window(self, parent):
-        center_window(self, parent, 460, 340)
 
     def _format_month(self, ym: str) -> str:
         try:
@@ -51,19 +43,10 @@ class PayRecurringDialog(ctk.CTkToplevel):
             return ym
 
     def _build_ui(self):
-        card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        card.pack(fill="both", expand=True, padx=16, pady=16)
+        card = self.create_standard_frame()
 
         # 1. Cabecera
-        header = ctk.CTkFrame(card, fg_color="transparent")
-        header.pack(fill="x", padx=16, pady=(16, 10))
-
-        ctk.CTkLabel(
-            header,
-            text="📅 Registrar Pago de Gasto Fijo",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w")
+        header = self.create_header(card, "Registrar Pago de Gasto Fijo", icon="📅")
 
         curr = self.item.get("currency", "COP")
         amt = self.item.get("amount", 0)
@@ -71,11 +54,11 @@ class PayRecurringDialog(ctk.CTkToplevel):
         m_name = self._format_month(self.target_ym)
 
         # 2. Tarjeta resumen del gasto
-        box = ctk.CTkFrame(card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        box.pack(fill="x", padx=16, pady=(0, 12))
+        box = ctk.CTkFrame(card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        box.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         b_in = ctk.CTkFrame(box, fg_color="transparent")
-        b_in.pack(fill="x", padx=12, pady=10)
+        b_in.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(
             b_in,
@@ -85,13 +68,13 @@ class PayRecurringDialog(ctk.CTkToplevel):
         ).pack(anchor="w")
 
         row_info = ctk.CTkFrame(b_in, fg_color="transparent")
-        row_info.pack(fill="x", pady=(4, 0))
+        row_info.pack(fill="x", pady=(Theme.SPACING_XS, 0))
 
         ctk.CTkLabel(
             row_info,
             text=f"Monto: {amt_str}",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#10b981"
+            text_color=Theme.SUCCESS
         ).pack(side="left")
 
         ctk.CTkLabel(
@@ -107,10 +90,10 @@ class PayRecurringDialog(ctk.CTkToplevel):
             text="Fecha en que realizas el pago (hoy):",
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
-        ).pack(anchor="w", padx=16, pady=(0, 4))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.date_picker = DatePickerWidget(card, height=34)
-        self.date_picker.pack(fill="x", padx=16, pady=(0, 8))
+        self.date_picker.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         hint_text = f"💡 Se descontará hoy de tu saldo disponible y quedará imputado contablemente en {m_name}, apareciendo en su Balance General y Presupuesto sin consumir el presupuesto del mes actual."
         ctk.CTkLabel(
@@ -120,38 +103,17 @@ class PayRecurringDialog(ctk.CTkToplevel):
             text_color=Theme.TEXT_MUTED,
             wraplength=380,
             justify="left"
-        ).pack(anchor="w", padx=16, pady=(0, 14))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # 4. Botones
-        btn_row = ctk.CTkFrame(card, fg_color="transparent")
-        btn_row.pack(fill="x", padx=16, pady=(0, 14))
-
-        btn_cancel = ctk.CTkButton(
-            btn_row,
-            text="Cancelar",
-            height=34,
-            width=90,
-            fg_color=Theme.BG_CARD_SUBTLE,
-            hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.TEXT_SECONDARY,
-            font=ctk.CTkFont(size=12),
-            corner_radius=8,
-            command=self._handle_cancel
+        self.create_footer_buttons(
+            card,
+            on_confirm=self._handle_confirm,
+            on_cancel=self._handle_cancel,
+            confirm_text="✅ Confirmar Pago",
+            cancel_text="Cancelar",
+            is_destructive=False
         )
-        btn_cancel.pack(side="left", padx=(0, 8))
-
-        btn_confirm = ctk.CTkButton(
-            btn_row,
-            text="✅ Confirmar Pago",
-            height=34,
-            fg_color="#10b981",
-            hover_color="#059669",
-            text_color="#ffffff",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            corner_radius=8,
-            command=self._handle_confirm
-        )
-        btn_confirm.pack(side="right", fill="x", expand=True)
 
     def _handle_cancel(self):
         if self.on_cancel:

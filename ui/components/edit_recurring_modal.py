@@ -10,7 +10,9 @@ from ui.theme import Theme
 from ui.utils.modal_helper import center_window
 
 
-class EditRecurringModal(ctk.CTkToplevel):
+from ui.components.base_modal import BaseModal
+
+class EditRecurringModal(BaseModal):
     def __init__(
         self,
         parent,
@@ -18,90 +20,49 @@ class EditRecurringModal(ctk.CTkToplevel):
         recurring_item: Dict[str, Any],
         on_success: Optional[Callable[[], None]] = None
     ):
-        super().__init__(parent)
         self.db = db_manager
         self.item = recurring_item
         self.on_success = on_success
 
-        self.title("Editar Gasto Fijo Recurrente")
-        self.geometry("500x580")
-        self.minsize(460, 480)
-        self.resizable(True, True)
-        self.configure(fg_color=Theme.BG_WINDOW)
-
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
+        super().__init__(parent, title="Editar Gasto Fijo Recurrente", width=500, height=580, min_width=460, min_height=480, resizable_x=True, resizable_y=True)
 
         self._build_ui()
 
-    def _center_window(self, parent):
-        center_window(self, parent, 500, 580)
-
     def _build_ui(self):
-        container = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        container.pack(fill="both", expand=True, padx=16, pady=16)
+        container = self.create_standard_frame()
 
         # 1. Encabezado Fijo Superior
-        header = ctk.CTkFrame(container, fg_color="transparent")
-        header.pack(fill="x", padx=18, pady=(16, 10))
-
-        ctk.CTkLabel(
-            header,
-            text="✏️ Modificar Gasto Fijo",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w")
+        header = self.create_header(container, "Modificar Gasto Fijo", icon="✏️")
 
         ctk.CTkLabel(
             header,
             text="Actualiza los parámetros de este pago en tu plantilla recurrente.",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", pady=(2, 0))
+        ).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
-        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
-        footer = ctk.CTkFrame(container, fg_color="transparent")
-        footer.pack(side="bottom", fill="x", padx=18, pady=(0, 16))
-
-        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
-        self.lbl_error.pack(anchor="w", pady=(0, 6))
-
-        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
-        btn_row.pack(fill="x")
-
-        btn_cancel = ctk.CTkButton(
-            btn_row,
-            text="Cancelar",
-            font=ctk.CTkFont(size=12),
-            height=38,
-            corner_radius=8,
-            fg_color=Theme.BG_INPUT,
-            hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.TEXT_SECONDARY,
-            command=self.destroy
+        # 2. Pie Fijo Inferior con Botones
+        self.create_footer_buttons(
+            container,
+            on_confirm=self._handle_save,
+            on_cancel=self.destroy,
+            confirm_text="💾 Guardar Cambios",
+            cancel_text="Cancelar",
+            is_destructive=False
         )
-        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        btn_save = ctk.CTkButton(
-            btn_row,
-            text="💾 Guardar Cambios",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
-            command=self._handle_save
-        )
-        btn_save.pack(side="right", fill="x", expand=True, padx=(8, 0))
+        footer_error_container = ctk.CTkFrame(container, fg_color="transparent")
+        footer_error_container.pack(side="bottom", fill="x", padx=Theme.SPACING_MD, pady=(0, 0))
+
+        self.lbl_error = ctk.CTkLabel(footer_error_container, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE)
+        self.lbl_error.pack(anchor="w", pady=(0, Theme.SPACING_XS))
 
         # 3. Cuerpo Desplazable Central
         scroll_body = ctk.CTkScrollableFrame(container, fg_color="transparent")
-        scroll_body.pack(fill="both", expand=True, padx=12, pady=(0, 10))
+        scroll_body.pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
         # Selector de Moneda
-        ctk.CTkLabel(scroll_body, text="Moneda del Gasto:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 2))
+        ctk.CTkLabel(scroll_body, text="Moneda del Gasto:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         
         curr = self.item.get("currency", "COP")
         self.curr_seg = ctk.CTkSegmentedButton(
@@ -111,36 +72,36 @@ class EditRecurringModal(ctk.CTkToplevel):
             command=self._on_currency_changed
         )
         self.curr_seg.set("💵 Dólares (USD)" if curr == "USD" else "🇨🇴 Pesos (COP)")
-        self.curr_seg.pack(fill="x", padx=6, pady=(0, 12))
+        self.curr_seg.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Selector de Categoría
-        ctk.CTkLabel(scroll_body, text="Categoría:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 2))
+        ctk.CTkLabel(scroll_body, text="Categoría:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         
         self.cat_combo = ctk.CTkComboBox(
             scroll_body,
             values=[],
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
-        self.cat_combo.pack(fill="x", padx=6, pady=(0, 12))
+        self.cat_combo.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
         self._populate_categories(curr)
 
         # Descripción
-        ctk.CTkLabel(scroll_body, text="Descripción / Concepto:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 2))
+        ctk.CTkLabel(scroll_body, text="Descripción / Concepto:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         self.desc_entry = ctk.CTkEntry(
             scroll_body,
             placeholder_text="Ej: Pago arriendo / Suscripción",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
         )
         self.desc_entry.insert(0, str(self.item.get("description", "")))
-        self.desc_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.desc_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Monto
         self.lbl_amt = ctk.CTkLabel(
@@ -149,13 +110,13 @@ class EditRecurringModal(ctk.CTkToplevel):
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         )
-        self.lbl_amt.pack(anchor="w", padx=6, pady=(0, 2))
+        self.lbl_amt.pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
         self.amount_entry = ctk.CTkEntry(
             scroll_body,
             placeholder_text="Ej: 1500000",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
@@ -163,21 +124,21 @@ class EditRecurringModal(ctk.CTkToplevel):
         amt_val = self.item.get("amount", 0)
         amt_str = f"{amt_val:.2f}" if curr == "USD" else str(int(amt_val))
         self.amount_entry.insert(0, amt_str)
-        self.amount_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.amount_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Día sugerido de pago
-        ctk.CTkLabel(scroll_body, text="Día sugerido de pago (1 al 31):", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 2))
+        ctk.CTkLabel(scroll_body, text="Día sugerido de pago (1 al 31):", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         self.day_entry = ctk.CTkEntry(
             scroll_body,
             placeholder_text="Ej: 5",
             height=34,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12)
         )
         self.day_entry.insert(0, str(self.item.get("due_day", 1)))
-        self.day_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.day_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
     def _populate_categories(self, currency: str):
         cat_type = "EXPENSE_USD" if currency == "USD" else "EXPENSE_COP"

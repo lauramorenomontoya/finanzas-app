@@ -50,14 +50,14 @@ class CalendarPopup(ctk.CTkToplevel):
     def _build_ui(self):
         # 1. Cabecera con controles de mes y año
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=12, pady=(12, 6))
+        header.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
         btn_prev = ctk.CTkButton(
             header,
             text="◀",
             width=30,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12, weight="bold"),
@@ -78,7 +78,7 @@ class CalendarPopup(ctk.CTkToplevel):
             text="▶",
             width=30,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=12, weight="bold"),
@@ -88,7 +88,7 @@ class CalendarPopup(ctk.CTkToplevel):
 
         # 2. Encabezados de días de la semana
         days_header = ctk.CTkFrame(self, fg_color="transparent")
-        days_header.pack(fill="x", padx=12, pady=(2, 4))
+        days_header.pack(fill="x", padx=Theme.SPACING_SM, pady=(2, Theme.SPACING_XS))
         days_header.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
 
         day_names = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"]
@@ -98,42 +98,42 @@ class CalendarPopup(ctk.CTkToplevel):
                 text=d_name,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 text_color=Theme.TEXT_MUTED
-            ).grid(row=0, column=idx, pady=2)
+            ).grid(row=0, column=idx, pady=Theme.SPACING_XS)
 
         # 3. Cuadrícula de días
         self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.grid_frame.pack(fill="both", expand=True, padx=10, pady=(0, 6))
+        self.grid_frame.pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_XS))
         self.grid_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
 
         # 4. Barra inferior con 'Hoy' y 'Cerrar'
         footer = ctk.CTkFrame(self, fg_color="transparent")
-        footer.pack(fill="x", padx=12, pady=(0, 10))
+        footer.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
         btn_today = ctk.CTkButton(
             footer,
             text="📅 Hoy",
             height=26,
-            corner_radius=6,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_XS,
+            fg_color=Theme.INFO,
+            hover_color=Theme.INFO_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._select_today
         )
-        btn_today.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        btn_today.pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
         btn_close = ctk.CTkButton(
             footer,
             text="Cerrar",
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_SECONDARY,
             font=ctk.CTkFont(size=11),
             command=self.destroy
         )
-        btn_close.pack(side="right", padx=(4, 0))
+        btn_close.pack(side="right", padx=(Theme.SPACING_XS, 0))
 
     def _prev_month(self):
         if self.view_month == 1:
@@ -197,7 +197,7 @@ class CalendarPopup(ctk.CTkToplevel):
                     text=str(day),
                     width=32,
                     height=28,
-                    corner_radius=6,
+                    corner_radius=Theme.SPACING_XS,
                     fg_color=bg_color,
                     hover_color=hover_color,
                     text_color=txt_color,
@@ -206,7 +206,7 @@ class CalendarPopup(ctk.CTkToplevel):
                     font=ctk.CTkFont(size=11, weight="bold" if (is_selected or is_today) else "normal"),
                     command=lambda d=day: self._select_day(d)
                 )
-                btn_day.grid(row=r_idx, column=c_idx, padx=1, pady=1)
+                btn_day.grid(row=r_idx, column=c_idx, padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
 
     def _select_day(self, day: int):
         chosen = date(self.view_year, self.view_month, day)
@@ -244,13 +244,13 @@ class DatePickerWidget(ctk.CTkFrame):
         self.entry = ctk.CTkEntry(
             self,
             height=height,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=13)
         )
         self.entry.insert(0, default_date)
-        self.entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.entry.pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
         # Botón de Calendario
         self.btn_cal = ctk.CTkButton(
@@ -258,7 +258,7 @@ class DatePickerWidget(ctk.CTkFrame):
             text="📅",
             width=38,
             height=height,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             hover_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=14),

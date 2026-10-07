@@ -38,7 +38,7 @@ class EmptyState(ctk.CTkFrame):
             container,
             width=50 if compact else 64,
             height=50 if compact else 64,
-            corner_radius=25 if compact else 32,
+            corner_radius=Theme.SPACING_LG if compact else 32,
             fg_color=Theme.BG_CARD_SUBTLE,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE
@@ -60,7 +60,7 @@ class EmptyState(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=title_size, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
-        lbl_title.pack(pady=(0, 4))
+        lbl_title.pack(pady=(0, Theme.SPACING_XS))
 
         # 3. Mensaje / Descripción
         if message:
@@ -92,11 +92,11 @@ class EmptyState(ctk.CTkFrame):
                 container,
                 text=action_text,
                 height=30 if compact else 34,
-                corner_radius=8,
+                corner_radius=Theme.SPACING_SM,
                 fg_color=fg_btn,
                 hover_color=hover_btn,
                 text_color=txt_color,
                 font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
                 command=action_command
             )
-            btn_cta.pack(pady=(4, 0))
+            btn_cta.pack(pady=(Theme.SPACING_XS, 0))

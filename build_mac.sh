@@ -17,10 +17,17 @@ fi
 # Instalar dependencias necesarias
 ./venv/bin/pip install -q --upgrade pip
 ./venv/bin/pip install -q -r requirements.txt
-./venv/bin/pip install -q pyinstaller
+./venv/bin/pip install -q pyinstaller pyarmor
+
+# Desmontar imagen DMG si estaba montada previamente
+hdiutil detach "/Volumes/Control Financiero" -force >/dev/null 2>&1 || true
 
 # Limpiar compilaciones anteriores
 rm -rf build dist
+
+# Ofuscar código fuente con PyArmor
+echo "Ofuscando código fuente con PyArmor..."
+./venv/bin/pyarmor gen -O build/obf -r main.py controllers core database services ui
 
 # Compilar la aplicación con PyInstaller
 echo "Empaquetando aplicación .app..."

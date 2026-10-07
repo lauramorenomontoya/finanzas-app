@@ -9,51 +9,41 @@ from ui.theme import Theme
 from ui.utils.modal_helper import center_window
 
 
-class GlobalSearchModal(ctk.CTkToplevel):
+from ui.components.base_modal import BaseModal
+
+class GlobalSearchModal(BaseModal):
     def __init__(
         self,
         parent,
         db_manager,
         navigate_to: Optional[Callable[[str], None]] = None
     ):
-        super().__init__(parent)
         self.db = db_manager
         self.navigate_to = navigate_to
         self.search_job = None
 
-        self.title("Búsqueda Global Rápida")
-        self.geometry("740x520")
-        self.minsize(650, 420)
-        self.configure(fg_color=Theme.BG_WINDOW)
-
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
+        super().__init__(parent, title="Búsqueda Global Rápida", width=740, height=520, min_width=650, min_height=420)
 
         self._build_ui()
 
         # Atajos de teclado para cerrar
         self.bind("<Escape>", lambda _: self.destroy())
 
-    def _center_window(self, parent):
-        center_window(self, parent, 740, 520)
-
     def _build_ui(self):
-        main_card = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_card.pack(fill="both", expand=True, padx=16, pady=16)
+        main_card = self.create_standard_frame()
 
         # 1. Barra de Búsqueda Superior
-        search_box = ctk.CTkFrame(main_card, fg_color=Theme.BG_INPUT, corner_radius=10, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        search_box.pack(fill="x", padx=16, pady=(16, 10))
+        search_box = ctk.CTkFrame(main_card, fg_color=Theme.BG_INPUT, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        search_box.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         search_inner = ctk.CTkFrame(search_box, fg_color="transparent")
-        search_inner.pack(fill="x", padx=12, pady=8)
+        search_inner.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(
             search_inner,
             text="🔍",
             font=ctk.CTkFont(size=16)
-        ).pack(side="left", padx=(0, 8))
+        ).pack(side="left", padx=(0, Theme.SPACING_SM))
 
         self.entry_query = ctk.CTkEntry(
             search_inner,
@@ -72,7 +62,7 @@ class GlobalSearchModal(ctk.CTkToplevel):
             text="✕",
             width=28,
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_MUTED,
@@ -83,7 +73,7 @@ class GlobalSearchModal(ctk.CTkToplevel):
 
         # 2. Encabezado de Resultados
         results_header = ctk.CTkFrame(main_card, fg_color="transparent")
-        results_header.pack(fill="x", padx=18, pady=(0, 6))
+        results_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
 
         self.lbl_results_count = ctk.CTkLabel(
             results_header,
@@ -94,12 +84,12 @@ class GlobalSearchModal(ctk.CTkToplevel):
         self.lbl_results_count.pack(side="left")
 
         # 3. Lista de Resultados con Scroll
-        self.results_scroll = ctk.CTkScrollableFrame(main_card, fg_color=Theme.BG_INPUT, corner_radius=8)
-        self.results_scroll.pack(fill="both", expand=True, padx=16, pady=(0, 10))
+        self.results_scroll = ctk.CTkScrollableFrame(main_card, fg_color=Theme.BG_INPUT, corner_radius=Theme.SPACING_SM)
+        self.results_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # 4. Barra Inferior con Ayuda de Atajos
         footer = ctk.CTkFrame(main_card, fg_color="transparent")
-        footer.pack(fill="x", padx=18, pady=(0, 12))
+        footer.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         ctk.CTkLabel(
             footer,
@@ -134,7 +124,7 @@ class GlobalSearchModal(ctk.CTkToplevel):
         if not results:
             self.lbl_results_count.configure(text=f"No se encontraron resultados para '{query}'")
             empty_box = ctk.CTkFrame(self.results_scroll, fg_color="transparent")
-            empty_box.pack(expand=True, pady=40)
+            empty_box.pack(expand=True, pady=Theme.SPACING_XL)
             ctk.CTkLabel(
                 empty_box,
                 text="🔍 Sin coincidencias",
@@ -161,11 +151,11 @@ class GlobalSearchModal(ctk.CTkToplevel):
                 amt_color = Theme.ACCENT_ROSE
 
             # Tarjeta de resultado interactiva
-            card = ctk.CTkFrame(self.results_scroll, fg_color=Theme.BG_CARD, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=2, padx=2)
+            card = ctk.CTkFrame(self.results_scroll, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             inner = ctk.CTkFrame(card, fg_color="transparent")
-            inner.pack(fill="x", padx=10, pady=8)
+            inner.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
             # Badge de módulo
             badge_color = "#0284c7" if "USD" in mod else ("#6366f1" if "Conversión" in mod else "#10b981")
@@ -174,10 +164,10 @@ class GlobalSearchModal(ctk.CTkToplevel):
                 text=f" {mod} ",
                 font=ctk.CTkFont(size=10, weight="bold"),
                 fg_color=badge_color,
-                text_color="#ffffff",
-                corner_radius=4
+                text_color=Theme.TEXT_ON_COLOR,
+                corner_radius=Theme.SPACING_XS
             )
-            mod_badge.pack(side="left", padx=(0, 8))
+            mod_badge.pack(side="left", padx=(0, Theme.SPACING_SM))
 
             # Monto a la derecha
             amt_lbl = ctk.CTkLabel(
@@ -186,7 +176,7 @@ class GlobalSearchModal(ctk.CTkToplevel):
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=amt_color
             )
-            amt_lbl.pack(side="right", padx=(8, 2))
+            amt_lbl.pack(side="right", padx=(Theme.SPACING_SM, 2))
 
             # Info central
             info_box = ctk.CTkFrame(inner, fg_color="transparent")

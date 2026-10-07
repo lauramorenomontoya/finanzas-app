@@ -20,7 +20,7 @@ class StatCard(ctk.CTkFrame):
         bg_color: Union[str, Tuple[str, str]] = Theme.BG_CARD,
         border_color: Union[str, Tuple[str, str]] = Theme.BORDER_DEFAULT,
         width: int = 220,
-        height: int = 120,
+        height: int = 104,
         **kwargs
     ):
         super().__init__(
@@ -28,7 +28,7 @@ class StatCard(ctk.CTkFrame):
             fg_color=bg_color,
             border_color=border_color,
             border_width=1,
-            corner_radius=14,
+            corner_radius=Theme.SPACING_MD,
             width=width,
             height=height,
             **kwargs
@@ -40,23 +40,23 @@ class StatCard(ctk.CTkFrame):
         # Barra superior de acento de color
         self.accent_bar = ctk.CTkFrame(
             self,
-            height=4,
-            corner_radius=2,
+            height=3,
+            corner_radius=Theme.SPACING_XS,
             fg_color=accent_color
         )
-        self.accent_bar.pack(fill="x", padx=14, pady=(10, 0))
+        self.accent_bar.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_XS, 0))
 
         # Fila superior: Ícono y Título
         top_frame = ctk.CTkFrame(self, fg_color="transparent")
-        top_frame.pack(fill="x", padx=16, pady=(8, 4))
+        top_frame.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_XS, 2))
 
         self.icon_label = ctk.CTkLabel(
             top_frame,
             text=icon,
-            font=ctk.CTkFont(size=20),
+            font=ctk.CTkFont(size=18),
             text_color=accent_color
         )
-        self.icon_label.pack(side="left", padx=(0, 8))
+        self.icon_label.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         self.title_label = ctk.CTkLabel(
             top_frame,
@@ -66,14 +66,16 @@ class StatCard(ctk.CTkFrame):
         )
         self.title_label.pack(side="left")
 
-        # Valor principal grande
+        # Valor principal grande (con auto-escala según longitud)
+        val_str = str(value)
+        font_size = 19 if len(val_str) > 17 else (22 if len(val_str) > 13 else 24)
         self.value_label = ctk.CTkLabel(
             self,
             text=value,
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=font_size, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
-        self.value_label.pack(anchor="w", padx=16, pady=(0, 2))
+        self.value_label.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, 2))
 
         # Subtítulo explicativo
         self.subtitle_label = ctk.CTkLabel(
@@ -82,17 +84,22 @@ class StatCard(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         )
-        self.subtitle_label.pack(anchor="w", padx=16, pady=(0, 12))
+        self.subtitle_label.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
     def update_value(self, new_value: str, new_subtitle: Optional[str] = None):
-        """Actualiza el texto del valor y opcionalmente el subtítulo."""
-        self.value_label.configure(text=new_value)
+        """Actualiza el texto del valor y opcionalmente el subtítulo con tipografía adaptativa."""
+        val_str = str(new_value)
+        font_size = 19 if len(val_str) > 17 else (22 if len(val_str) > 13 else 24)
+        self.value_label.configure(
+            text=new_value,
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=font_size, weight="bold")
+        )
         if new_subtitle is not None:
             self.subtitle_label.configure(text=new_subtitle)
 
     def set_value(self, new_value: str):
         """Alias para actualizar el valor."""
-        self.value_label.configure(text=new_value)
+        self.update_value(new_value)
 
     def set_subtitle(self, new_subtitle: str):
         """Alias para actualizar el subtítulo."""

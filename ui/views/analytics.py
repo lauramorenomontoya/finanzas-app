@@ -16,14 +16,26 @@ import matplotlib
 matplotlib.use("Agg")  # Backend estático para integración nativa con Tkinter
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from controllers.analytics_controller import AnalyticsController
 
 
 class AnalyticsView(ctk.CTkFrame):
+    ANNUAL_COL_WIDTHS = {
+        "month": 130,
+        "usd_in": 110,
+        "usd_out": 110,
+        "usd_sav": 115,
+        "cop_in": 135,
+        "cop_out": 135,
+        "cop_net": 135,
+        "global_net": 155,
+    }
+
     def __init__(self, master, db_manager, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
-        self.db = db_manager
+        self.controller = AnalyticsController(db_manager)
         self.current_year = datetime.now().year
-        self.current_rate = self.db.get_latest_exchange_rate()
+        self.current_rate = self.controller.get_latest_exchange_rate()
 
         self._build_ui()
         self._fetch_rate_on_start()
@@ -34,7 +46,7 @@ class AnalyticsView(ctk.CTkFrame):
 
         # 1. Cabecera
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 12))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_SM))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -61,11 +73,11 @@ class AnalyticsView(ctk.CTkFrame):
         self.trm_badge = ctk.CTkFrame(
             controls_frame,
             fg_color=Theme.BG_CARD,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             border_width=1,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.trm_badge.pack(side="left", padx=(0, 10))
+        self.trm_badge.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         self.lbl_trm_info = ctk.CTkLabel(
             self.trm_badge,
@@ -73,16 +85,16 @@ class AnalyticsView(ctk.CTkFrame):
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
-        self.lbl_trm_info.pack(padx=10, pady=5)
+        self.lbl_trm_info.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
-        ctk.CTkLabel(controls_frame, text="Año:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(controls_frame, text="Año:", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(side="left", padx=(0, Theme.SPACING_XS))
         years = [str(self.current_year + i) for i in range(-2, 3)]
         self.year_combo = ctk.CTkComboBox(
             controls_frame,
             values=years,
             width=85,
             height=30,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD,
@@ -92,11 +104,11 @@ class AnalyticsView(ctk.CTkFrame):
         self.year_combo.pack(side="left")
 
         # 2. Gran Banner de Patrimonio Neto Global Consolidado
-        self.net_worth_banner = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        self.net_worth_banner.pack(fill="x", padx=24, pady=(0, 14))
+        self.net_worth_banner = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        self.net_worth_banner.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         banner_inner = ctk.CTkFrame(self.net_worth_banner, fg_color="transparent")
-        banner_inner.pack(fill="x", padx=20, pady=16)
+        banner_inner.pack(fill="x", padx=Theme.SPACING_LG, pady=Theme.SPACING_MD)
 
         # Columna Izquierda: Total Patrimonio Neto
         left_nw = ctk.CTkFrame(banner_inner, fg_color="transparent")
@@ -114,7 +126,7 @@ class AnalyticsView(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=28, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
-        self.lbl_net_worth_cop.pack(anchor="w", pady=(2, 0))
+        self.lbl_net_worth_cop.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         self.lbl_net_worth_usd = ctk.CTkLabel(
             left_nw,
@@ -125,11 +137,11 @@ class AnalyticsView(ctk.CTkFrame):
         self.lbl_net_worth_usd.pack(anchor="w")
 
         # Columna Derecha: Control de TRM en vivo
-        trm_box = ctk.CTkFrame(banner_inner, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        trm_box = ctk.CTkFrame(banner_inner, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
         trm_box.pack(side="right")
 
         trm_inner = ctk.CTkFrame(trm_box, fg_color="transparent")
-        trm_inner.pack(padx=14, pady=10)
+        trm_inner.pack(padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(
             trm_inner,
@@ -144,7 +156,7 @@ class AnalyticsView(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.ACCENT_BLUE
         )
-        self.lbl_trm_applied.pack(anchor="w", pady=(2, 6))
+        self.lbl_trm_applied.pack(anchor="w", pady=(2, Theme.SPACING_XS))
 
         trm_row = ctk.CTkFrame(trm_inner, fg_color="transparent")
         trm_row.pack(anchor="w")
@@ -154,21 +166,21 @@ class AnalyticsView(ctk.CTkFrame):
             text="🌐 TRM en Vivo",
             height=28,
             width=95,
-            corner_radius=6,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_XS,
+            fg_color=Theme.INFO,
+            hover_color=Theme.INFO_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             font=ctk.CTkFont(size=10, weight="bold"),
             command=self._fetch_live_trm
         )
-        self.btn_live_trm.pack(side="left", padx=(0, 6))
+        self.btn_live_trm.pack(side="left", padx=(0, Theme.SPACING_XS))
 
         self.btn_edit_trm = ctk.CTkButton(
             trm_row,
             text="✏️ Cambiar Tasa",
             height=28,
             width=95,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             border_width=1,
@@ -181,7 +193,7 @@ class AnalyticsView(ctk.CTkFrame):
 
         # 3. Fila de Tarjetas de Métricas de Activos y Pasivos
         self.kpi_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.kpi_container.pack(fill="x", padx=24, pady=(0, 14))
+        self.kpi_container.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
         self.kpi_container.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="kpi_cards")
 
         # Tarjeta 1: Activos COP
@@ -195,7 +207,7 @@ class AnalyticsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_cop_assets.grid(row=0, column=0, padx=(0, 6), sticky="nsew")
+        self.card_cop_assets.grid(row=0, column=0, padx=(0, Theme.SPACING_XS), sticky="nsew")
 
         # Tarjeta 2: Activos USD
         self.card_usd_assets = StatCard(
@@ -208,7 +220,7 @@ class AnalyticsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_usd_assets.grid(row=0, column=1, padx=3, sticky="nsew")
+        self.card_usd_assets.grid(row=0, column=1, padx=Theme.SPACING_XS, sticky="nsew")
 
         # Tarjeta 3: Pasivos (Deuda TC)
         self.card_liabilities = StatCard(
@@ -219,9 +231,9 @@ class AnalyticsView(ctk.CTkFrame):
             icon="💳",
             accent_color=Theme.ACCENT_ROSE,
             bg_color=Theme.BG_CARD,
-            border_color="#e11d48"
+            border_color=Theme.ERROR
         )
-        self.card_liabilities.grid(row=0, column=2, padx=3, sticky="nsew")
+        self.card_liabilities.grid(row=0, column=2, padx=Theme.SPACING_XS, sticky="nsew")
 
         # Tarjeta 4: Tasa Retención USD
         self.card_usd_retention = StatCard(
@@ -234,14 +246,14 @@ class AnalyticsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_usd_retention.grid(row=0, column=3, padx=(6, 0), sticky="nsew")
+        self.card_usd_retention.grid(row=0, column=3, padx=(Theme.SPACING_XS, 0), sticky="nsew")
 
         # 4. Contenedor Principal con Pestañas
-        main_content = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_content.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        main_content = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        main_content.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
 
         content_header = ctk.CTkFrame(main_content, fg_color="transparent")
-        content_header.pack(fill="x", padx=18, pady=(14, 8))
+        content_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         self.tab_seg = ctk.CTkSegmentedButton(
             content_header,
@@ -262,7 +274,7 @@ class AnalyticsView(ctk.CTkFrame):
 
         # Contenedor de Vistas
         self.tab_content = ctk.CTkFrame(main_content, fg_color="transparent")
-        self.tab_content.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+        self.tab_content.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # Sub-panel 1: Composición de Activos
         self.composition_scroll = ctk.CTkScrollableFrame(self.tab_content, fg_color="transparent")
@@ -270,19 +282,28 @@ class AnalyticsView(ctk.CTkFrame):
         # Sub-panel 2: Flujo Anualizado
         self.annual_frame = ctk.CTkFrame(self.tab_content, fg_color="transparent")
         
-        tbl_head = ctk.CTkFrame(self.annual_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, height=32)
-        tbl_head.pack(fill="x", pady=(0, 6))
-        tbl_head.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
+        tbl_head = ctk.CTkFrame(self.annual_frame, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, height=32)
+        tbl_head.pack(fill="x", pady=(0, Theme.SPACING_XS), padx=Theme.SPACING_XS)
 
-        cols = ["Mes", "Ingreso USD", "Gasto USD", "Ahorro USD", "Ingreso COP", "Gastos COP", "Flujo COP", "🌐 Flujo Global"]
-        for idx, col_text in enumerate(cols):
-            align = "w" if idx == 0 else "e"
+        cols = [
+            ("Mes", self.ANNUAL_COL_WIDTHS["month"], "w"),
+            ("Ingreso USD", self.ANNUAL_COL_WIDTHS["usd_in"], "e"),
+            ("Gasto USD", self.ANNUAL_COL_WIDTHS["usd_out"], "e"),
+            ("Ahorro USD", self.ANNUAL_COL_WIDTHS["usd_sav"], "e"),
+            ("Ingreso COP", self.ANNUAL_COL_WIDTHS["cop_in"], "e"),
+            ("Gastos COP", self.ANNUAL_COL_WIDTHS["cop_out"], "e"),
+            ("Flujo COP", self.ANNUAL_COL_WIDTHS["cop_net"], "e"),
+            ("🌐 Flujo Global", self.ANNUAL_COL_WIDTHS["global_net"], "e"),
+        ]
+        for idx, (col_text, col_w, align) in enumerate(cols):
             ctk.CTkLabel(
                 tbl_head,
                 text=col_text.upper(),
+                width=col_w,
+                anchor=align,
                 font=ctk.CTkFont(size=10, weight="bold"),
                 text_color=Theme.TEXT_MUTED if idx < 7 else Theme.ACCENT_BLUE
-            ).grid(row=0, column=idx, padx=8, pady=6, sticky=align)
+            ).pack(side="left", padx=6, pady=Theme.SPACING_XS)
 
         self.months_scroll = ctk.CTkScrollableFrame(self.annual_frame, fg_color="transparent")
         self.months_scroll.pack(fill="both", expand=True)
@@ -305,7 +326,7 @@ class AnalyticsView(ctk.CTkFrame):
             if rate and rate > 0:
                 self.current_rate = rate
                 try:
-                    self.db.set_setting("official_trm", str(rate))
+                    self.controller.set_official_trm(rate)
                 except Exception:
                     pass
                 self.refresh_data()
@@ -361,7 +382,7 @@ class AnalyticsView(ctk.CTkFrame):
         if hasattr(self, "lbl_trm_applied"):
             self.lbl_trm_applied.configure(text=f"💵 1 USD ≈ ${rate:,.2f} COP")
 
-        net_worth = self.db.get_global_net_worth(exchange_rate=rate)
+        net_worth = self.controller.get_global_net_worth(exchange_rate=rate)
 
         # Actualizar Gran Banner
         self.lbl_net_worth_cop.configure(text=f"${net_worth['net_worth_cop']:,.0f} COP")
@@ -385,7 +406,7 @@ class AnalyticsView(ctk.CTkFrame):
             year = int(self.year_combo.get())
         except ValueError:
             year = self.current_year
-        overview = self.db.get_annual_overview(year)
+        overview = self.controller.get_annual_overview(year)
         totals = overview["totals"]
 
         self.card_usd_retention.update_value(
@@ -399,8 +420,8 @@ class AnalyticsView(ctk.CTkFrame):
         for widget in self.composition_scroll.winfo_children():
             widget.destroy()
 
-        net_worth = self.db.get_global_net_worth(exchange_rate=self.current_rate)
-        accounts = self.db.get_accounts(only_active=True)
+        net_worth = self.controller.get_global_net_worth(exchange_rate=self.current_rate)
+        accounts = self.controller.get_accounts(only_active=True)
 
         gross_cop = net_worth["total_cop_assets"] + net_worth["total_usd_in_cop"]
 
@@ -420,17 +441,17 @@ class AnalyticsView(ctk.CTkFrame):
         for name, cop_val, label_sub, bar_color in items:
             pct = (cop_val / gross_cop * 100) if gross_cop > 0 else 0
 
-            card = ctk.CTkFrame(self.composition_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=3, padx=2)
+            card = ctk.CTkFrame(self.composition_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             top = ctk.CTkFrame(card, fg_color="transparent")
-            top.pack(fill="x", padx=14, pady=(8, 4))
+            top.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
             ctk.CTkLabel(top, text=name, font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
             ctk.CTkLabel(top, text=f"${cop_val:,.0f} COP ({pct:.1f}%) • {label_sub}", font=ctk.CTkFont(size=12, weight="bold"), text_color=bar_color).pack(side="right")
 
-            p_bar = ctk.CTkProgressBar(card, height=6, corner_radius=3, fg_color=Theme.BORDER_DEFAULT, progress_color=bar_color)
-            p_bar.pack(fill="x", padx=14, pady=(0, 8))
+            p_bar = ctk.CTkProgressBar(card, height=6, corner_radius=Theme.SPACING_XS, fg_color=Theme.BORDER_DEFAULT, progress_color=bar_color)
+            p_bar.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
             p_bar.set(min(pct / 100.0, 1.0))
 
     def _refresh_annual_table(self):
@@ -442,7 +463,7 @@ class AnalyticsView(ctk.CTkFrame):
         except ValueError:
             year = self.current_year
 
-        overview = self.db.get_annual_overview(year)
+        overview = self.controller.get_annual_overview(year)
         totals = overview["totals"]
 
         net_cop = totals["cop_net"]
@@ -469,38 +490,74 @@ class AnalyticsView(ctk.CTkFrame):
             )
 
             row_bg = Theme.BG_CARD_SUBTLE if has_activity else "transparent"
-            row_frame = ctk.CTkFrame(self.months_scroll, fg_color=row_bg, corner_radius=8, height=36)
-            row_frame.pack(fill="x", pady=2, padx=2)
-            row_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
+            row_frame = ctk.CTkFrame(self.months_scroll, fg_color=row_bg, corner_radius=Theme.SPACING_SM, height=36)
+            row_frame.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             # 0. Mes
             ctk.CTkLabel(
                 row_frame,
                 text=f"🗓️ {m_data['month_name']}",
+                width=self.ANNUAL_COL_WIDTHS["month"],
+                anchor="w",
                 font=ctk.CTkFont(size=12, weight="bold" if has_activity else "normal"),
                 text_color=Theme.TEXT_PRIMARY if has_activity else Theme.TEXT_MUTED
-            ).grid(row=0, column=0, padx=8, pady=8, sticky="w")
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 1. Ingreso USD
             usd_inc_str = f"${m_data['usd_income']:,.0f}" if m_data['usd_income'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_BLUE if m_data['usd_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=1, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=usd_inc_str,
+                width=self.ANNUAL_COL_WIDTHS["usd_in"],
+                anchor="e",
+                font=ctk.CTkFont(size=12),
+                text_color=Theme.ACCENT_BLUE if m_data['usd_income'] > 0 else Theme.TEXT_MUTED
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 2. Retiro/Gasto USD
             usd_out_tot = m_data["usd_converted"] + m_data.get("usd_spent", 0)
             usd_out_str = f"${usd_out_tot:,.0f}" if usd_out_tot > 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_out_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_INDIGO if usd_out_tot > 0 else Theme.TEXT_MUTED).grid(row=0, column=2, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=usd_out_str,
+                width=self.ANNUAL_COL_WIDTHS["usd_out"],
+                anchor="e",
+                font=ctk.CTkFont(size=12),
+                text_color=Theme.ACCENT_INDIGO if usd_out_tot > 0 else Theme.TEXT_MUTED
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 3. Ahorro USD
             usd_sav_str = f"${m_data['usd_saved']:,.0f}" if m_data['usd_saved'] != 0 else "-"
-            ctk.CTkLabel(row_frame, text=usd_sav_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN if m_data['usd_saved'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=3, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=usd_sav_str,
+                width=self.ANNUAL_COL_WIDTHS["usd_sav"],
+                anchor="e",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=Theme.ACCENT_GREEN if m_data['usd_saved'] > 0 else Theme.TEXT_MUTED
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 4. Ingreso COP
             cop_inc_str = f"${m_data['cop_manual_income']:,.0f}" if m_data['cop_manual_income'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=cop_inc_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_GREEN if m_data['cop_manual_income'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=4, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=cop_inc_str,
+                width=self.ANNUAL_COL_WIDTHS["cop_in"],
+                anchor="e",
+                font=ctk.CTkFont(size=12),
+                text_color=Theme.ACCENT_GREEN if m_data['cop_manual_income'] > 0 else Theme.TEXT_MUTED
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 5. Gastos COP
             cop_exp_str = f"${m_data['cop_expenses']:,.0f}" if m_data['cop_expenses'] > 0 else "-"
-            ctk.CTkLabel(row_frame, text=cop_exp_str, font=ctk.CTkFont(size=12), text_color=Theme.ACCENT_ROSE if m_data['cop_expenses'] > 0 else Theme.TEXT_MUTED).grid(row=0, column=5, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=cop_exp_str,
+                width=self.ANNUAL_COL_WIDTHS["cop_out"],
+                anchor="e",
+                font=ctk.CTkFont(size=12),
+                text_color=Theme.ACCENT_ROSE if m_data['cop_expenses'] > 0 else Theme.TEXT_MUTED
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 6. Flujo COP
             m_net = m_data["cop_net"]
@@ -510,7 +567,14 @@ class AnalyticsView(ctk.CTkFrame):
             else:
                 m_net_str = "-"
                 m_net_color = Theme.TEXT_MUTED
-            ctk.CTkLabel(row_frame, text=m_net_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_net_color).grid(row=0, column=6, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=m_net_str,
+                width=self.ANNUAL_COL_WIDTHS["cop_net"],
+                anchor="e",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=m_net_color
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
             # 7. Flujo Global (COP + USD * TRM)
             m_global = m_net + (m_data["usd_saved"] * self.current_rate)
@@ -520,29 +584,35 @@ class AnalyticsView(ctk.CTkFrame):
             else:
                 m_glob_str = "-"
                 m_glob_color = Theme.TEXT_MUTED
-            ctk.CTkLabel(row_frame, text=m_glob_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=m_glob_color).grid(row=0, column=7, padx=8, pady=8, sticky="e")
+            ctk.CTkLabel(
+                row_frame,
+                text=m_glob_str,
+                width=self.ANNUAL_COL_WIDTHS["global_net"],
+                anchor="e",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=m_glob_color
+            ).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
         # Fila destacada de TOTALES DEL AÑO
-        tot_frame = ctk.CTkFrame(self.months_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        tot_frame.pack(fill="x", pady=(8, 2), padx=2)
-        tot_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
+        tot_frame = ctk.CTkFrame(self.months_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        tot_frame.pack(fill="x", pady=(Theme.SPACING_SM, 2), padx=Theme.SPACING_XS)
 
-        ctk.CTkLabel(tot_frame, text=f"🎯 TOTAL {year}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).grid(row=0, column=0, padx=8, pady=9, sticky="w")
-        ctk.CTkLabel(tot_frame, text=f"${totals['usd_earned']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_BLUE).grid(row=0, column=1, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=f"🎯 TOTAL {year}", width=self.ANNUAL_COL_WIDTHS["month"], anchor="w", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left", padx=6, pady=Theme.SPACING_SM)
+        ctk.CTkLabel(tot_frame, text=f"${totals['usd_earned']:,.0f}", width=self.ANNUAL_COL_WIDTHS["usd_in"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_BLUE).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
         tot_usd_out = totals["usd_converted"] + totals.get("usd_spent", 0)
-        ctk.CTkLabel(tot_frame, text=f"${tot_usd_out:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_INDIGO).grid(row=0, column=2, padx=8, pady=9, sticky="e")
-        ctk.CTkLabel(tot_frame, text=f"${totals['usd_saved']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).grid(row=0, column=3, padx=8, pady=9, sticky="e")
-        ctk.CTkLabel(tot_frame, text=f"${totals['cop_manual_income']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).grid(row=0, column=4, padx=8, pady=9, sticky="e")
-        ctk.CTkLabel(tot_frame, text=f"${totals['cop_expenses']:,.0f}", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_ROSE).grid(row=0, column=5, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=f"${tot_usd_out:,.0f}", width=self.ANNUAL_COL_WIDTHS["usd_out"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_INDIGO).pack(side="left", padx=6, pady=Theme.SPACING_SM)
+        ctk.CTkLabel(tot_frame, text=f"${totals['usd_saved']:,.0f}", width=self.ANNUAL_COL_WIDTHS["usd_sav"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).pack(side="left", padx=6, pady=Theme.SPACING_SM)
+        ctk.CTkLabel(tot_frame, text=f"${totals['cop_manual_income']:,.0f}", width=self.ANNUAL_COL_WIDTHS["cop_in"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_GREEN).pack(side="left", padx=6, pady=Theme.SPACING_SM)
+        ctk.CTkLabel(tot_frame, text=f"${totals['cop_expenses']:,.0f}", width=self.ANNUAL_COL_WIDTHS["cop_out"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
         net_tot_str = f"+${net_cop:,.0f}" if net_cop >= 0 else f"-${abs(net_cop):,.0f}"
         net_tot_color = Theme.ACCENT_GREEN if net_cop >= 0 else Theme.ACCENT_ROSE
-        ctk.CTkLabel(tot_frame, text=net_tot_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=net_tot_color).grid(row=0, column=6, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=net_tot_str, width=self.ANNUAL_COL_WIDTHS["cop_net"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=net_tot_color).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
         glob_tot_str = f"+${global_net_cop:,.0f}" if global_net_cop >= 0 else f"-${abs(global_net_cop):,.0f}"
         glob_tot_color = Theme.ACCENT_GREEN if global_net_cop >= 0 else Theme.ACCENT_ROSE
-        ctk.CTkLabel(tot_frame, text=glob_tot_str, font=ctk.CTkFont(size=12, weight="bold"), text_color=glob_tot_color).grid(row=0, column=7, padx=8, pady=9, sticky="e")
+        ctk.CTkLabel(tot_frame, text=glob_tot_str, width=self.ANNUAL_COL_WIDTHS["global_net"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=glob_tot_color).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
     def _refresh_charts(self):
         """Genera y renderiza las gráficas visuales con Matplotlib de forma segura."""
@@ -571,7 +641,7 @@ class AnalyticsView(ctk.CTkFrame):
         grid_color = "#334155" if is_dark else "#e2e8f0"
 
         # 1. Gráfica de Donut: Gastos COP por Categoría del Mes
-        categories = self.db.get_expenses_by_category()
+        categories = self.controller.get_expenses_by_category()
         fig1 = Figure(figsize=(8, 3.2), dpi=100, facecolor=bg_color)
         ax1 = fig1.add_subplot(111)
         ax1.set_facecolor(bg_color)
@@ -599,15 +669,15 @@ class AnalyticsView(ctk.CTkFrame):
             ax1.text(0.5, 0.5, "No hay gastos registrados en el mes actual", color=muted_color, ha="center", va="center", fontsize=11)
             ax1.axis("off")
 
-        chart_card1 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card1.pack(fill="x", pady=6, padx=4)
+        chart_card1 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        chart_card1.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
         canvas1 = FigureCanvasTkAgg(fig1, master=chart_card1)
         canvas1.draw()
-        canvas1.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+        canvas1.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         # 2. Gráfica de Barras: Flujo Mensual (Ingresos vs Gastos vs Superávit)
-        overview = self.db.get_annual_overview(year)
+        overview = self.controller.get_annual_overview(year)
         months = [m["month_name"] for m in overview["months"]]
         cop_in = [m["cop_total_income"] / 1000000.0 for m in overview["months"]]
         cop_out = [m["cop_expenses"] / 1000000.0 for m in overview["months"]]
@@ -633,15 +703,15 @@ class AnalyticsView(ctk.CTkFrame):
         for spine in ax2.spines.values():
             spine.set_color(grid_color)
 
-        chart_card2 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card2.pack(fill="x", pady=6, padx=4)
+        chart_card2 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        chart_card2.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
         canvas2 = FigureCanvasTkAgg(fig2, master=chart_card2)
         canvas2.draw()
-        canvas2.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+        canvas2.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         # 3. Gráfica de Línea: Evolución del Patrimonio Neto Global
-        history = self.db.get_monthly_net_worth_history(year, exchange_rate=self.current_rate)
+        history = self.controller.get_monthly_net_worth_history(year, exchange_rate=self.current_rate)
         nw_cop_millions = [h["net_worth_cop"] / 1000000.0 for h in history]
 
         fig3 = Figure(figsize=(8, 3.2), dpi=100, facecolor=bg_color)
@@ -658,12 +728,12 @@ class AnalyticsView(ctk.CTkFrame):
         for spine in ax3.spines.values():
             spine.set_color(grid_color)
 
-        chart_card3 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card3.pack(fill="x", pady=6, padx=4)
+        chart_card3 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        chart_card3.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
         canvas3 = FigureCanvasTkAgg(fig3, master=chart_card3)
         canvas3.draw()
-        canvas3.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+        canvas3.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         self._active_figures.extend([fig1, fig2, fig3])
 

@@ -1,142 +1,80 @@
-"""
-Modal para registrar Pagos de Tarjeta de Crédito en CustomTkinter.
-Diseño responsivo con pie fijo de botones y cuerpo desplazable.
-"""
-
 import customtkinter as ctk
 from datetime import datetime
 from typing import Callable, Optional
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
-from ui.utils.modal_helper import center_window
+from ui.components.base_modal import BaseModal
 
 
-class CCPaymentModal(ctk.CTkToplevel):
+class CCPaymentModal(BaseModal):
     def __init__(
         self,
         parent,
         db_manager,
         on_success: Optional[Callable[[], None]] = None
     ):
-        super().__init__(parent)
         self.db = db_manager
         self.on_success = on_success
 
-        self.title("Pagar Tarjeta de Crédito")
-        self.geometry("480x570")
-        self.minsize(440, 500)
-        self.resizable(True, True)
-        self.configure(fg_color=Theme.BG_WINDOW)
-
-        self.transient(parent)
-        self.grab_set()
-        self._center_window(parent)
-
-        self._build_ui()
-
-    def _center_window(self, parent):
-        center_window(self, parent, 480, 570)
-
-    def _build_ui(self):
-        main_frame = ctk.CTkFrame(self, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
-
-        # 1. Encabezado Fijo
-        header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(16, 10))
-
-        ctk.CTkLabel(
-            header,
-            text="💳 Pago de Tarjeta de Crédito",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=18, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w")
-
-        ctk.CTkLabel(
-            header,
-            text="Descuenta de tu cuenta operativa para saldar tu deuda de TC.",
-            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
-            text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w")
-
-        # 2. Pie Fijo Inferior con Botones (SIEMPRE VISIBLE)
-        footer = ctk.CTkFrame(main_frame, fg_color="transparent")
-        footer.pack(side="bottom", fill="x", padx=20, pady=(0, 16))
-
-        self.lbl_error = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE, wraplength=420)
-        self.lbl_error.pack(anchor="w", pady=(0, 6))
-
-        btn_row = ctk.CTkFrame(footer, fg_color="transparent")
-        btn_row.pack(fill="x")
-
-        btn_cancel = ctk.CTkButton(
-            btn_row,
-            text="Cancelar",
-            font=ctk.CTkFont(size=12),
-            height=38,
-            corner_radius=8,
-            fg_color=Theme.BG_INPUT,
-            hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.TEXT_SECONDARY,
-            command=self.destroy
+        super().__init__(
+            parent=parent,
+            title="Pagar Tarjeta de Crédito",
+            width=480,
+            height=570,
+            min_width=440,
+            min_height=500
         )
-        btn_cancel.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        btn_confirm = ctk.CTkButton(
-            btn_row,
-            text="💸 Confirmar Pago",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=38,
-            corner_radius=8,
-            fg_color="#10b981",
-            hover_color="#059669",
-            text_color="#ffffff",
-            command=self._handle_pay
+    def build_ui(self):
+        main_frame = self.create_standard_frame(self.main_container)
+
+        self.create_header(
+            parent=main_frame,
+            title="💳 Pago de Tarjeta de Crédito",
+            subtitle="Descuenta de tu cuenta operativa para saldar tu deuda de TC."
         )
-        btn_confirm.pack(side="right", fill="x", expand=True, padx=(8, 0))
 
-        # 3. Cuerpo Central
         scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
-        scroll_body.pack(fill="both", expand=True, padx=12, pady=(0, 10))
+        scroll_body.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Tarjeta de Estado de Deuda
-        debt_box = ctk.CTkFrame(scroll_body, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        debt_box.pack(fill="x", padx=6, pady=(0, 12))
+        debt_box = ctk.CTkFrame(scroll_body, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        debt_box.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         debt_inner = ctk.CTkFrame(debt_box, fg_color="transparent")
-        debt_inner.pack(fill="x", padx=14, pady=10)
+        debt_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
         current_debt = self.db.get_credit_card_debt()
         cop_bal = self.db.get_cop_balance()
 
         ctk.CTkLabel(debt_inner, text="DEUDA PENDIENTE TC:", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(anchor="w")
         ctk.CTkLabel(debt_inner, text=f"${current_debt:,.0f} COP", font=ctk.CTkFont(size=20, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(anchor="w")
-        ctk.CTkLabel(debt_inner, text=f"Disponible en cuenta: ${cop_bal:,.0f} COP", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(anchor="w", pady=(2, 0))
+        ctk.CTkLabel(debt_inner, text=f"Disponible en cuenta: ${cop_bal:,.0f} COP", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         # Campo Monto a Pagar
-        ctk.CTkLabel(scroll_body, text="Monto a Pagar ($ COP):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Monto a Pagar ($ COP):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         
         amount_row = ctk.CTkFrame(scroll_body, fg_color="transparent")
-        amount_row.pack(fill="x", padx=6, pady=(0, 4))
+        amount_row.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
         self.amount_entry = ctk.CTkEntry(
             amount_row,
             placeholder_text=f"Ej: {int(current_debt)}",
             height=36,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=13)
         )
         self.amount_entry.insert(0, str(int(current_debt)) if current_debt > 0 else "")
-        self.amount_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.amount_entry.pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_SM))
 
         btn_full_pay = ctk.CTkButton(
             amount_row,
             text="Todo",
             width=55,
             height=36,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_GREEN,
@@ -150,25 +88,38 @@ class CCPaymentModal(ctk.CTkToplevel):
             text="💡 Puedes abonar una parte o presionar 'Todo' para saldarla completa.",
             font=ctk.CTkFont(size=11),
             text_color=Theme.TEXT_MUTED
-        ).pack(anchor="w", padx=6, pady=(0, 10))
+        ).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Campo Fecha con DatePickerWidget
-        ctk.CTkLabel(scroll_body, text="Fecha del Pago:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Fecha del Pago:", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         self.date_entry = DatePickerWidget(scroll_body, height=36)
-        self.date_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.date_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
 
         # Campo Notas Opcional
-        ctk.CTkLabel(scroll_body, text="Notas / Concepto (Opcional):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=6, pady=(0, 4))
+        ctk.CTkLabel(scroll_body, text="Notas / Concepto (Opcional):", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY).pack(anchor="w", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
         self.notes_entry = ctk.CTkEntry(
             scroll_body,
             placeholder_text="Ej: Abono quincenal / Pago parcial TC",
             height=36,
-            corner_radius=8,
+            corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_INPUT,
             border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=13)
         )
-        self.notes_entry.pack(fill="x", padx=6, pady=(0, 12))
+        self.notes_entry.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
+
+        self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE, wraplength=420)
+        self.lbl_error.pack(anchor="w", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
+
+        footer, btn_cancel, self.btn_confirm = self.create_footer_buttons(
+            parent=main_frame,
+            cancel_command=self.destroy,
+            confirm_command=self._handle_pay,
+            confirm_text="💸 Confirmar Pago",
+            destructive=False
+        )
+
+        self.btn_confirm.configure(fg_color=Theme.SUCCESS, hover_color=Theme.SUCCESS, text_color=Theme.TEXT_ON_COLOR)
 
     def _set_full_amount(self, debt: float):
         self.amount_entry.delete(0, "end")

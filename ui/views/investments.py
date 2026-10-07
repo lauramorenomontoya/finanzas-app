@@ -17,13 +17,13 @@ from ui.components import (
     EditTransactionModal,
     EmptyState
 )
-
+from controllers.investment_controller import InvestmentController
+from core.event_bus import EventBus
 
 class InvestmentsView(ctk.CTkFrame):
-    def __init__(self, master, db_manager, on_data_changed: Optional[Callable[[], None]] = None, **kwargs):
+    def __init__(self, master, db_manager, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
-        self.db = db_manager
-        self.on_data_changed = on_data_changed
+        self.controller = InvestmentController(db_manager)
 
         self._build_ui()
         self.refresh_data()
@@ -34,7 +34,7 @@ class InvestmentsView(ctk.CTkFrame):
 
         # 2. Cabecera
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 16))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -58,10 +58,10 @@ class InvestmentsView(ctk.CTkFrame):
             header_frame,
             text="➕ Nueva Cuenta / Fiducia",
             height=36,
-            corner_radius=8,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_SM,
+            fg_color=Theme.INFO,
+            hover_color=Theme.INFO_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._handle_create_account
         )
@@ -69,7 +69,7 @@ class InvestmentsView(ctk.CTkFrame):
 
         # 3. Fila de Tarjetas de Resumen
         summary_container = ctk.CTkFrame(self, fg_color="transparent")
-        summary_container.pack(fill="x", padx=24, pady=(0, 16))
+        summary_container.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
         summary_container.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="inv_stat_cards")
 
         self.card_cop_invested = StatCard(
@@ -82,7 +82,7 @@ class InvestmentsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_cop_invested.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+        self.card_cop_invested.grid(row=0, column=0, padx=(0, Theme.SPACING_SM), sticky="nsew")
 
         self.card_usd_invested = StatCard(
             summary_container,
@@ -94,7 +94,7 @@ class InvestmentsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_usd_invested.grid(row=0, column=1, padx=4, sticky="nsew")
+        self.card_usd_invested.grid(row=0, column=1, padx=Theme.SPACING_XS, sticky="nsew")
 
         self.card_cop_yields = StatCard(
             summary_container,
@@ -106,7 +106,7 @@ class InvestmentsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_cop_yields.grid(row=0, column=2, padx=4, sticky="nsew")
+        self.card_cop_yields.grid(row=0, column=2, padx=Theme.SPACING_XS, sticky="nsew")
 
         self.card_usd_yields = StatCard(
             summary_container,
@@ -118,11 +118,11 @@ class InvestmentsView(ctk.CTkFrame):
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
-        self.card_usd_yields.grid(row=0, column=3, padx=(8, 0), sticky="nsew")
+        self.card_usd_yields.grid(row=0, column=3, padx=(Theme.SPACING_SM, 0), sticky="nsew")
 
         # 4. Selector de Filtro de Cuentas (Todas / COP / USD)
         filter_bar = ctk.CTkFrame(self, fg_color="transparent")
-        filter_bar.pack(fill="x", padx=24, pady=(0, 12))
+        filter_bar.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         self.currency_filter = ctk.CTkSegmentedButton(
             filter_bar,
@@ -135,17 +135,17 @@ class InvestmentsView(ctk.CTkFrame):
 
         # 5. Contenedor Dividido: Grid de Cuentas (Arriba) + Historial de Rendimientos/Aportes (Abajo)
         main_content = ctk.CTkFrame(self, fg_color="transparent")
-        main_content.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        main_content.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
         main_content.grid_rowconfigure(0, weight=6)
         main_content.grid_rowconfigure(1, weight=4)
         main_content.grid_columnconfigure(0, weight=1)
 
         # Panel de Cuentas (Scrollable)
-        accounts_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        accounts_panel.grid(row=0, column=0, sticky="nsew", pady=(0, 10))
+        accounts_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        accounts_panel.grid(row=0, column=0, sticky="nsew", pady=(0, Theme.SPACING_SM))
 
         acc_header = ctk.CTkFrame(accounts_panel, fg_color="transparent")
-        acc_header.pack(fill="x", padx=18, pady=(14, 8))
+        acc_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         ctk.CTkLabel(
             acc_header,
@@ -155,14 +155,14 @@ class InvestmentsView(ctk.CTkFrame):
         ).pack(side="left")
 
         self.accounts_scroll = ctk.CTkScrollableFrame(accounts_panel, fg_color="transparent")
-        self.accounts_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 14))
+        self.accounts_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
 
         # Panel Inferior: Historial de Transacciones de Inversión
-        history_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        history_panel = ctk.CTkFrame(main_content, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
         history_panel.grid(row=1, column=0, sticky="nsew")
 
         hist_header = ctk.CTkFrame(history_panel, fg_color="transparent")
-        hist_header.pack(fill="x", padx=18, pady=(12, 6))
+        hist_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
         ctk.CTkLabel(
             hist_header,
@@ -172,12 +172,12 @@ class InvestmentsView(ctk.CTkFrame):
         ).pack(side="left")
 
         self.history_scroll = ctk.CTkScrollableFrame(history_panel, fg_color="transparent", height=130)
-        self.history_scroll.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+        self.history_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
     def _handle_create_account(self):
         EditAccountModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,
             account=None,
             on_success=self._on_account_saved
         )
@@ -185,7 +185,7 @@ class InvestmentsView(ctk.CTkFrame):
     def _handle_edit_account(self, account: Dict[str, Any]):
         EditAccountModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,
             account=account,
             on_success=self._on_account_saved
         )
@@ -193,13 +193,12 @@ class InvestmentsView(ctk.CTkFrame):
     def _on_account_saved(self):
         self.toast.show("Cuenta actualizada exitosamente.", is_error=False)
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")
 
     def _open_account_action(self, account: Dict[str, Any], action_type: str):
         AccountActionModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,
             account=account,
             initial_action=action_type,
             on_success=self._on_action_success
@@ -208,12 +207,11 @@ class InvestmentsView(ctk.CTkFrame):
     def _on_action_success(self):
         self.toast.show("Movimiento registrado con éxito.", is_error=False)
         self.refresh_data()
-        if self.on_data_changed:
-            self.on_data_changed()
+        EventBus.publish("DATA_UPDATED")
 
     def refresh_data(self):
         """Actualiza todas las métricas, tarjetas y listas."""
-        summary = self.db.get_investments_summary()
+        summary = self.controller.get_investments_summary()
 
         self.card_cop_invested.update_value(
             f"${summary['total_cop_invested']:,.0f} COP",
@@ -246,7 +244,7 @@ class InvestmentsView(ctk.CTkFrame):
         elif "USD" in choice:
             curr = "USD"
 
-        accounts = self.db.get_accounts(currency=curr, only_active=True)
+        accounts = self.controller.get_accounts(currency=curr, only_active=True)
 
         if not accounts:
             EmptyState(
@@ -257,7 +255,7 @@ class InvestmentsView(ctk.CTkFrame):
                 action_text="+ Nueva Cuenta",
                 action_command=self._open_new_account_modal,
                 action_variant="primary"
-            ).pack(fill="x", padx=10, pady=20)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
 
         for acc in accounts:
@@ -267,12 +265,12 @@ class InvestmentsView(ctk.CTkFrame):
             yields_str = f"+${acc['total_yields']:,.2f} USD" if currency == "USD" else f"+${acc['total_yields']:,.0f} COP"
             icon = acc.get("icon", "📈")
 
-            card = ctk.CTkFrame(self.accounts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=4, padx=2)
+            card = ctk.CTkFrame(self.accounts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             # Contenedor principal de la tarjeta de cuenta
             inner = ctk.CTkFrame(card, fg_color="transparent")
-            inner.pack(fill="x", padx=14, pady=10)
+            inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
             # Columna Izquierda: Información de la cuenta
             info_col = ctk.CTkFrame(inner, fg_color="transparent")
@@ -293,7 +291,7 @@ class InvestmentsView(ctk.CTkFrame):
                 text=f"[{acc['currency']}]",
                 font=ctk.CTkFont(size=11, weight="bold"),
                 text_color=Theme.ACCENT_GREEN if currency == "COP" else Theme.ACCENT_BLUE
-            ).pack(side="left", padx=(8, 0))
+            ).pack(side="left", padx=(Theme.SPACING_SM, 0))
 
             sub_text = f"{acc.get('institution', 'Personal')} • Rendimientos: {yields_str}"
             ctk.CTkLabel(
@@ -301,11 +299,11 @@ class InvestmentsView(ctk.CTkFrame):
                 text=sub_text,
                 font=ctk.CTkFont(size=11),
                 text_color=Theme.TEXT_MUTED
-            ).pack(anchor="w", pady=(2, 0))
+            ).pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
             # Columna Central: Saldo actual
             bal_col = ctk.CTkFrame(inner, fg_color="transparent")
-            bal_col.pack(side="left", padx=16)
+            bal_col.pack(side="left", padx=Theme.SPACING_MD)
 
             ctk.CTkLabel(
                 bal_col,
@@ -323,61 +321,61 @@ class InvestmentsView(ctk.CTkFrame):
                 text="📈 +Rendimiento",
                 width=100,
                 height=30,
-                corner_radius=6,
-                fg_color="#10b981",
-                hover_color="#059669",
-                text_color="#ffffff",
+                corner_radius=Theme.SPACING_XS,
+                fg_color=Theme.SUCCESS,
+                hover_color=Theme.SUCCESS,
+                text_color=Theme.TEXT_ON_COLOR,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 command=lambda a=acc: self._open_account_action(a, "YIELD")
             )
-            btn_yield.pack(side="left", padx=3)
+            btn_yield.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_deposit = ctk.CTkButton(
                 btns_col,
                 text="📥 Aportar",
                 width=75,
                 height=30,
-                corner_radius=6,
-                fg_color="#0284c7",
-                hover_color="#0369a1",
-                text_color="#ffffff",
+                corner_radius=Theme.SPACING_XS,
+                fg_color=Theme.INFO,
+                hover_color=Theme.INFO_HOVER,
+                text_color=Theme.TEXT_ON_COLOR,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 command=lambda a=acc: self._open_account_action(a, "TRANSFER_TO")
             )
-            btn_deposit.pack(side="left", padx=3)
+            btn_deposit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_withdraw = ctk.CTkButton(
                 btns_col,
                 text="📤 Retirar",
                 width=75,
                 height=30,
-                corner_radius=6,
-                fg_color="#e11d48",
-                hover_color="#be123c",
-                text_color="#ffffff",
+                corner_radius=Theme.SPACING_XS,
+                fg_color=Theme.ERROR,
+                hover_color=Theme.ERROR_HOVER,
+                text_color=Theme.TEXT_ON_COLOR,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 command=lambda a=acc: self._open_account_action(a, "TRANSFER_FROM")
             )
-            btn_withdraw.pack(side="left", padx=3)
+            btn_withdraw.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_edit = ctk.CTkButton(
                 btns_col,
                 text="⚙️",
                 width=30,
                 height=30,
-                corner_radius=6,
+                corner_radius=Theme.SPACING_XS,
                 fg_color=Theme.BG_INPUT,
                 hover_color=Theme.BORDER_DEFAULT,
                 font=ctk.CTkFont(size=12),
                 command=lambda a=acc: self._handle_edit_account(a)
             )
-            btn_edit.pack(side="left", padx=(3, 0))
+            btn_edit.pack(side="left", padx=(Theme.SPACING_XS, 0))
 
     def _refresh_history_list(self):
         for widget in self.history_scroll.winfo_children():
             widget.destroy()
 
-        transactions = self.db.get_account_transactions(limit=25)
+        transactions = self.controller.get_account_transactions(limit=25)
 
         if not transactions:
             EmptyState(
@@ -386,7 +384,7 @@ class InvestmentsView(ctk.CTkFrame):
                 title="Sin movimientos registrados",
                 message="Los aportes, retiros y rendimientos que registres aparecerán aquí.",
                 compact=True
-            ).pack(fill="x", padx=10, pady=16)
+            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_MD)
             return
 
         for tx in transactions:
@@ -407,11 +405,11 @@ class InvestmentsView(ctk.CTkFrame):
                 amt_str = f"-${amt:,.2f} USD" if curr == "USD" else f"-${amt:,.0f} COP"
                 accent = Theme.ACCENT_ROSE
 
-            card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card.pack(fill="x", pady=2, padx=2)
+            card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
             row = ctk.CTkFrame(card, fg_color="transparent")
-            row.pack(fill="x", padx=10, pady=6)
+            row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
             ctk.CTkLabel(
                 row,
@@ -428,7 +426,7 @@ class InvestmentsView(ctk.CTkFrame):
                 text=amt_str,
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=accent
-            ).pack(side="left", padx=(0, 8))
+            ).pack(side="left", padx=(0, Theme.SPACING_SM))
 
             btn_edit = ctk.CTkButton(
                 btn_box,
@@ -440,7 +438,7 @@ class InvestmentsView(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11),
                 command=lambda t=tx: self._handle_edit_tx(t)
             )
-            btn_edit.pack(side="left", padx=1)
+            btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_del = ctk.CTkButton(
                 btn_box,
@@ -448,16 +446,16 @@ class InvestmentsView(ctk.CTkFrame):
                 width=24,
                 height=20,
                 fg_color="transparent",
-                hover_color="#450a0a",
+                hover_color=Theme.ERROR_HOVER,
                 font=ctk.CTkFont(size=11),
                 command=lambda t=tx: self._prompt_delete_tx(t)
             )
-            btn_del.pack(side="left", padx=1)
+            btn_del.pack(side="left", padx=Theme.SPACING_XS)
 
     def _handle_edit_tx(self, tx: Dict[str, Any]):
         EditTransactionModal(
             self.winfo_toplevel(),
-            self.db,
+            self.controller.db,
             source_table="account_transactions",
             record=tx,
             on_success=self._on_action_success
@@ -473,7 +471,7 @@ class InvestmentsView(ctk.CTkFrame):
         )
 
     def _execute_delete_tx(self, tx_id: int):
-        success, msg, _ = self.db.delete_account_transaction(tx_id)
+        success, msg, _ = self.controller.delete_account_transaction(tx_id)
         if success:
             self.toast.show("Movimiento eliminado con éxito.", is_error=False)
             self._on_action_success()

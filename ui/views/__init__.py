@@ -6,7 +6,7 @@ from .conversion import ConversionView
 from .investments import InvestmentsView
 from .ledger import LedgerView
 from .analytics import AnalyticsView
-from .settings import SettingsView
+from .settings_view import SettingsView
 from .budget_view import BudgetView
 from .debt_view import DebtView
 

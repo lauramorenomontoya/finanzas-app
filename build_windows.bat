@@ -18,11 +18,15 @@ if %errorlevel% neq 0 (
 REM Instalar dependencias
 echo Instalando dependencias necesarias...
 pip install -r requirements.txt
-pip install pyinstaller
+pip install pyinstaller pyarmor
 
 REM Limpiar builds previos
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
+
+REM Ofuscar código fuente con PyArmor
+echo Ofuscando código fuente con PyArmor...
+pyarmor gen -O build\obf -r main.py controllers core database services ui
 
 REM Compilar con PyInstaller
 echo Empaquetando aplicación ejecutable (.exe)...

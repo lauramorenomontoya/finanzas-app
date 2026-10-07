@@ -34,7 +34,7 @@ class BudgetView(ctk.CTkFrame):
 
         # 1. Cabecera Principal
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        header_frame.pack(fill="x", padx=24, pady=(20, 10))
+        header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_SM))
 
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.pack(side="left")
@@ -64,20 +64,20 @@ class BudgetView(ctk.CTkFrame):
             command=self._on_currency_changed
         )
         self.currency_seg.set("🇨🇴 COP")
-        self.currency_seg.pack(side="left", padx=(0, 10))
+        self.currency_seg.pack(side="left", padx=(0, Theme.SPACING_SM))
 
         btn_prev = ctk.CTkButton(
             controls_frame,
             text="◀",
             width=32,
             height=30,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=self._prev_month
         )
-        btn_prev.pack(side="left", padx=2)
+        btn_prev.pack(side="left", padx=Theme.SPACING_XS)
 
         self.lbl_month = ctk.CTkLabel(
             controls_frame,
@@ -86,47 +86,47 @@ class BudgetView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY,
             width=80
         )
-        self.lbl_month.pack(side="left", padx=4)
+        self.lbl_month.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_next = ctk.CTkButton(
             controls_frame,
             text="▶",
             width=32,
             height=30,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             command=self._next_month
         )
-        btn_next.pack(side="left", padx=2)
+        btn_next.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_today = ctk.CTkButton(
             controls_frame,
             text="Hoy",
             width=50,
             height=30,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._go_current_month
         )
-        btn_today.pack(side="left", padx=(4, 0))
+        btn_today.pack(side="left", padx=(Theme.SPACING_XS, 0))
 
         # 2. CUERPO DESPLAZABLE PRINCIPAL
         self.main_scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self.main_scroll.pack(fill="both", expand=True, padx=24, pady=(0, 20))
+        self.main_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
 
         # ------------------------------------------------------------------
         # BANNER MAESTRO: DINERO SEGURO PARA GASTAR (Safe-to-Spend)
         # ------------------------------------------------------------------
-        self.banner_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        self.banner_card.pack(fill="x", pady=(0, 14))
+        self.banner_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        self.banner_card.pack(fill="x", pady=(0, Theme.SPACING_MD))
 
         banner_inner = ctk.CTkFrame(self.banner_card, fg_color="transparent")
-        banner_inner.pack(fill="x", padx=20, pady=16)
+        banner_inner.pack(fill="x", padx=Theme.SPACING_LG, pady=Theme.SPACING_MD)
 
         banner_left = ctk.CTkFrame(banner_inner, fg_color="transparent")
         banner_left.pack(side="left", fill="both", expand=True)
@@ -144,7 +144,7 @@ class BudgetView(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=32, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
-        self.lbl_safe_to_spend.pack(anchor="w", pady=(2, 0))
+        self.lbl_safe_to_spend.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         self.lbl_safe_desc = ctk.CTkLabel(
             banner_left,
@@ -152,23 +152,23 @@ class BudgetView(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12),
             text_color=Theme.TEXT_MUTED
         )
-        self.lbl_safe_desc.pack(anchor="w", pady=(2, 0))
+        self.lbl_safe_desc.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
         # Columna Derecha del Banner: Ritmo Diario + Botones de Configuración
         banner_right = ctk.CTkFrame(banner_inner, fg_color="transparent")
-        banner_right.pack(side="right", padx=(14, 0))
+        banner_right.pack(side="right", padx=(Theme.SPACING_MD, 0))
 
-        r_box = ctk.CTkFrame(banner_right, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        r_box.pack(fill="x", pady=(0, 8))
+        r_box = ctk.CTkFrame(banner_right, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        r_box.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
         r_inner = ctk.CTkFrame(r_box, fg_color="transparent")
-        r_inner.pack(padx=16, pady=10)
+        r_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
-        ctk.CTkLabel(r_inner, text="RITMO DIARIO SUGERIDO", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="w")
+        ctk.CTkLabel(r_inner, text="RITMO DIARIO SUGERIDO", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="center")
         self.lbl_daily_budget = ctk.CTkLabel(r_inner, text="$0 COP / día", font=ctk.CTkFont(size=16, weight="bold"), text_color=Theme.ACCENT_BLUE)
-        self.lbl_daily_budget.pack(anchor="w", pady=(2, 0))
+        self.lbl_daily_budget.pack(anchor="center", pady=(Theme.SPACING_XS, 0))
         self.lbl_days_left = ctk.CTkLabel(r_inner, text="", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_SECONDARY)
-        self.lbl_days_left.pack(anchor="w")
+        self.lbl_days_left.pack(anchor="center")
 
         btn_row = ctk.CTkFrame(banner_right, fg_color="transparent")
         btn_row.pack(fill="x")
@@ -177,23 +177,23 @@ class BudgetView(ctk.CTkFrame):
             btn_row,
             text="⚙️ Reglas (50/25/25)",
             height=28,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_SECONDARY,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._open_budget_settings
         )
-        btn_settings.pack(side="left", padx=(0, 4))
+        btn_settings.pack(side="left", padx=(0, Theme.SPACING_XS))
 
         btn_targets = ctk.CTkButton(
             btn_row,
             text="🎯 Metas del Mes",
             height=28,
-            corner_radius=6,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            text_color="#ffffff",
+            corner_radius=Theme.SPACING_XS,
+            fg_color=Theme.INFO,
+            hover_color=Theme.INFO_HOVER,
+            text_color=Theme.TEXT_ON_COLOR,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._open_monthly_targets
         )
@@ -206,11 +206,11 @@ class BudgetView(ctk.CTkFrame):
         # ==========================================
         # PILAR 1: NECESIDADES & GASTOS FIJOS (50%)
         # ==========================================
-        self.p1_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        self.p1_card.pack(fill="x", pady=(0, 14))
+        self.p1_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        self.p1_card.pack(fill="x", pady=(0, Theme.SPACING_MD))
 
         p1_top = ctk.CTkFrame(self.p1_card, fg_color="transparent")
-        p1_top.pack(fill="x", padx=20, pady=(16, 8))
+        p1_top.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         p1_title_box = ctk.CTkFrame(p1_top, fg_color="transparent")
         p1_title_box.pack(side="left")
@@ -234,17 +234,17 @@ class BudgetView(ctk.CTkFrame):
             p1_top,
             text="🟢 EN RANGO SEGURO",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#ffffff",
-            fg_color="#059669",
-            corner_radius=6,
-            padx=10,
-            pady=4
+            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.SUCCESS,
+            corner_radius=Theme.SPACING_XS,
+            padx=Theme.SPACING_SM,
+            pady=Theme.SPACING_XS
         )
         self.p1_badge.pack(side="right")
 
         # Métricas Fijos (Compromiso, Pagado, Pendiente)
         p1_metrics = ctk.CTkFrame(self.p1_card, fg_color="transparent")
-        p1_metrics.pack(fill="x", padx=20, pady=(4, 10))
+        p1_metrics.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
         p1_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p1_cols")
 
         self.p1_lbl_budget = self._create_metric_cell(p1_metrics, 0, "LÍMITE SUGERIDO (50%):", "$0 COP", Theme.TEXT_PRIMARY)
@@ -253,11 +253,11 @@ class BudgetView(ctk.CTkFrame):
         self.p1_lbl_pending = self._create_metric_cell(p1_metrics, 3, "POR PAGAR RESTANTE:", "$0 COP", Theme.ACCENT_ROSE)
 
         # Barra de progreso Pilar 1
-        self.p1_progress = ctk.CTkProgressBar(self.p1_card, height=12, corner_radius=6, fg_color="#334155", progress_color="#10b981")
-        self.p1_progress.pack(fill="x", padx=20, pady=(0, 6))
+        self.p1_progress = ctk.CTkProgressBar(self.p1_card, height=12, corner_radius=Theme.SPACING_XS, fg_color=Theme.BG_PROGRESS_TRACK, progress_color=Theme.SUCCESS)
+        self.p1_progress.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
 
         p1_foot = ctk.CTkFrame(self.p1_card, fg_color="transparent")
-        p1_foot.pack(fill="x", padx=20, pady=(0, 14))
+        p1_foot.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         self.p1_status_text = ctk.CTkLabel(p1_foot, text="", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY)
         self.p1_status_text.pack(side="left")
@@ -267,7 +267,7 @@ class BudgetView(ctk.CTkFrame):
             text="👁️ Ver lista de gastos fijos ▾",
             width=170,
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
@@ -277,16 +277,16 @@ class BudgetView(ctk.CTkFrame):
         self.btn_toggle_p1.pack(side="right")
 
         # Contenedor desplegable de fijos
-        self.p1_details_box = ctk.CTkFrame(self.p1_card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        self.p1_details_box = ctk.CTkFrame(self.p1_card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
 
         # =========================================================
         # PILAR 2: AHORRO, PROVISIONES & INVERSIÓN (25%) [UNIFICADOS]
         # ==========================================
-        self.p2_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        self.p2_card.pack(fill="x", pady=(0, 14))
+        self.p2_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        self.p2_card.pack(fill="x", pady=(0, Theme.SPACING_MD))
 
         p2_top = ctk.CTkFrame(self.p2_card, fg_color="transparent")
-        p2_top.pack(fill="x", padx=20, pady=(16, 8))
+        p2_top.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         p2_title_box = ctk.CTkFrame(p2_top, fg_color="transparent")
         p2_title_box.pack(side="left")
@@ -310,17 +310,17 @@ class BudgetView(ctk.CTkFrame):
             p2_top,
             text="🟢 METAS AL DÍA",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#ffffff",
-            fg_color="#059669",
-            corner_radius=6,
-            padx=10,
-            pady=4
+            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.SUCCESS,
+            corner_radius=Theme.SPACING_XS,
+            padx=Theme.SPACING_SM,
+            pady=Theme.SPACING_XS
         )
         self.p2_badge.pack(side="right")
 
         # Métricas de Ahorro e Inversión (4 Columnas)
         p2_metrics = ctk.CTkFrame(self.p2_card, fg_color="transparent")
-        p2_metrics.pack(fill="x", padx=20, pady=(4, 10))
+        p2_metrics.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
         p2_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p2_cols")
 
         self.p2_lbl_target_total = self._create_metric_cell(p2_metrics, 0, "META CONSOLIDADA (25%):", "$0 COP", Theme.ACCENT_BLUE)
@@ -328,11 +328,11 @@ class BudgetView(ctk.CTkFrame):
         self.p2_lbl_emergency = self._create_metric_cell(p2_metrics, 2, "FONDO DE EMERGENCIA:", "$0 COP", Theme.TEXT_PRIMARY)
         self.p2_lbl_invest = self._create_metric_cell(p2_metrics, 3, "INVERSIÓN (FIDURENTA/TRII):", "$0 COP", Theme.ACCENT_BLUE)
 
-        self.p2_progress = ctk.CTkProgressBar(self.p2_card, height=12, corner_radius=6, fg_color="#334155", progress_color="#10b981")
-        self.p2_progress.pack(fill="x", padx=20, pady=(0, 6))
+        self.p2_progress = ctk.CTkProgressBar(self.p2_card, height=12, corner_radius=Theme.SPACING_XS, fg_color=Theme.BG_PROGRESS_TRACK, progress_color=Theme.SUCCESS)
+        self.p2_progress.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
 
         p2_foot = ctk.CTkFrame(self.p2_card, fg_color="transparent")
-        p2_foot.pack(fill="x", padx=20, pady=(0, 14))
+        p2_foot.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         self.p2_status_text = ctk.CTkLabel(p2_foot, text="", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY)
         self.p2_status_text.pack(side="left")
@@ -340,11 +340,11 @@ class BudgetView(ctk.CTkFrame):
         # ==========================================
         # PILAR 3: DINERO LIBRE PARA DISFRUTAR (25%)
         # ==========================================
-        self.p3_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=14, border_width=1, border_color=Theme.BORDER_DEFAULT)
-        self.p3_card.pack(fill="x", pady=(0, 14))
+        self.p3_card = ctk.CTkFrame(self.main_scroll, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_MD, border_width=1, border_color=Theme.BORDER_DEFAULT)
+        self.p3_card.pack(fill="x", pady=(0, Theme.SPACING_MD))
 
         p3_top = ctk.CTkFrame(self.p3_card, fg_color="transparent")
-        p3_top.pack(fill="x", padx=20, pady=(16, 8))
+        p3_top.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         p3_title_box = ctk.CTkFrame(p3_top, fg_color="transparent")
         p3_title_box.pack(side="left")
@@ -368,16 +368,16 @@ class BudgetView(ctk.CTkFrame):
             p3_top,
             text="🟢 EN RANGO SEGURO",
             font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#ffffff",
-            fg_color="#059669",
-            corner_radius=6,
-            padx=12,
-            pady=5
+            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.SUCCESS,
+            corner_radius=Theme.SPACING_XS,
+            padx=Theme.SPACING_SM,
+            pady=Theme.SPACING_XS
         )
         self.p3_badge.pack(side="right")
 
         p3_metrics = ctk.CTkFrame(self.p3_card, fg_color="transparent")
-        p3_metrics.pack(fill="x", padx=20, pady=(4, 10))
+        p3_metrics.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
         p3_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p3_cols")
 
         self.p3_lbl_limit = self._create_metric_cell(p3_metrics, 0, "CUPO LIBRE DISPONIBLE (25%):", "$0 COP", Theme.ACCENT_BLUE)
@@ -386,11 +386,11 @@ class BudgetView(ctk.CTkFrame):
         self.p3_lbl_daily = self._create_metric_cell(p3_metrics, 3, "DISPONIBLE POR DÍA RESTANTE:", "$0 COP / día", Theme.TEXT_PRIMARY)
 
         # Barra de progreso gruesa y brillante
-        self.p3_progress = ctk.CTkProgressBar(self.p3_card, height=14, corner_radius=7, fg_color="#334155", progress_color="#10b981")
-        self.p3_progress.pack(fill="x", padx=20, pady=(0, 6))
+        self.p3_progress = ctk.CTkProgressBar(self.p3_card, height=14, corner_radius=Theme.SPACING_XS, fg_color=Theme.BG_PROGRESS_TRACK, progress_color=Theme.SUCCESS)
+        self.p3_progress.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
 
         p3_foot = ctk.CTkFrame(self.p3_card, fg_color="transparent")
-        p3_foot.pack(fill="x", padx=20, pady=(0, 14))
+        p3_foot.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         self.p3_status_text = ctk.CTkLabel(p3_foot, text="", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_SECONDARY)
         self.p3_status_text.pack(side="left")
@@ -400,7 +400,7 @@ class BudgetView(ctk.CTkFrame):
             text="👁️ Ver desglose y detalle de compras ▾",
             width=230,
             height=26,
-            corner_radius=6,
+            corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.ACCENT_BLUE,
@@ -410,13 +410,13 @@ class BudgetView(ctk.CTkFrame):
         self.btn_toggle_p3.pack(side="right")
 
         # Contenedor desplegable de categorías variables y detalle de transacciones
-        self.p3_details_box = ctk.CTkFrame(self.p3_card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=10, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        self.p3_details_box = ctk.CTkFrame(self.p3_card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
 
     def _create_metric_cell(self, parent, col: int, label: str, value: str, color) -> ctk.CTkLabel:
-        box = ctk.CTkFrame(parent, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        box.grid(row=0, column=col, sticky="nsew", padx=4, pady=2)
+        box = ctk.CTkFrame(parent, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+        box.grid(row=0, column=col, sticky="nsew", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
         inner = ctk.CTkFrame(box, fg_color="transparent")
-        inner.pack(padx=12, pady=8)
+        inner.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(
             inner,
@@ -431,7 +431,7 @@ class BudgetView(ctk.CTkFrame):
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=color
         )
-        val_lbl.pack(anchor="w", pady=(2, 0))
+        val_lbl.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
         return val_lbl
 
     # ==========================================
@@ -470,7 +470,7 @@ class BudgetView(ctk.CTkFrame):
     def _toggle_p1_details(self):
         self.show_p1_details = not self.show_p1_details
         if self.show_p1_details:
-            self.p1_details_box.pack(fill="x", padx=20, pady=(0, 14))
+            self.p1_details_box.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
             self.btn_toggle_p1.configure(text="🔼 Ocultar lista de gastos fijos")
             self._render_p1_details()
         else:
@@ -480,7 +480,7 @@ class BudgetView(ctk.CTkFrame):
     def _toggle_p3_details(self):
         self.show_p3_details = not self.show_p3_details
         if self.show_p3_details:
-            self.p3_details_box.pack(fill="x", padx=20, pady=(0, 14))
+            self.p3_details_box.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
             self.btn_toggle_p3.configure(text="🔼 Ocultar desglose de compras")
             self._render_p3_details()
         else:
@@ -508,12 +508,12 @@ class BudgetView(ctk.CTkFrame):
         self.lbl_days_left.configure(text=f"{overview['days_left']} días restantes en {self.current_ym}")
 
         if safe_amt > 0:
-            self.lbl_safe_to_spend.configure(text_color="#10b981")
+            self.lbl_safe_to_spend.configure(text_color=Theme.SUCCESS)
             self.lbl_safe_desc.configure(
                 text=f"¡Tienes {safe_str} libres para disfrutar este mes! Fijos, provisión de moto y ahorro/inversión ya están reservados."
             )
         else:
-            self.lbl_safe_to_spend.configure(text_color="#f43f5e")
+            self.lbl_safe_to_spend.configure(text_color=Theme.ERROR)
             base_inc = overview["base_income"]
             fixed_tot = overview["total_fixed_obligations"]
             sav_tot = overview["total_savings_and_invest"]
@@ -556,16 +556,16 @@ class BudgetView(ctk.CTkFrame):
         self.p1_progress.set(min(pct_paid / 100.0, 1.0))
 
         if pending == 0:
-            self.p1_badge.configure(text="🟢 TODOS LOS FIJOS PAGADOS", fg_color="#059669")
-            self.p1_progress.configure(progress_color="#10b981")
-            self.p1_status_text.configure(text="✅ 100% de los gastos fijos del mes han sido cubiertos.", text_color="#10b981")
+            self.p1_badge.configure(text="🟢 TODOS LOS FIJOS PAGADOS", fg_color=Theme.SUCCESS)
+            self.p1_progress.configure(progress_color=Theme.SUCCESS)
+            self.p1_status_text.configure(text="✅ 100% de los gastos fijos del mes han sido cubiertos.", text_color=Theme.SUCCESS)
         elif committed > p1_limit and p1_limit > 0:
-            self.p1_badge.configure(text="🔴 FIJOS EXCEDEN EL 50%", fg_color="#e11d48")
-            self.p1_progress.configure(progress_color="#f43f5e")
-            self.p1_status_text.configure(text=f"⚠️ Tus gastos fijos (${committed:,.0f}) superan la meta del 50% (${p1_limit:,.0f}).", text_color="#f43f5e")
+            self.p1_badge.configure(text="🔴 FIJOS EXCEDEN EL 50%", fg_color=Theme.ERROR)
+            self.p1_progress.configure(progress_color=Theme.ERROR)
+            self.p1_status_text.configure(text=f"⚠️ Tus gastos fijos (${committed:,.0f}) superan la meta del 50% (${p1_limit:,.0f}).", text_color=Theme.ERROR)
         else:
-            self.p1_badge.configure(text="🟡 PAGOS PENDIENTES POR VENCER", fg_color="#d97706")
-            self.p1_progress.configure(progress_color="#f59e0b")
+            self.p1_badge.configure(text="🟡 PAGOS PENDIENTES POR VENCER", fg_color=Theme.WARNING)
+            self.p1_progress.configure(progress_color=Theme.WARNING)
             self.p1_status_text.configure(text=f"Llevas pagado el {pct_paid:.0f}% (${paid:,.0f} COP). Quedan ${pending:,.0f} COP por saldar.", text_color=Theme.TEXT_SECONDARY)
 
         if self.show_p1_details:
@@ -600,25 +600,25 @@ class BudgetView(ctk.CTkFrame):
         inv_ok = inv_done >= inv_goal if inv_goal > 0 else True
 
         if pct_p2 >= 100.0:
-            self.p2_badge.configure(text="🟢 METAS 100% CUMPLIDAS", fg_color="#059669")
-            self.p2_progress.configure(progress_color="#10b981")
+            self.p2_badge.configure(text="🟢 METAS 100% CUMPLIDAS", fg_color=Theme.SUCCESS)
+            self.p2_progress.configure(progress_color=Theme.SUCCESS)
             self.p2_status_text.configure(
                 text=f"🎉 ¡Excelente! Provisión de moto asegurada y meta global de ahorro/inversión completada (${total_saved_invested:,.0f} COP).",
-                text_color="#10b981"
+                text_color=Theme.SUCCESS
             )
         elif moto_ok:
-            self.p2_badge.configure(text="🟢 MOTO AL DÍA (EN PROCESO)", fg_color="#059669")
-            self.p2_progress.configure(progress_color="#10b981")
+            self.p2_badge.configure(text="🟢 MOTO AL DÍA (EN PROCESO)", fg_color=Theme.SUCCESS)
+            self.p2_progress.configure(progress_color=Theme.SUCCESS)
             self.p2_status_text.configure(
                 text=f"✅ Provisión de moto blindada ($150.000 COP en Fiducuenta). Llevas aportado el {pct_p2:.0f}% del pilar (${total_saved_invested:,.0f} COP).",
-                text_color="#10b981"
+                text_color=Theme.SUCCESS
             )
         else:
-            self.p2_badge.configure(text="🟡 PENDIENTE MOTO (FIDUCUENTA)", fg_color="#d97706")
-            self.p2_progress.configure(progress_color="#f59e0b")
+            self.p2_badge.configure(text="🟡 PENDIENTE MOTO (FIDUCUENTA)", fg_color=Theme.WARNING)
+            self.p2_progress.configure(progress_color=Theme.WARNING)
             self.p2_status_text.configure(
                 text=f"⚠️ Recuerda transferir ${moto_goal - moto_done:,.0f} COP a Fiducuenta para blindar SOAT y gastos anuales de la moto.",
-                text_color="#f59e0b"
+                text_color=Theme.WARNING
             )
 
         # -------------------------------------------------------------
@@ -632,9 +632,9 @@ class BudgetView(ctk.CTkFrame):
         self.p3_lbl_spent.configure(text=f"${var_spent:,.0f} COP")
 
         if free_remaining >= 0:
-            self.p3_lbl_remaining.configure(text=f"+${free_remaining:,.0f} COP", text_color="#10b981")
+            self.p3_lbl_remaining.configure(text=f"+${free_remaining:,.0f} COP", text_color=Theme.SUCCESS)
         else:
-            self.p3_lbl_remaining.configure(text=f"-${abs(free_remaining):,.0f} COP", text_color="#f43f5e")
+            self.p3_lbl_remaining.configure(text=f"-${abs(free_remaining):,.0f} COP", text_color=Theme.ERROR)
 
         daily_free = max(0.0, free_remaining) / max(1, overview["days_left"])
         self.p3_lbl_daily.configure(text=f"${daily_free:,.0f} COP / día")
@@ -649,32 +649,32 @@ class BudgetView(ctk.CTkFrame):
                 eq_name = summary["extraordinary_purchases"][0].get("notes") or "Compra de activo"
                 eq_amt = summary["extraordinary_sum"]
                 ord_var = max(0.0, var_spent - eq_amt)
-                self.p3_badge.configure(text="🟡 ACTIVO ADQUIRIDO", fg_color="#d97706")
-                self.p3_progress.configure(progress_color="#f59e0b")
+                self.p3_badge.configure(text="🟡 ACTIVO ADQUIRIDO", fg_color=Theme.WARNING)
+                self.p3_progress.configure(progress_color=Theme.WARNING)
                 self.p3_status_text.configure(
                     text=f"💡 Compra de activo de contado: {eq_name} (${eq_amt:,.0f} COP). Tus gastos de vida ordinarios fueron ${ord_var:,.0f} COP (dentro del presupuesto de ${p3_limit:,.0f} COP).",
-                    text_color="#f59e0b"
+                    text_color=Theme.WARNING
                 )
             else:
-                self.p3_badge.configure(text="🔴 SOBREGIRADO", fg_color="#e11d48")
-                self.p3_progress.configure(progress_color="#f43f5e")
+                self.p3_badge.configure(text="🔴 SOBREGIRADO", fg_color=Theme.ERROR)
+                self.p3_progress.configure(progress_color=Theme.ERROR)
                 self.p3_status_text.configure(
                     text=f"🚨 ALERTA: Has gastado el {pct_p3:.0f}% (${var_spent:,.0f} COP). Te has sobregirado en ${over_val:,.0f} COP frente a tu cupo libre.",
-                    text_color="#f43f5e"
+                    text_color=Theme.ERROR
                 )
         elif pct_p3 >= 75.0:
-            self.p3_badge.configure(text="🟡 ATENCIÓN: CERCA AL LÍMITE", fg_color="#d97706")
-            self.p3_progress.configure(progress_color="#f59e0b")
+            self.p3_badge.configure(text="🟡 ATENCIÓN: CERCA AL LÍMITE", fg_color=Theme.WARNING)
+            self.p3_progress.configure(progress_color=Theme.WARNING)
             self.p3_status_text.configure(
                 text=f"⚠️ PRECAUCIÓN: Llevas consumido el {pct_p3:.0f}% de tu dinero libre. Te restan ${free_remaining:,.0f} COP para el resto del mes.",
-                text_color="#f59e0b"
+                text_color=Theme.WARNING
             )
         else:
-            self.p3_badge.configure(text="🟢 EN RANGO SEGURO", fg_color="#059669")
-            self.p3_progress.configure(progress_color="#10b981")
+            self.p3_badge.configure(text="🟢 EN RANGO SEGURO", fg_color=Theme.SUCCESS)
+            self.p3_progress.configure(progress_color=Theme.SUCCESS)
             self.p3_status_text.configure(
                 text=f"🎉 EXCELENTE: Solo has consumido el {pct_p3:.0f}% (${var_spent:,.0f} COP). Tienes ${free_remaining:,.0f} COP totalmente libres para disfrutar.",
-                text_color="#10b981"
+                text_color=Theme.SUCCESS
             )
 
         if self.show_p3_details:
@@ -696,14 +696,14 @@ class BudgetView(ctk.CTkFrame):
             text="📋 Checklist de Gastos Fijos Obligatorios (Plantilla Mensual):",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w", padx=14, pady=(10, 6))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
         if not cop_items:
-            ctk.CTkLabel(self.p1_details_box, text="No hay gastos fijos registrados en la plantilla.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=4)
+            ctk.CTkLabel(self.p1_details_box, text="No hay gastos fijos registrados en la plantilla.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=Theme.SPACING_XS)
         else:
             for item in cop_items:
                 row = ctk.CTkFrame(self.p1_details_box, fg_color="transparent")
-                row.pack(fill="x", padx=14, pady=3)
+                row.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_XS)
 
                 is_paid = item.get("is_paid", False)
                 status_dot = "🟢 Pagado" if is_paid else f"🟡 Pendiente (Vence día {item.get('due_day', '')})"
@@ -728,7 +728,7 @@ class BudgetView(ctk.CTkFrame):
                 text="🛒 Necesidades Básicas del Mes (Mercado, Moto & Hogar):",
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=Theme.TEXT_PRIMARY
-            ).pack(anchor="w", padx=14, pady=(14, 6))
+            ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_XS))
 
             p1_var_cats.sort(key=lambda c: c.get("spent", 0.0), reverse=True)
 
@@ -738,11 +738,11 @@ class BudgetView(ctk.CTkFrame):
                 tx_count = cat.get("tx_count", 0)
                 icon = cat.get("icon", "🛒")
 
-                card_cat = ctk.CTkFrame(self.p1_details_box, fg_color=Theme.BG_CARD, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-                card_cat.pack(fill="x", padx=12, pady=4)
+                card_cat = ctk.CTkFrame(self.p1_details_box, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+                card_cat.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
                 head_row = ctk.CTkFrame(card_cat, fg_color="transparent")
-                head_row.pack(fill="x", padx=12, pady=8)
+                head_row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
                 ctk.CTkLabel(
                     head_row,
@@ -757,14 +757,14 @@ class BudgetView(ctk.CTkFrame):
                     text="🔼 Ocultar compras" if is_expanded else "👁️ Ver compras ▾",
                     width=130,
                     height=24,
-                    corner_radius=6,
+                    corner_radius=Theme.SPACING_XS,
                     fg_color=Theme.BG_CARD_SUBTLE,
                     hover_color=Theme.BORDER_DEFAULT,
                     text_color=Theme.ACCENT_BLUE,
                     font=ctk.CTkFont(size=11, weight="bold"),
                     command=lambda cn=cat_name: self._toggle_category_expansion(cn)
                 )
-                btn_toggle.pack(side="right", padx=(8, 0))
+                btn_toggle.pack(side="right", padx=(Theme.SPACING_SM, 0))
 
                 ctk.CTkLabel(
                     head_row,
@@ -774,16 +774,16 @@ class BudgetView(ctk.CTkFrame):
                 ).pack(side="right")
 
                 if is_expanded:
-                    tx_box = ctk.CTkFrame(card_cat, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=6)
-                    tx_box.pack(fill="x", padx=10, pady=(0, 10))
+                    tx_box = ctk.CTkFrame(card_cat, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_XS)
+                    tx_box.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
                     tx_list = self.db.get_category_expenses_detail(self.current_ym, cat_name, self.active_currency)
                     if not tx_list:
-                        ctk.CTkLabel(tx_box, text="No se encontraron detalles.", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(pady=6)
+                        ctk.CTkLabel(tx_box, text="No se encontraron detalles.", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(pady=Theme.SPACING_XS)
                     else:
                         for tx in tx_list:
                             tx_row = ctk.CTkFrame(tx_box, fg_color="transparent")
-                            tx_row.pack(fill="x", padx=12, pady=3)
+                            tx_row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
                             dt_raw = tx.get("date", "")
                             try:
@@ -830,7 +830,7 @@ class BudgetView(ctk.CTkFrame):
         var_cats = [c for c in cats if c["category"] not in excluded_from_p3 and c.get("spent", 0.0) > 0]
 
         if not var_cats:
-            ctk.CTkLabel(self.p3_details_box, text="No hay gastos variables registrados en este mes.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=12)
+            ctk.CTkLabel(self.p3_details_box, text="No hay gastos variables registrados en este mes.", font=ctk.CTkFont(size=12), text_color=Theme.TEXT_MUTED).pack(pady=Theme.SPACING_SM)
             return
 
         ctk.CTkLabel(
@@ -838,7 +838,7 @@ class BudgetView(ctk.CTkFrame):
             text="🏷️ Desglose de Gastos Variables de Estilo de Vida (Haz clic en '👁️ Ver compras' para auditar cada gasto):",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
-        ).pack(anchor="w", padx=14, pady=(10, 8))
+        ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(Theme.SPACING_SM, Theme.SPACING_SM))
 
         # Ordenar categorías por gasto descendente (las de mayor gasto primero)
         var_cats.sort(key=lambda c: c.get("spent", 0.0), reverse=True)
@@ -849,11 +849,11 @@ class BudgetView(ctk.CTkFrame):
             tx_count = cat.get("tx_count", 0)
             icon = cat.get("icon", "🏷️")
 
-            card_cat = ctk.CTkFrame(self.p3_details_box, fg_color=Theme.BG_CARD, corner_radius=8, border_width=1, border_color=Theme.BORDER_SUBTLE)
-            card_cat.pack(fill="x", padx=12, pady=4)
+            card_cat = ctk.CTkFrame(self.p3_details_box, fg_color=Theme.BG_CARD, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card_cat.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
             head_row = ctk.CTkFrame(card_cat, fg_color="transparent")
-            head_row.pack(fill="x", padx=12, pady=8)
+            head_row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
             ctk.CTkLabel(
                 head_row,
@@ -868,14 +868,14 @@ class BudgetView(ctk.CTkFrame):
                 text="🔼 Ocultar compras" if is_expanded else "👁️ Ver compras ▾",
                 width=130,
                 height=24,
-                corner_radius=6,
+                corner_radius=Theme.SPACING_XS,
                 fg_color=Theme.BG_CARD_SUBTLE,
                 hover_color=Theme.BORDER_DEFAULT,
                 text_color=Theme.ACCENT_BLUE,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 command=lambda cn=cat_name: self._toggle_category_expansion(cn)
             )
-            btn_toggle.pack(side="right", padx=(8, 0))
+            btn_toggle.pack(side="right", padx=(Theme.SPACING_SM, 0))
 
             ctk.CTkLabel(
                 head_row,
@@ -886,16 +886,16 @@ class BudgetView(ctk.CTkFrame):
 
             # Si la categoría está expandida, renderizar las transacciones individuales
             if is_expanded:
-                tx_box = ctk.CTkFrame(card_cat, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=6)
-                tx_box.pack(fill="x", padx=10, pady=(0, 10))
+                tx_box = ctk.CTkFrame(card_cat, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_XS)
+                tx_box.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
 
                 tx_list = self.db.get_category_expenses_detail(self.current_ym, cat_name, self.active_currency)
                 if not tx_list:
-                    ctk.CTkLabel(tx_box, text="No se encontraron detalles.", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(pady=6)
+                    ctk.CTkLabel(tx_box, text="No se encontraron detalles.", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_MUTED).pack(pady=Theme.SPACING_XS)
                 else:
                     for tx in tx_list:
                         tx_row = ctk.CTkFrame(tx_box, fg_color="transparent")
-                        tx_row.pack(fill="x", padx=12, pady=3)
+                        tx_row.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
                         # Fecha formateada (e.g. "18 Sep")
                         dt_raw = tx.get("date", "")
