@@ -1,0 +1,38 @@
+# UTF-8
+#
+# Archivo de recursos de versión de Windows para PyInstaller
+# Asigna autoría, compañía y copyright a ControlFinanciero.exe
+#
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 2, 0, 0),
+    prodvers=(1, 2, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'Laura Moreno Montoya'),
+            StringStruct('FileDescription', 'Control Financiero Pro - Ingresos, Egresos & Patrimonio Multimoneda'),
+            StringStruct('FileVersion', '1.2.0.0'),
+            StringStruct('InternalName', 'ControlFinanciero'),
+            StringStruct('LegalCopyright', '© 2026 Laura Moreno Montoya. Todos los derechos reservados.'),
+            StringStruct('OriginalFilename', 'ControlFinanciero.exe'),
+            StringStruct('ProductName', 'Control Financiero Pro'),
+            StringStruct('ProductVersion', '1.2.0.0'),
+            StringStruct('Comments', 'Desarrollado por Laura Moreno Montoya')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)

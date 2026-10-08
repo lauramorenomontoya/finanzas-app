@@ -8,7 +8,7 @@ import customtkinter as ctk
 from typing import Dict, Any
 from database.db_manager import DatabaseManager
 from ui.theme import Theme
-from ui.components import CSVImporterModal, GlobalSearchModal
+from ui.components import CSVImporterModal, GlobalSearchModal, AboutModal
 from ui.views.dashboard import DashboardView
 from ui.views.incomes import IncomesView
 from ui.views.expenses import ExpensesView
@@ -67,9 +67,13 @@ class FinancialApp(ctk.CTk):
         self._build_sidebar()
         self._build_content_area()
 
-        # Atajos de Teclado Globales (Cmd+K en macOS, Ctrl+K en Windows/Linux)
+        # Atajos de Teclado Globales (Cmd+K en macOS, Ctrl+K en Windows/Linux, F1 para Acerca de)
         self.bind_all("<Command-k>", lambda e: self._open_global_search())
         self.bind_all("<Control-k>", lambda e: self._open_global_search())
+        self.bind_all("<F1>", lambda e: self._open_about_modal())
+
+        # Configurar menús de sistema nativos (About en macOS y Menú Ayuda en Windows)
+        self._setup_system_menus()
 
         # Suscribirse al bus de eventos globales
         EventBus.subscribe("DATA_UPDATED", self.on_data_updated)
@@ -276,6 +280,17 @@ class FinancialApp(ctk.CTk):
         )
         self.lbl_backup_status.pack(anchor="w")
 
+        # Firma de Autoría Sutil
+        self.lbl_author_signature = ctk.CTkLabel(
+            footer_frame,
+            text="✨ Creado por Laura Moreno",
+            font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10),
+            text_color=Theme.TEXT_MUTED,
+            cursor="hand2"
+        )
+        self.lbl_author_signature.pack(anchor="w", pady=(2, 0))
+        self.lbl_author_signature.bind("<Button-1>", lambda e: self._open_about_modal())
+
     def _build_content_area(self):
         """Inicializa el contenedor donde se muestran las diferentes vistas."""
         self.content_container = ctk.CTkFrame(self, fg_color=Theme.BG_WINDOW, corner_radius=0)
@@ -409,3 +424,33 @@ class FinancialApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
         else:
             ctk.set_appearance_mode("light")
+
+    def _setup_system_menus(self):
+        """Configura los menús nativos del sistema operativo (macOS y Windows)."""
+        import tkinter as tk
+        import platform
+
+        # 1. En macOS: Conectar con el menú nativo "About Control Financiero" de Apple
+        if platform.system() == "Darwin":
+            try:
+                self.createcommand("tkAboutDialog", self._open_about_modal)
+            except Exception:
+                pass
+        else:
+            # 2. En Windows / Linux: Barra de menú estándar con 'Ayuda ➔ Acerca de...'
+            try:
+                menubar = tk.Menu(self)
+                help_menu = tk.Menu(menubar, tearoff=0)
+                help_menu.add_command(
+                    label="Acerca de Control Financiero",
+                    command=self._open_about_modal,
+                    accelerator="F1"
+                )
+                menubar.add_cascade(label="Ayuda", menu=help_menu)
+                self.config(menu=menubar)
+            except Exception:
+                pass
+
+    def _open_about_modal(self):
+        """Abre la ventana modal 'Acerca de...' con los créditos de autoría."""
+        AboutModal(self)

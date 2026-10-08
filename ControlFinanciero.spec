@@ -94,6 +94,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    version='version_info.txt' if os.path.exists('version_info.txt') else None,
 )
 
 coll = COLLECT(
@@ -116,10 +117,11 @@ if sys.platform == 'darwin':
         info_plist={
             'CFBundleName': 'Control Financiero',
             'CFBundleDisplayName': 'Control Financiero',
-            'CFBundleGetInfoString': 'Gestor Financiero Multimoneda',
+            'CFBundleGetInfoString': 'Gestor Financiero Multimoneda creado por Laura Moreno Montoya',
             'CFBundleIdentifier': 'com.controlfinanciero.app',
             'CFBundleVersion': '1.2.0',
             'CFBundleShortVersionString': '1.2.0',
+            'NSHumanReadableCopyright': '© 2026 Laura Moreno Montoya. Todos los derechos reservados.',
             'NSHighResolutionCapable': 'True',
         },
     )

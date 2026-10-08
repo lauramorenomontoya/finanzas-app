@@ -1,6 +1,8 @@
 # core/constants.py
 
 APP_VERSION = "1.2.0"
+APP_AUTHOR = "Laura Moreno Montoya"
+APP_COPYRIGHT = "© 2026 Laura Moreno Montoya. Todos los derechos reservados."
 
 class Currencies:
     COP = "COP"
