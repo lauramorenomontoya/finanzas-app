@@ -99,9 +99,11 @@ jobs:
           name: ControlFinanciero_Windows
           path: ./release_assets
 
-      - name: Crear GitHub Release con instaladores
+      - name: Crear GitHub Release en finanzas-app
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.PUBLIC_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: lauramorenomontoya/finanzas-app
           files: |
             ./release_assets/ControlFinanciero_macOS.dmg
             ./release_assets/ControlFinanciero_Windows.zip

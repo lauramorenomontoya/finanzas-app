@@ -16,7 +16,7 @@ from typing import Callable, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("ControlFinanciero.UpdateService")
 
-GITHUB_REPO = "lauramorenomontoya/finanzas"
+GITHUB_REPO = "lauramorenomontoya/finanzas-app"
 LATEST_RELEASE_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 
