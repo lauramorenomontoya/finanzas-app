@@ -23,9 +23,11 @@ from .debt_history_modal import DebtHistoryModal
 from .pay_recurring_dialog import PayRecurringDialog
 from .empty_state import EmptyState
 from .about_modal import AboutModal
+from .update_modal import UpdateModal
 
 __all__ = [
     "AboutModal",
+    "UpdateModal",
     "EmptyState",
     "StatCard",
     "ToastNotification",

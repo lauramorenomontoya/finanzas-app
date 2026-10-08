@@ -75,6 +75,22 @@ class SettingsView(ctk.CTkFrame):
         )
         btn_export.pack(side="right", padx=(0, Theme.SPACING_SM))
 
+        btn_update = ctk.CTkButton(
+            header_frame,
+            text="🔄 Actualizaciones",
+            height=36,
+            width=135,
+            corner_radius=Theme.SPACING_SM,
+            fg_color=Theme.BG_CARD_SUBTLE,
+            hover_color=Theme.BORDER_DEFAULT,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE,
+            text_color=Theme.TEXT_PRIMARY,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._check_for_updates
+        )
+        btn_update.pack(side="right", padx=(0, Theme.SPACING_SM))
+
         # 2. Selector de Sección
         self.section_seg = ctk.CTkSegmentedButton(
             self,
@@ -146,3 +162,9 @@ class SettingsView(ctk.CTkFrame):
         self.accounts_tab.refresh_data()
         self.recurring_tab.refresh_data()
         self.ai_tab.refresh_data()
+
+    def _check_for_updates(self):
+        """Dispara la verificación manual de versiones desde la ventana principal."""
+        top = self.winfo_toplevel()
+        if hasattr(top, "check_for_updates_manual"):
+            top.check_for_updates_manual()

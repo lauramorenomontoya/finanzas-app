@@ -78,3 +78,33 @@ jobs:
         with:
           name: ControlFinanciero_Windows
           path: dist/ControlFinanciero_Windows.zip
+
+  release:
+    name: Publicar Release en GitHub
+    needs: [build-macos, build-windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar artefacto macOS
+        uses: actions/download-artifact@v4
+        with:
+          name: ControlFinanciero_macOS
+          path: ./release_assets
+
+      - name: Descargar artefacto Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: ControlFinanciero_Windows
+          path: ./release_assets
+
+      - name: Crear GitHub Release con instaladores
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./release_assets/ControlFinanciero_macOS.dmg
+            ./release_assets/ControlFinanciero_Windows.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true

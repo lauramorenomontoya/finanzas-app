@@ -7,8 +7,8 @@ búsqueda global (Cmd+K), sincronización reactiva y arquitectura modular.
 import customtkinter as ctk
 from typing import Dict, Any
 from database.db_manager import DatabaseManager
-from ui.theme import Theme
-from ui.components import CSVImporterModal, GlobalSearchModal, AboutModal
+from ui.components import CSVImporterModal, GlobalSearchModal, AboutModal, UpdateModal
+from services.update_service import UpdateService
 from ui.views.dashboard import DashboardView
 from ui.views.incomes import IncomesView
 from ui.views.expenses import ExpensesView
@@ -80,6 +80,9 @@ class FinancialApp(ctk.CTk):
 
         # Iniciar en el Dashboard
         self.show_view("dashboard")
+
+        # Verificación automática de actualizaciones en segundo plano (2s tras abrir)
+        self.after(2000, self._check_updates_background)
 
     def _build_sidebar(self):
         """Construye la barra de navegación lateral."""
@@ -437,10 +440,15 @@ class FinancialApp(ctk.CTk):
             except Exception:
                 pass
         else:
-            # 2. En Windows / Linux: Barra de menú estándar con 'Ayuda ➔ Acerca de...'
+            # 2. En Windows / Linux: Barra de menú estándar con 'Ayuda ➔ Acerca de...' y 'Buscar Actualizaciones'
             try:
                 menubar = tk.Menu(self)
                 help_menu = tk.Menu(menubar, tearoff=0)
+                help_menu.add_command(
+                    label="Buscar Actualizaciones...",
+                    command=self.check_for_updates_manual
+                )
+                help_menu.add_separator()
                 help_menu.add_command(
                     label="Acerca de Control Financiero",
                     command=self._open_about_modal,
@@ -454,3 +462,39 @@ class FinancialApp(ctk.CTk):
     def _open_about_modal(self):
         """Abre la ventana modal 'Acerca de...' con los créditos de autoría."""
         AboutModal(self)
+
+    def _check_updates_background(self):
+        """Inicia la comprobación asíncrona de nuevas versiones en segundo plano."""
+        UpdateService.check_for_updates_async(
+            APP_VERSION,
+            callback=self._on_update_check_finished
+        )
+
+    def _on_update_check_finished(self, info: Dict[str, Any]):
+        """Procesa el resultado del chequeo silencioso en el hilo de la UI."""
+        if info.get("update_available"):
+            self.after(0, lambda: self._show_update_modal(info))
+
+    def _show_update_modal(self, info: Dict[str, Any]):
+        """Muestra el diálogo emergente con los detalles de la nueva versión."""
+        UpdateModal(self, info)
+
+    def check_for_updates_manual(self):
+        """Verificación manual invocada por el usuario (muestra feedback si no hay actualizaciones)."""
+        def _manual_callback(info: Dict[str, Any]):
+            if info.get("update_available"):
+                self.after(0, lambda: self._show_update_modal(info))
+            else:
+                from tkinter import messagebox
+                if info.get("error"):
+                    self.after(0, lambda: messagebox.showinfo(
+                        "Actualizaciones",
+                        "No fue posible conectar con el servidor de actualizaciones en este momento.\nVerifica tu conexión a internet."
+                    ))
+                else:
+                    self.after(0, lambda: messagebox.showinfo(
+                        "Control Financiero al día",
+                        f"¡Tienes la versión más reciente instalada! (v{APP_VERSION})"
+                    ))
+
+        UpdateService.check_for_updates_async(APP_VERSION, callback=_manual_callback)
