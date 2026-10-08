@@ -105,11 +105,13 @@ jobs:
         run: |
           echo "Archivos descargados para el release:"
           ls -la ./release_assets
+          # Limpiar release anterior o borrador si existiera
+          gh release delete "${{ github.ref_name }}" --repo lauramorenomontoya/finanzas-app --yes || true
+          # Crear el nuevo release oficial con los instaladores
           gh release create "${{ github.ref_name }}" \
             --repo lauramorenomontoya/finanzas-app \
             --target main \
             --title "Control Financiero ${{ github.ref_name }}" \
             --notes "Instaladores oficiales de Control Financiero ${{ github.ref_name }}." \
-            --clobber \
             ./release_assets/ControlFinanciero_macOS.dmg \
             ./release_assets/ControlFinanciero_Windows.zip
