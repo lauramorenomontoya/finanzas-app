@@ -102,11 +102,17 @@ jobs:
       - name: Crear GitHub Release en finanzas-app
         uses: softprops/action-gh-release@v2
         with:
-          token: ${{ secrets.PUBLIC_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUBLIC_REPO_TOKEN }}
           repository: lauramorenomontoya/finanzas-app
+          tag_name: ${{ github.ref_name }}
+          target_commitish: main
+          name: Control Financiero ${{ github.ref_name }}
+          body: |
+            Instaladores oficiales de Control Financiero ${{ github.ref_name }}.
+            - macOS: ControlFinanciero_macOS.dmg
+            - Windows: ControlFinanciero_Windows.zip
           files: |
             ./release_assets/ControlFinanciero_macOS.dmg
             ./release_assets/ControlFinanciero_Windows.zip
           draft: false
           prerelease: false
-          generate_release_notes: true
