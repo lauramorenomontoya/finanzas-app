@@ -109,7 +109,7 @@ class BudgetView(ctk.CTkFrame):
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT_COP,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._go_current_month
         )
@@ -135,7 +135,7 @@ class BudgetView(ctk.CTkFrame):
             banner_left,
             text="🛡️ DINERO SEGURO PARA GASTAR LIBREMENTE (PILAR 3)",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
-            text_color=Theme.ACCENT_GREEN
+            text_color=Theme.ACCENT_COP
         ).pack(anchor="w")
 
         self.lbl_safe_to_spend = ctk.CTkLabel(
@@ -165,7 +165,7 @@ class BudgetView(ctk.CTkFrame):
         r_inner.pack(fill="x", padx=Theme.SPACING_MD, pady=Theme.SPACING_SM)
 
         ctk.CTkLabel(r_inner, text="RITMO DIARIO SUGERIDO", font=ctk.CTkFont(size=10, weight="bold"), text_color=Theme.TEXT_MUTED).pack(anchor="center")
-        self.lbl_daily_budget = ctk.CTkLabel(r_inner, text="$0 COP / día", font=ctk.CTkFont(size=16, weight="bold"), text_color=Theme.ACCENT_BLUE)
+        self.lbl_daily_budget = ctk.CTkLabel(r_inner, text="$0 COP / día", font=ctk.CTkFont(size=16, weight="bold"), text_color=Theme.ACCENT_COP)
         self.lbl_daily_budget.pack(anchor="center", pady=(Theme.SPACING_XS, 0))
         self.lbl_days_left = ctk.CTkLabel(r_inner, text="", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_SECONDARY)
         self.lbl_days_left.pack(anchor="center")
@@ -248,7 +248,7 @@ class BudgetView(ctk.CTkFrame):
         p1_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p1_cols")
 
         self.p1_lbl_budget = self._create_metric_cell(p1_metrics, 0, "LÍMITE SUGERIDO (50%):", "$0 COP", Theme.TEXT_PRIMARY)
-        self.p1_lbl_committed = self._create_metric_cell(p1_metrics, 1, "COMPROMISO FIJOS TOTAL:", "$0 COP", Theme.ACCENT_BLUE)
+        self.p1_lbl_committed = self._create_metric_cell(p1_metrics, 1, "COMPROMISO FIJOS TOTAL:", "$0 COP", Theme.ACCENT_COP)
         self.p1_lbl_paid = self._create_metric_cell(p1_metrics, 2, "PAGADO A LA FECHA:", "$0 COP", Theme.ACCENT_GREEN)
         self.p1_lbl_pending = self._create_metric_cell(p1_metrics, 3, "POR PAGAR RESTANTE:", "$0 COP", Theme.ACCENT_ROSE)
 
@@ -270,7 +270,7 @@ class BudgetView(ctk.CTkFrame):
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT_COP,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._toggle_p1_details
         )
@@ -323,10 +323,10 @@ class BudgetView(ctk.CTkFrame):
         p2_metrics.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
         p2_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p2_cols")
 
-        self.p2_lbl_target_total = self._create_metric_cell(p2_metrics, 0, "META CONSOLIDADA (25%):", "$0 COP", Theme.ACCENT_BLUE)
-        self.p2_lbl_moto = self._create_metric_cell(p2_metrics, 1, "PROVISIÓN MOTO (FIDUCUENTA):", "$150.000 COP", Theme.ACCENT_GREEN)
+        self.p2_lbl_target_total = self._create_metric_cell(p2_metrics, 0, "META CONSOLIDADA (25%):", "$0 COP", Theme.ACCENT_COP)
+        self.p2_lbl_moto = self._create_metric_cell(p2_metrics, 1, "PROVISIÓN MOTO (FIDUCUENTA):", "$150.000 COP", Theme.ACCENT_COP)
         self.p2_lbl_emergency = self._create_metric_cell(p2_metrics, 2, "FONDO DE EMERGENCIA:", "$0 COP", Theme.TEXT_PRIMARY)
-        self.p2_lbl_invest = self._create_metric_cell(p2_metrics, 3, "INVERSIÓN (FIDURENTA/TRII):", "$0 COP", Theme.ACCENT_BLUE)
+        self.p2_lbl_invest = self._create_metric_cell(p2_metrics, 3, "INVERSIÓN (FIDURENTA/TRII):", "$0 COP", Theme.ACCENT_COP)
 
         self.p2_progress = ctk.CTkProgressBar(self.p2_card, height=12, corner_radius=Theme.SPACING_XS, fg_color=Theme.BG_PROGRESS_TRACK, progress_color=Theme.SUCCESS)
         self.p2_progress.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
@@ -380,7 +380,7 @@ class BudgetView(ctk.CTkFrame):
         p3_metrics.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_XS, Theme.SPACING_SM))
         p3_metrics.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="p3_cols")
 
-        self.p3_lbl_limit = self._create_metric_cell(p3_metrics, 0, "CUPO LIBRE DISPONIBLE (25%):", "$0 COP", Theme.ACCENT_BLUE)
+        self.p3_lbl_limit = self._create_metric_cell(p3_metrics, 0, "CUPO LIBRE DISPONIBLE (25%):", "$0 COP", Theme.ACCENT_COP)
         self.p3_lbl_spent = self._create_metric_cell(p3_metrics, 1, "GASTADO REAL EN EL MES:", "$0 COP", Theme.ACCENT_ROSE)
         self.p3_lbl_remaining = self._create_metric_cell(p3_metrics, 2, "MARGEN RESTANTE SIN CULPA:", "$0 COP", Theme.ACCENT_GREEN)
         self.p3_lbl_daily = self._create_metric_cell(p3_metrics, 3, "DISPONIBLE POR DÍA RESTANTE:", "$0 COP / día", Theme.TEXT_PRIMARY)
@@ -403,7 +403,7 @@ class BudgetView(ctk.CTkFrame):
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT_COP,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._toggle_p3_details
         )
@@ -508,7 +508,7 @@ class BudgetView(ctk.CTkFrame):
         self.lbl_days_left.configure(text=f"{overview['days_left']} días restantes en {self.current_ym}")
 
         if safe_amt > 0:
-            self.lbl_safe_to_spend.configure(text_color=Theme.SUCCESS)
+            self.lbl_safe_to_spend.configure(text_color=Theme.ACCENT_COP)
             self.lbl_safe_desc.configure(
                 text=f"¡Tienes {safe_str} libres para disfrutar este mes! Fijos, provisión de moto y ahorro/inversión ya están reservados."
             )

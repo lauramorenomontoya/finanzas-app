@@ -14,8 +14,14 @@ from typing import Dict, Any, List, Optional
 
 # Asegurar importación de módulos locales
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-if CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+BASE_DIRS = [
+    CURRENT_DIR,
+    os.path.expanduser("~/Desktop/Scripts/ControlFinanciero"),
+    os.path.expanduser("~/Desktop/Scripts/Montu"),
+]
+for d in BASE_DIRS:
+    if os.path.exists(d) and d not in sys.path:
+        sys.path.insert(0, d)
 
 from database.db_manager import DatabaseManager
 from mcp.server.mcpserver import MCPServer

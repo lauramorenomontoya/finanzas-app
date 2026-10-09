@@ -4,40 +4,85 @@ core/theme.py - Sistema de Diseño y Tema Central ("Dark Finance") para Montu.
 """
 
 import platform
+from typing import Tuple, Union, Optional
+import customtkinter as ctk
 
 
-def get_system_font_family(style: str = "text") -> str:
+def get_resolved_font_family() -> str:
     """
-    Retorna la familia tipográfica recomendada según la plataforma:
-    - style='display': Para cabeceras, títulos y valores numéricos grandes.
-    - style='text': Para cuerpo de texto, etiquetas y botones.
+    Resuelve dinámicamente la fuente del sistema disponible en Tkinter con fallback seguro:
+    - En macOS: Busca 'SF Pro Text' -> 'SF Pro' -> 'Helvetica Neue' -> 'Helvetica' -> 'Arial'.
+    - En Windows: Busca 'Segoe UI' -> 'Arial'.
+    - En Linux: Busca 'Ubuntu' -> 'DejaVu Sans' -> 'Arial'.
     """
-    sys_name = platform.system()
-    if sys_name == "Darwin":  # macOS
-        return "SF Pro Display" if style == "display" else "SF Pro Text"
-    elif sys_name == "Windows":  # Windows
-        return "Segoe UI"
-    else:  # Linux y otros
-        return "Ubuntu" if style == "display" else "DejaVu Sans"
+    available = set()
+    try:
+        import tkinter as tk
+        import tkinter.font as tkfont
+        root = tk._default_root
+        temp_root = False
+        if root is None:
+            try:
+                root = tk.Tk()
+                root.withdraw()
+                temp_root = True
+            except Exception:
+                root = None
+        if root is not None:
+            available = set(tkfont.families(root))
+            if temp_root:
+                root.destroy()
+    except Exception:
+        pass
+
+    if platform.system() == "Darwin":
+        for font in ["SF Pro Text", "SF Pro", "Helvetica Neue", "Helvetica"]:
+            if font in available:
+                return font
+        return "Helvetica Neue" if ("Helvetica Neue" in available or not available) else "Arial"
+    elif platform.system() == "Windows":
+        return "Segoe UI" if ("Segoe UI" in available or not available) else "Arial"
+    else:
+        for font in ["Ubuntu", "DejaVu Sans"]:
+            if font in available:
+                return font
+        return "Arial"
 
 
-# Constante base de tipografía (SF Pro en macOS; cambiar aquí para migrar a Inter globalmente)
-FONT_FAMILY = get_system_font_family("text")
+# Constante base de tipografía (cambiar aquí modifica toda la app, ej. a 'Inter')
+FONT_FAMILY = get_resolved_font_family()
 
 
 class Theme:
     """
-    Tokens de diseño para Montu.
+    Tokens de diseño "Dark Finance" para Montu.
     Mantiene compatibilidad con tuplas CustomTkinter: (color_modo_claro, color_modo_oscuro).
     """
 
-    # Tipografía
-    FONT_DISPLAY = get_system_font_family("display")
-    FONT_TEXT = get_system_font_family("text")
+    # Tipografía del sistema y estilos
+    FONT_DISPLAY = FONT_FAMILY
+    FONT_TEXT = FONT_FAMILY
+
+    @classmethod
+    def font_title(cls, size: int = 24, weight: str = "bold") -> ctk.CTkFont:
+        return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
+
+    @classmethod
+    def font_subtitle(cls, size: int = 14, weight: str = "normal") -> ctk.CTkFont:
+        return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
+
+    @classmethod
+    def font_body(cls, size: int = 12, weight: str = "normal") -> ctk.CTkFont:
+        return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
+
+    @classmethod
+    def font_figures(cls, size: int = 18, weight: str = "bold") -> ctk.CTkFont:
+        return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
 
     # Escala de Espaciado (múltiplos de 8, 12, 16, 24, 32)
     SPACING_XS = 4
     SPACING_SM = 8
+    SPACING_BASE = 12
     SPACING_MD = 16
     SPACING_LG = 24
     SPACING_XL = 32
@@ -48,46 +93,63 @@ class Theme:
     RADIUS_INPUT = 8
     RADIUS_PILL = 12
 
-    # Fondos
-    BG_WINDOW = ("#f8fafc", "#0f172a")          # Fondo de ventana principal
-    BG_SIDEBAR = ("#f1f5f9", "#090d16")         # Fondo de barra lateral
-    BG_CARD = ("#ffffff", "#1e293b")            # Paneles y tarjetas
-    BG_CARD_SUBTLE = ("#f1f5f9", "#0f172a")     # Cajas internas
-    BG_INPUT = ("#ffffff", "#0f172a")           # Campos de texto y combos
-    BG_PROGRESS_TRACK = ("#e2e8f0", "#334155")  # Fondo de barras de progreso
+    # --- Paleta Dark Finance (Constantes Hex directas) ---
+    BG_APP = "#111713"         # Obsidiana (fondo principal)
+    BG_PANEL = "#1A211D"       # Carbón (paneles y tarjetas)
+    ACCENT = "#75D9A5"         # Esmeralda (acciones principales, saldos positivos, mundo USD / Bóveda)
+    ACCENT_USD = "#75D9A5"     # Esmeralda (mundo USD / Bóveda)
+    ACCENT_COP = "#E3B368"     # Ámbar suave (mundo COP / Presupuesto)
+    TEXT_PRIMARY = "#F0F4F1"   # Marfil frío (texto principal)
+    TEXT_SECONDARY = "#8D9B92" # Salvia (texto secundario)
+    DANGER = "#D97878"         # Coral (errores y alertas)
 
-    # Bordes
-    BORDER_DEFAULT = ("#cbd5e1", "#334155")
-    BORDER_SIDEBAR = ("#cbd5e1", "#1e293b")
-    BORDER_SUBTLE = ("#e2e8f0", "#1e293b")
+    # --- Tuplas CustomTkinter (modo claro, modo oscuro Dark Finance) ---
+    BG_WINDOW = ("#F4F7F5", "#111713")          # Fondo principal
+    BG_SIDEBAR = ("#EAEFEA", "#0D130F")         # Fondo barra lateral
+    BG_CARD = ("#FFFFFF", "#1A211D")            # Paneles y tarjetas
+    BG_CARD_SUBTLE = ("#F0F4F1", "#151C17")     # Cajas internas y cards secundarias
+    BG_INPUT = ("#FFFFFF", "#151C17")           # Campos de entrada
+    BG_PROGRESS_TRACK = ("#E2E8F0", "#263029")  # Pistas de barras de progreso
 
-    # Textos
-    TEXT_PRIMARY = ("#0f172a", "#f8fafc")
-    TEXT_SECONDARY = ("#334155", "#94a3b8")
-    TEXT_MUTED = ("#475569", "#94a3b8")
-    TEXT_ON_COLOR = ("#ffffff", "#ffffff")
+    # Bordes sutiles
+    BORDER_DEFAULT = ("#D5DDD7", "#263029")
+    BORDER_SIDEBAR = ("#D5DDD7", "#1E2721")
+    BORDER_SUBTLE = ("#E2E8E4", "#1E2721")
 
-    # Acentos (Paleta Primaria)
-    ACCENT_BLUE = ("#0284c7", "#38bdf8")
-    ACCENT_GREEN = ("#059669", "#10b981")
-    ACCENT_ROSE = ("#e11d48", "#f43f5e")
-    ACCENT_INDIGO = ("#4f46e5", "#818cf8")
+    # Textos adaptables
+    TEXT_MUTED = ("#6B7A70", "#64746A")
+    TEXT_ON_COLOR = ("#FFFFFF", "#111713")      # Para botones con fondo brillante
+    TEXT_ON_DARK = ("#FFFFFF", "#F0F4F1")
 
-    # Colores Semánticos (Status)
-    SUCCESS = ("#059669", "#10b981")            # Verde / Esmeralda
-    SUCCESS_HOVER = ("#047857", "#34d399")
-    WARNING = ("#d97706", "#f59e0b")            # Ámbar
-    WARNING_HOVER = ("#b45309", "#fbbf24")
-    ERROR = ("#e11d48", "#f43f5e")              # Coral / Rojo
-    ERROR_HOVER = ("#be123c", "#fb7185")
-    INFO = ("#0284c7", "#38bdf8")               # Azul
-    INFO_HOVER = ("#0369a1", "#7dd3fc")
+    # Acentos de color semánticos
+    ACCENT_GREEN = ("#059669", "#75D9A5")       # Esmeralda
+    ACCENT_BLUE = ("#0284C7", "#75D9A5")        # Esmeralda (compatibilidad)
+    ACCENT_ROSE = ("#E11D48", "#D97878")        # Coral
+    ACCENT_INDIGO = ("#4F46E5", "#75D9A5")
+    ACCENT_AMBER = ("#D97706", "#E3B368")       # Ámbar
 
-    # Banners de estado y mundos de moneda (USD = Esmeralda / Azul, COP = Ámbar)
-    USD_BANNER_BG = ("#e0f2fe", "#082f49")
-    USD_BANNER_BORDER = ("#7dd3fc", "#0284c7")
-    USD_BANNER_TEXT = ("#0284c7", "#38bdf8")
+    # Estados y Feedback
+    SUCCESS = ("#059669", "#75D9A5")            # Verde Esmeralda
+    SUCCESS_HOVER = ("#047857", "#5EC48F")
+    WARNING = ("#D97706", "#E3B368")            # Ámbar
+    WARNING_HOVER = ("#B45309", "#CCA057")
+    ERROR = ("#E11D48", "#D97878")              # Coral
+    ERROR_HOVER = ("#BE123C", "#C56565")
+    INFO = ("#0284C7", "#75D9A5")               # Esmeralda
+    INFO_HOVER = ("#0369A1", "#5EC48F")
 
-    COP_BANNER_BG = ("#d1fae5", "#064e3b")
-    COP_BANNER_BORDER = ("#6ee7b7", "#10b981")
-    COP_BANNER_TEXT = ("#059669", "#10b981")
+    # Banners de estado por mundo de moneda
+    # Mundo USD (Esmeralda)
+    USD_BANNER_BG = ("#E6F7EF", "#14221A")
+    USD_BANNER_BORDER = ("#75D9A5", "#274734")
+    USD_BANNER_TEXT = ("#059669", "#75D9A5")
+
+    # Mundo COP (Ámbar)
+    COP_BANNER_BG = ("#FBF4E8", "#292114")
+    COP_BANNER_BORDER = ("#E3B368", "#4F3C1D")
+    COP_BANNER_TEXT = ("#B45309", "#E3B368")
+
+
+def get_system_font_family(style: str = "text") -> str:
+    """Helper de compatibilidad hacia atrás."""
+    return FONT_FAMILY

@@ -363,8 +363,8 @@ class DebtView(ctk.CTkFrame):
         else:
             badge_text = "LIQUIDADA 🎉" if is_paid else "ACTIVA"
 
-        badge_color = Theme.ACCENT_GREEN if is_paid else "#f59e0b"
-        badge_bg = Theme.COP_BANNER_BG if is_paid else ("#fef3c7", "#78350f")
+        badge_color = Theme.SUCCESS if is_paid else Theme.WARNING
+        badge_bg = Theme.USD_BANNER_BG if is_paid else Theme.COP_BANNER_BG
 
         badge = ctk.CTkLabel(
             title_frame,

@@ -17,6 +17,7 @@ class StatCard(ctk.CTkFrame):
         subtitle: str = "",
         icon: str = "💵",
         accent_color: Union[str, Tuple[str, str]] = ("#0284c7", "#38bdf8"),
+        value_color: Optional[Union[str, Tuple[str, str]]] = None,
         bg_color: Union[str, Tuple[str, str]] = Theme.BG_CARD,
         border_color: Union[str, Tuple[str, str]] = Theme.BORDER_DEFAULT,
         width: int = 220,
@@ -69,11 +70,12 @@ class StatCard(ctk.CTkFrame):
         # Valor principal grande (con auto-escala según longitud)
         val_str = str(value)
         font_size = 19 if len(val_str) > 17 else (22 if len(val_str) > 13 else 24)
+        self.value_color = value_color or Theme.TEXT_PRIMARY
         self.value_label = ctk.CTkLabel(
             self,
             text=value,
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=font_size, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
+            text_color=self.value_color
         )
         self.value_label.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, 2))
 
@@ -86,14 +88,17 @@ class StatCard(ctk.CTkFrame):
         )
         self.subtitle_label.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
-    def update_value(self, new_value: str, new_subtitle: Optional[str] = None):
+    def update_value(self, new_value: str, new_subtitle: Optional[str] = None, new_color: Optional[Union[str, Tuple[str, str]]] = None):
         """Actualiza el texto del valor y opcionalmente el subtítulo con tipografía adaptativa."""
         val_str = str(new_value)
         font_size = 19 if len(val_str) > 17 else (22 if len(val_str) > 13 else 24)
-        self.value_label.configure(
-            text=new_value,
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=font_size, weight="bold")
-        )
+        config_kwargs = {
+            "text": new_value,
+            "font": ctk.CTkFont(family=Theme.FONT_DISPLAY, size=font_size, weight="bold")
+        }
+        if new_color is not None:
+            config_kwargs["text_color"] = new_color
+        self.value_label.configure(**config_kwargs)
         if new_subtitle is not None:
             self.subtitle_label.configure(text=new_subtitle)
 

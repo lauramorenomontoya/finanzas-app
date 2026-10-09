@@ -217,54 +217,58 @@ class DashboardView(ctk.CTkFrame):
         cards_container.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
         cards_container.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="stat_cards")
 
-        # Tarjeta 1: Bóveda USD
+        # Tarjeta 1: Bóveda USD (Mundo USD -> Esmeralda)
         self.card_usd = StatCard(
             cards_container,
             title="Bóveda USD",
             value="$0.00 USD",
-            subtitle="Liquidez en Wenia",
+            subtitle="Liquidez en dólares",
             icon="🏦",
-            accent_color=Theme.ACCENT_BLUE,
+            accent_color=Theme.ACCENT_USD,
+            value_color=Theme.ACCENT_USD,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
         self.card_usd.grid(row=0, column=0, padx=(0, Theme.SPACING_SM), sticky="nsew")
 
-        # Tarjeta 2: Disponible COP
+        # Tarjeta 2: Disponible COP (Mundo COP -> Ámbar)
         self.card_cop = StatCard(
             cards_container,
             title="Disponible Bancolombia",
             value="$0 COP",
-            subtitle="Saldo en cuenta corriente/ahorros",
+            subtitle="Saldo en cuenta operativa",
             icon="💳",
-            accent_color=Theme.ACCENT_GREEN,
+            accent_color=Theme.ACCENT_COP,
+            value_color=Theme.ACCENT_COP,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
         self.card_cop.grid(row=0, column=1, padx=Theme.SPACING_XS, sticky="nsew")
 
-        # Tarjeta 3: Deudas Totales
+        # Tarjeta 3: Deudas Totales (Mundo Alertas / Deuda -> Coral)
         self.card_cc_debt = StatCard(
             cards_container,
             title="Deudas Totales",
             value="$0 COP",
             subtitle="TC y compromisos",
             icon="🤝",
-            accent_color=Theme.ACCENT_ROSE,
+            accent_color=Theme.DANGER,
+            value_color=Theme.DANGER,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
         self.card_cc_debt.grid(row=0, column=2, padx=Theme.SPACING_XS, sticky="nsew")
         self.card_cc_debt.bind("<Button-1>", lambda _: self._trigger_nav("debts"))
 
-        # Tarjeta 4: Gastos del Mes COP
+        # Tarjeta 4: Gastos del Mes COP (Egresos -> Coral)
         self.card_expenses = StatCard(
             cards_container,
             title="Gastos del Mes",
             value="$0 COP",
             subtitle="Egresos en pesos",
             icon="📉",
-            accent_color=Theme.ACCENT_ROSE,
+            accent_color=Theme.DANGER,
+            value_color=Theme.DANGER,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -532,11 +536,12 @@ class DashboardView(ctk.CTkFrame):
                 else:
                     self.bottom_strip.pack_forget()
 
-        # 3. Actualizar Tarjetas de Estadísticas USD y COP
+        # 3. Actualizar Tarjetas de Estadísticas USD y COP (Colores de su mundo)
         if hasattr(self, "card_usd") and self.card_usd.winfo_exists():
             self.card_usd.update_value(
                 f"${usd_liq:,.2f} USD",
-                f"≈ ${usd_cop:,.0f} COP líquidos disponibles"
+                f"≈ ${usd_cop:,.0f} COP líquidos disponibles",
+                new_color=Theme.ACCENT_USD
             )
 
         if hasattr(self, "card_cop") and self.card_cop.winfo_exists():
@@ -546,7 +551,8 @@ class DashboardView(ctk.CTkFrame):
                 cop_sub = f"Liquidez combinada: +${net_liq:,.0f} COP"
             self.card_cop.update_value(
                 f"${cop_liq:,.0f} COP",
-                cop_sub
+                cop_sub,
+                new_color=Theme.ACCENT_COP
             )
 
         return summary
@@ -570,7 +576,8 @@ class DashboardView(ctk.CTkFrame):
 
         self.card_cc_debt.update_value(
             f"${grand_debt:,.0f} COP",
-            debt_sub
+            debt_sub,
+            new_color=Theme.DANGER if grand_debt > 0 else Theme.TEXT_PRIMARY
         )
 
         # 3. Actualizar Tarjeta de Gastos del Mes COP
@@ -581,7 +588,8 @@ class DashboardView(ctk.CTkFrame):
 
         self.card_expenses.update_value(
             f"${summary['cop_expenses']:,.0f} COP",
-            exp_sub
+            exp_sub,
+            new_color=Theme.DANGER if summary['cop_expenses'] > 0 else Theme.TEXT_PRIMARY
         )
 
         # 4. Actualizar Desglose de Gastos

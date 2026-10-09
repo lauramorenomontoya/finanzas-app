@@ -78,7 +78,8 @@ class InvestmentsView(ctk.CTkFrame):
             value="$0 COP",
             subtitle="Fiducias y cajitas COP",
             icon="🇨🇴",
-            accent_color=Theme.ACCENT_GREEN,
+            accent_color=Theme.ACCENT_COP,
+            value_color=Theme.ACCENT_COP,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -90,7 +91,8 @@ class InvestmentsView(ctk.CTkFrame):
             value="$0.00 USD",
             subtitle="Fondos y billeteras USD",
             icon="💵",
-            accent_color=Theme.ACCENT_BLUE,
+            accent_color=Theme.ACCENT_USD,
+            value_color=Theme.ACCENT_USD,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -102,7 +104,8 @@ class InvestmentsView(ctk.CTkFrame):
             value="+$0 COP",
             subtitle="Intereses acumulados",
             icon="📈",
-            accent_color=Theme.ACCENT_GREEN,
+            accent_color=Theme.ACCENT_COP,
+            value_color=Theme.ACCENT_COP,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -114,7 +117,8 @@ class InvestmentsView(ctk.CTkFrame):
             value="+$0.00 USD",
             subtitle="Ganancias en dólares",
             icon="📊",
-            accent_color=Theme.ACCENT_INDIGO,
+            accent_color=Theme.ACCENT_USD,
+            value_color=Theme.ACCENT_USD,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -215,19 +219,23 @@ class InvestmentsView(ctk.CTkFrame):
 
         self.card_cop_invested.update_value(
             f"${summary['total_cop_invested']:,.0f} COP",
-            f"{len([a for a in summary['accounts'] if a['currency'] == 'COP'])} cuentas activas"
+            f"{len([a for a in summary['accounts'] if a['currency'] == 'COP'])} cuentas activas",
+            new_color=Theme.ACCENT_COP
         )
         self.card_usd_invested.update_value(
             f"${summary['total_usd_invested']:,.2f} USD",
-            f"{len([a for a in summary['accounts'] if a['currency'] == 'USD'])} cuentas activas"
+            f"{len([a for a in summary['accounts'] if a['currency'] == 'USD'])} cuentas activas",
+            new_color=Theme.ACCENT_USD
         )
         self.card_cop_yields.update_value(
             f"+${summary['total_cop_yields']:,.0f} COP",
-            "Intereses acumulados"
+            "Intereses acumulados",
+            new_color=Theme.ACCENT_COP
         )
         self.card_usd_yields.update_value(
             f"+${summary['total_usd_yields']:,.2f} USD",
-            "Ganancias acumuladas"
+            "Ganancias acumuladas",
+            new_color=Theme.ACCENT_USD
         )
 
         self._refresh_accounts_grid()

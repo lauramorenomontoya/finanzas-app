@@ -83,7 +83,7 @@ class ConversionView(ctk.CTkFrame):
             status_row,
             text="$0.00 USD",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=14, weight="bold"),
-            text_color=Theme.ACCENT_BLUE
+            text_color=Theme.ACCENT_USD
         )
         self.lbl_available_usd.pack(side="right")
 
@@ -174,7 +174,7 @@ class ConversionView(ctk.CTkFrame):
             preview_inner,
             text="$0 COP",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
-            text_color=Theme.ACCENT_GREEN
+            text_color=Theme.ACCENT_COP
         )
         self.lbl_preview_cop.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
@@ -206,8 +206,8 @@ class ConversionView(ctk.CTkFrame):
             font=ctk.CTkFont(size=13, weight="bold"),
             height=42,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.ACCENT_INDIGO,
-            hover_color=Theme.ACCENT_INDIGO,
+            fg_color=Theme.ACCENT,
+            hover_color=Theme.SUCCESS_HOVER,
             text_color=Theme.TEXT_ON_COLOR,
             command=self._handle_convert
         )
@@ -413,7 +413,7 @@ class ConversionView(ctk.CTkFrame):
                 corner_radius=Theme.SPACING_SM,
                 fg_color=Theme.BG_CARD,
                 hover_color=Theme.BG_PROGRESS_TRACK,
-                text_color=Theme.ACCENT_INDIGO,
+                text_color=Theme.ACCENT,
                 font=ctk.CTkFont(size=12, weight="bold"),
                 command=self._load_more
             )

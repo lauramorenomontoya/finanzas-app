@@ -72,7 +72,7 @@ class ExpensesView(ctk.CTkFrame):
         b_cop_in = ctk.CTkFrame(b_cop, fg_color="transparent")
         b_cop_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_cop_in, text="DISPONIBLE COP", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.COP_BANNER_TEXT).pack(anchor="e")
-        self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_GREEN)
+        self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_COP)
         self.lbl_cop_bal.pack(anchor="e")
 
         # Banner USD
@@ -81,7 +81,7 @@ class ExpensesView(ctk.CTkFrame):
         b_usd_in = ctk.CTkFrame(b_usd, fg_color="transparent")
         b_usd_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_usd_in, text="DISPONIBLE USD", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.USD_BANNER_TEXT).pack(anchor="e")
-        self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_BLUE)
+        self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_USD)
         self.lbl_usd_bal.pack(anchor="e")
 
         # 2. Contenedor Principal (Formulario Izquierda + Panel Derecho con Pestañas)
@@ -297,7 +297,7 @@ class ExpensesView(ctk.CTkFrame):
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.BG_CARD_SUBTLE,
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT_COP,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._current_checklist_month
         )
@@ -620,7 +620,7 @@ class ExpensesView(ctk.CTkFrame):
 
             # Monto a la derecha (empaquetado antes para reservar su espacio completo)
             amt_str = f"${item['amount']:,.2f} USD" if curr == "USD" else f"${item['amount']:,.0f} COP"
-            amt_color = "#34d399" if is_paid else Theme.ACCENT_ROSE
+            amt_color = Theme.SUCCESS if is_paid else Theme.DANGER
             amt_lbl = ctk.CTkLabel(
                 row,
                 text=amt_str,

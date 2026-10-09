@@ -67,7 +67,7 @@ class IncomesView(ctk.CTkFrame):
         b_usd_in = ctk.CTkFrame(b_usd, fg_color="transparent")
         b_usd_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_usd_in, text="BÓVEDA USD", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.USD_BANNER_TEXT).pack(anchor="e")
-        self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_BLUE)
+        self.lbl_usd_bal = ctk.CTkLabel(b_usd_in, text="$0.00 USD", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_USD)
         self.lbl_usd_bal.pack(anchor="e")
 
         # Banner COP
@@ -76,7 +76,7 @@ class IncomesView(ctk.CTkFrame):
         b_cop_in = ctk.CTkFrame(b_cop, fg_color="transparent")
         b_cop_in.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
         ctk.CTkLabel(b_cop_in, text="DISPONIBLE COP", font=ctk.CTkFont(size=9, weight="bold"), text_color=Theme.COP_BANNER_TEXT).pack(anchor="e")
-        self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_GREEN)
+        self.lbl_cop_bal = ctk.CTkLabel(b_cop_in, text="$0 COP", font=ctk.CTkFont(size=15, weight="bold"), text_color=Theme.ACCENT_COP)
         self.lbl_cop_bal.pack(anchor="e")
 
         # 2. Contenedor Principal (Formulario Izquierda + Historial Derecha)
@@ -95,8 +95,8 @@ class IncomesView(ctk.CTkFrame):
         self.currency_seg = ctk.CTkSegmentedButton(
             form_panel,
             values=[CurrencyLabels.INCOME_USD, CurrencyLabels.INCOME_COP],
-            selected_color=Theme.INFO,
-            selected_hover_color=Theme.INFO_HOVER,
+            selected_color=Theme.ACCENT_USD,
+            selected_hover_color=Theme.SUCCESS_HOVER,
             height=34,
             command=self._on_currency_changed
         )
@@ -213,8 +213,8 @@ class IncomesView(ctk.CTkFrame):
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.INFO,
-            hover_color=Theme.INFO_HOVER,
+            fg_color=Theme.ACCENT_USD,
+            hover_color=Theme.SUCCESS_HOVER,
             text_color=Theme.TEXT_ON_COLOR,
             command=self._handle_submit
         )
@@ -249,7 +249,8 @@ class IncomesView(ctk.CTkFrame):
 
     def _on_currency_changed(self, choice: str):
         if "USD" in choice:
-            self.btn_submit.configure(text="💾 Guardar Ingreso USD", fg_color=Theme.INFO, hover_color=Theme.INFO_HOVER)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_USD, selected_hover_color=Theme.SUCCESS_HOVER)
+            self.btn_submit.configure(text="💾 Guardar Ingreso USD", fg_color=Theme.ACCENT_USD, hover_color=Theme.SUCCESS_HOVER)
             self.lbl_amount.configure(text="Monto a Ingresar ($ USD):")
             self.amount_entry.configure(placeholder_text="Ej: 1500.00")
             cats = self.controller.get_categories(is_usd_or_type=True)
@@ -257,10 +258,10 @@ class IncomesView(ctk.CTkFrame):
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
             self.platform_combo.configure(values=Platforms.USD)
-
             self.platform_combo.set("Wenia")
         else:
-            self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color=Theme.SUCCESS, hover_color=Theme.SUCCESS)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_COP, selected_hover_color=Theme.WARNING_HOVER)
+            self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color=Theme.ACCENT_COP, hover_color=Theme.WARNING_HOVER)
             self.lbl_amount.configure(text="Monto a Ingresar ($ COP):")
             self.amount_entry.configure(placeholder_text="Ej: 3500000")
             cats = self.controller.get_categories(is_usd_or_type=False)

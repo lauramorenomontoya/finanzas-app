@@ -114,7 +114,7 @@ class FinancialApp(ctk.CTk):
         # Botón de Búsqueda Rápida Spotlight (Cmd+K)
         btn_search = ctk.CTkButton(
             self.sidebar,
-            text="🔍  Buscar... (⌘K)",
+            text="Buscar... (⌘K)",
             anchor="w",
             height=32,
             corner_radius=Theme.SPACING_SM,
@@ -144,22 +144,22 @@ class FinancialApp(ctk.CTk):
 
         nav_groups = [
             ("FINANZAS", [
-                ("dashboard", "📊  Panel Principal"),
-                ("incomes", "📥  Ingresos (USD / COP)"),
-                ("expenses", "💸  Egresos & Gastos"),
+                ("dashboard", "Panel Principal"),
+                ("incomes", "Bóveda USD / Ingresos"),
+                ("expenses", "Egresos & Gastos"),
             ]),
             ("PLANIFICACIÓN", [
-                ("budget", "🎯  Presupuesto & Metas"),
-                ("debts", "💳  Control de Deudas"),
-                ("conversion", "🔄  Puente USD ➔ COP"),
+                ("budget", "Presupuesto & Metas"),
+                ("debts", "Control de Deudas"),
+                ("conversion", "Puente USD ➔ COP"),
             ]),
             ("PATRIMONIO", [
-                ("investments", "📈  Cuentas & Inversiones"),
-                ("ledger", "📖  Libro Mayor"),
-                ("analytics", "📊  Balance General"),
+                ("investments", "Cuentas & Inversiones"),
+                ("ledger", "Libro Mayor"),
+                ("analytics", "Balance General"),
             ]),
             ("SISTEMA", [
-                ("settings", "⚙️  Configuración & CRUD"),
+                ("settings", "Configuración"),
             ]),
         ]
 
@@ -204,17 +204,17 @@ class FinancialApp(ctk.CTk):
                 btn.pack(side="left", fill="x", expand=True)
                 self.nav_buttons[view_key] = btn
 
-        # Botón Importar CSV destacado
+        # Botón Importar CSV
         btn_csv = ctk.CTkButton(
             nav_scroll,
-            text="📄  Importador CSV",
+            text="Importador CSV",
             anchor="w",
             height=32,
             corner_radius=Theme.SPACING_SM,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT,
             command=self._open_csv_importer
         )
         btn_csv.pack(fill="x", padx=(Theme.SPACING_SM, Theme.SPACING_XS), pady=(Theme.SPACING_SM, Theme.SPACING_XS))
@@ -241,7 +241,7 @@ class FinancialApp(ctk.CTk):
             quick_inner,
             text="USD: $0.00",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color=Theme.ACCENT_BLUE
+            text_color=Theme.ACCENT_USD
         )
         self.lbl_sidebar_usd.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
@@ -249,7 +249,7 @@ class FinancialApp(ctk.CTk):
             quick_inner,
             text="COP: $0",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color=Theme.ACCENT_GREEN
+            text_color=Theme.ACCENT_COP
         )
         self.lbl_sidebar_cop.pack(anchor="w")
 
@@ -376,11 +376,11 @@ class FinancialApp(ctk.CTk):
             if key == view_key:
                 btn.configure(
                     fg_color=Theme.BG_CARD,
-                    text_color=Theme.ACCENT_BLUE,
+                    text_color=Theme.ACCENT,
                     font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold")
                 )
                 if pill:
-                    pill.configure(fg_color=Theme.ACCENT_BLUE)
+                    pill.configure(fg_color=Theme.ACCENT)
             else:
                 btn.configure(
                     fg_color="transparent",
