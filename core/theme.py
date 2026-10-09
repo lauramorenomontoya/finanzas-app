@@ -97,16 +97,19 @@ class Theme:
     BG_APP = "#111713"         # Obsidiana (fondo principal)
     BG_PANEL = "#1A211D"       # Carbón (paneles y tarjetas)
     ACCENT = "#75D9A5"         # Esmeralda (acciones principales, saldos positivos, mundo USD / Bóveda)
+    ACCENT_HOVER = ("#047857", "#5EC48F")
     ACCENT_USD = "#75D9A5"     # Esmeralda (mundo USD / Bóveda)
     ACCENT_COP = "#E3B368"     # Ámbar suave (mundo COP / Presupuesto)
     TEXT_PRIMARY = "#F0F4F1"   # Marfil frío (texto principal)
     TEXT_SECONDARY = "#8D9B92" # Salvia (texto secundario)
     DANGER = "#D97878"         # Coral (errores y alertas)
+    DANGER_HOVER = ("#BE123C", "#C56565")
 
     # --- Tuplas CustomTkinter (modo claro, modo oscuro Dark Finance) ---
     BG_WINDOW = ("#F4F7F5", "#111713")          # Fondo principal
     BG_SIDEBAR = ("#EAEFEA", "#0D130F")         # Fondo barra lateral
     BG_CARD = ("#FFFFFF", "#1A211D")            # Paneles y tarjetas
+    BG_CARD_HOVER = ("#F0F4F1", "#222B25")      # Hover para tarjetas y botones secundarios
     BG_CARD_SUBTLE = ("#F0F4F1", "#151C17")     # Cajas internas y cards secundarias
     BG_INPUT = ("#FFFFFF", "#151C17")           # Campos de entrada
     BG_PROGRESS_TRACK = ("#E2E8F0", "#263029")  # Pistas de barras de progreso

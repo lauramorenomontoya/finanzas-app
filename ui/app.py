@@ -268,6 +268,9 @@ class FinancialApp(ctk.CTk):
             theme_row,
             text="",
             width=36,
+            progress_color=Theme.ACCENT,
+            button_color=Theme.TEXT_PRIMARY,
+            button_hover_color=Theme.TEXT_SECONDARY,
             command=self._toggle_theme
         )
         self.theme_switch.select()
@@ -275,7 +278,7 @@ class FinancialApp(ctk.CTk):
 
         # Indicador de Backup
         backup_info = self.db.get_last_backup_info()
-        backup_text = f"🛡️ Backup: {backup_info}" if backup_info else "🛡️ Backup: Activo"
+        backup_text = f"Backup: {backup_info}" if backup_info else "Backup: Activo"
         self.lbl_backup_status = ctk.CTkLabel(
             footer_frame,
             text=backup_text,
@@ -287,7 +290,7 @@ class FinancialApp(ctk.CTk):
         # Firma de Autoría Sutil
         self.lbl_author_signature = ctk.CTkLabel(
             footer_frame,
-            text="✨ Creado por Laura Moreno",
+            text="Creado por Laura Moreno",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=10),
             text_color=Theme.TEXT_MUTED,
             cursor="hand2"

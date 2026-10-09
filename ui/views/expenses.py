@@ -20,8 +20,10 @@ from ui.components import (
     ApplyRecurringModal,
     TagSelector,
     PayRecurringDialog,
-    EmptyState
+    EmptyState,
+    StyledSegmentedButton
 )
+from ui.utils.icon_helper import IconHelper
 from controllers.expense_controller import ExpenseController
 from ui.theme import Theme
 from core.event_bus import EventBus
@@ -50,7 +52,7 @@ class ExpensesView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="💸 Egresos & Gastos",
+            text="Egresos & Gastos",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -97,15 +99,15 @@ class ExpensesView(ctk.CTkFrame):
         form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, Theme.SPACING_SM))
 
         # Selector de Moneda de Gasto
-        self.currency_seg = ctk.CTkSegmentedButton(
+        self.currency_seg = StyledSegmentedButton(
             form_panel,
             values=[CurrencyLabels.EXPENSE_COP, CurrencyLabels.EXPENSE_USD],
-            selected_color=Theme.ERROR,
-            selected_hover_color=Theme.ERROR_HOVER,
+            selected_color=Theme.ACCENT_COP,
+            selected_hover_color=Theme.WARNING_HOVER,
             height=34,
             command=self._on_currency_changed
         )
-        self.currency_seg.set("🇨🇴 Gasto en COP")
+        self.currency_seg.set(CurrencyLabels.EXPENSE_COP)
         self.currency_seg.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         # Campo: Categoría
@@ -146,7 +148,7 @@ class ExpensesView(ctk.CTkFrame):
             border_color=Theme.BORDER_DEFAULT,
             dropdown_fg_color=Theme.BG_CARD
         )
-        self.payment_combo.set("💳 Débito / Cuenta Operativa")
+        self.payment_combo.set(PaymentMethods.DEBIT)
         self.payment_combo.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
         # Campo: Monto
@@ -186,7 +188,7 @@ class ExpensesView(ctk.CTkFrame):
             text="Marcar como Gasto Fijo Mensual",
             font=ctk.CTkFont(size=12),
             text_color=Theme.TEXT_SECONDARY,
-            progress_color=Theme.ERROR
+            progress_color=Theme.ACCENT
         )
         self.fixed_switch.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
@@ -212,7 +214,7 @@ class ExpensesView(ctk.CTkFrame):
         # Selector de Etiquetas (Tags)
         ctk.CTkLabel(
             form_panel,
-            text="🏷️ Etiquetas / Tags:",
+            text="Etiquetas / Tags:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
@@ -223,13 +225,13 @@ class ExpensesView(ctk.CTkFrame):
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
             form_panel,
-            text="💸 Registrar Egreso COP",
+            text="Registrar Egreso COP",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.ERROR,
-            hover_color=Theme.ERROR_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.ACCENT_COP,
+            hover_color=Theme.WARNING_HOVER,
+            text_color=Theme.BG_APP,
             command=self._handle_submit
         )
         self.btn_submit.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
@@ -241,13 +243,14 @@ class ExpensesView(ctk.CTkFrame):
         right_header = ctk.CTkFrame(right_panel, fg_color="transparent")
         right_header.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
-        self.right_view_seg = ctk.CTkSegmentedButton(
+        self.right_view_seg = StyledSegmentedButton(
             right_header,
             values=FilterOptions.TAB_EXPENSES,
             height=32,
+            selected_color=Theme.ACCENT,
             command=self._on_right_view_changed
         )
-        self.right_view_seg.set("📋 Checklist Gastos Fijos (Agenda)")
+        self.right_view_seg.set(FilterOptions.TAB_EXPENSES[0])
         self.right_view_seg.pack(side="left")
 
         # Selector de Mes para la Agenda de Gastos Fijos
@@ -329,12 +332,12 @@ class ExpensesView(ctk.CTkFrame):
 
         self.btn_batch_apply = ctk.CTkButton(
             p_top,
-            text="⚡ Aplicar Gastos del Mes",
+            text="Aplicar Gastos del Mes",
             height=26,
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.SUCCESS,
             hover_color=Theme.SUCCESS,
-            text_color=Theme.TEXT_ON_COLOR,
+            text_color=Theme.BG_APP,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._open_apply_recurring_modal
         )
@@ -398,11 +401,12 @@ class ExpensesView(ctk.CTkFrame):
         self.history_scroll = ctk.CTkScrollableFrame(self.history_frame, fg_color="transparent")
         self.history_scroll.pack(fill="both", expand=True, padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_XS))
 
-        self._on_right_view_changed("📋 Checklist Gastos Fijos (Agenda)")
+        self._on_right_view_changed(FilterOptions.TAB_EXPENSES[0])
 
     def _on_currency_changed(self, choice: str):
         if "COP" in choice:
-            self.btn_submit.configure(text="💸 Registrar Egreso COP", fg_color=Theme.ERROR, hover_color=Theme.ERROR_HOVER)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_COP)
+            self.btn_submit.configure(text="Registrar Egreso COP", fg_color=Theme.ACCENT_COP, hover_color=Theme.WARNING_HOVER, text_color=Theme.BG_APP)
             self.lbl_amount.configure(text="Monto en Pesos ($ COP):")
             self.amount_entry.configure(placeholder_text="Ej: 250000")
             self.lbl_payment.pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
@@ -413,7 +417,8 @@ class ExpensesView(ctk.CTkFrame):
                 self.category_combo.configure(values=cats)
                 self.category_combo.set(cats[0])
         else:
-            self.btn_submit.configure(text="💸 Registrar Egreso USD", fg_color=Theme.INFO, hover_color=Theme.INFO_HOVER)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_USD)
+            self.btn_submit.configure(text="Registrar Egreso USD", fg_color=Theme.ACCENT_USD, hover_color=Theme.SUCCESS_HOVER, text_color=Theme.BG_APP)
             self.lbl_amount.configure(text="Monto en Dólares ($ USD):")
             self.amount_entry.configure(placeholder_text="Ej: 20.00")
             self.payment_combo.pack_forget()
@@ -575,14 +580,14 @@ class ExpensesView(ctk.CTkFrame):
             text=f"Pendiente: ${pending_cop:,.0f} COP • ${pending_usd:,.2f} USD"
         )
         short_m = m_name.split()[0]
-        self.btn_batch_apply.configure(text=f"⚡ Aplicar Gastos de {short_m}")
+        self.btn_batch_apply.configure(text=f"Aplicar Gastos de {short_m}")
 
         if not checklist:
             EmptyState(
                 self.checklist_scroll,
-                icon="📋",
+                icon=None,
                 title="Sin gastos fijos configurados",
-                message="Configura tu plantilla de gastos fijos y suscripciones en ⚙️ Configuración.",
+                message="Configura tu plantilla de gastos fijos y suscripciones en Configuración.",
                 compact=True
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
@@ -591,8 +596,8 @@ class ExpensesView(ctk.CTkFrame):
         for item in checklist:
             is_paid = item["is_paid"]
             curr = item.get("currency", "COP")
-            card_bg = "#064e3b" if is_paid else Theme.BG_CARD_SUBTLE
-            border_col = "#059669" if is_paid else Theme.BORDER_SUBTLE
+            card_bg = Theme.USD_BANNER_BG if is_paid else Theme.BG_CARD_SUBTLE
+            border_col = Theme.USD_BANNER_BORDER if is_paid else Theme.BORDER_SUBTLE
 
             card = ctk.CTkFrame(self.checklist_scroll, fg_color=card_bg, corner_radius=Theme.SPACING_SM, border_width=1, border_color=border_col)
             card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
@@ -620,7 +625,7 @@ class ExpensesView(ctk.CTkFrame):
 
             # Monto a la derecha (empaquetado antes para reservar su espacio completo)
             amt_str = f"${item['amount']:,.2f} USD" if curr == "USD" else f"${item['amount']:,.0f} COP"
-            amt_color = Theme.SUCCESS if is_paid else Theme.DANGER
+            amt_color = Theme.SUCCESS if is_paid else Theme.TEXT_PRIMARY
             amt_lbl = ctk.CTkLabel(
                 row,
                 text=amt_str,
@@ -633,7 +638,6 @@ class ExpensesView(ctk.CTkFrame):
             info_box = ctk.CTkFrame(row, fg_color="transparent")
             info_box.pack(side="left", fill="both", expand=True)
 
-            title_color = "#a7f3d0" if is_paid else Theme.TEXT_PRIMARY
             curr_badge = f"[{curr}] "
             desc_text = f"{curr_badge}{item['category']} • {item['description']}"
 
@@ -641,7 +645,7 @@ class ExpensesView(ctk.CTkFrame):
                 info_box,
                 text=desc_text,
                 font=ctk.CTkFont(size=12, weight="bold"),
-                text_color=title_color
+                text_color=Theme.TEXT_PRIMARY
             ).pack(anchor="w")
 
             sub_info = f"Vencimiento habitual: Día {item['due_day']}"
@@ -656,7 +660,7 @@ class ExpensesView(ctk.CTkFrame):
                 info_box,
                 text=sub_info,
                 font=ctk.CTkFont(size=10),
-                text_color=Theme.TEXT_SECONDARY if not is_paid else "#6ee7b7"
+                text_color=Theme.SUCCESS if is_paid else Theme.TEXT_SECONDARY
             ).pack(anchor="w")
 
     def _toggle_checklist_item(self, item: Dict[str, Any], new_state: int):
@@ -714,7 +718,7 @@ class ExpensesView(ctk.CTkFrame):
         if not expenses:
             EmptyState(
                 self.history_scroll,
-                icon="💸",
+                icon=None,
                 title="Sin egresos para mostrar",
                 message="No se encontraron movimientos que coincidan con los filtros aplicados."
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
@@ -725,7 +729,8 @@ class ExpensesView(ctk.CTkFrame):
             is_usd = (curr == "USD")
             amt = float(exp["amount"])
             amt_str = f"-${amt:,.2f} USD" if is_usd else f"-${amt:,.0f} COP"
-            badge = "💵 USD" if is_usd else ("💳 TC" if exp.get("payment_method") == "CREDIT_CARD" else "🇨🇴 COP")
+            tag_text = "USD" if is_usd else ("TC" if exp.get("payment_method") == "CREDIT_CARD" else "COP")
+            tag_col = Theme.ACCENT_USD if is_usd else (Theme.ACCENT_INDIGO if tag_text == "TC" else Theme.ACCENT_COP)
             source_tbl = "usd_transactions" if is_usd else "cop_transactions"
 
             card = ctk.CTkFrame(self.history_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
@@ -734,8 +739,20 @@ class ExpensesView(ctk.CTkFrame):
             top = ctk.CTkFrame(card, fg_color="transparent")
             top.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, 2))
 
-            ctk.CTkLabel(top, text=f"💸 {exp['category']} [{badge}]", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
-            ctk.CTkLabel(top, text=amt_str, font=ctk.CTkFont(size=13, weight="bold"), text_color=Theme.ACCENT_ROSE).pack(side="right")
+            pill = ctk.CTkLabel(
+                top,
+                text=tag_text,
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color=tag_col,
+                fg_color=Theme.BG_CARD,
+                corner_radius=Theme.SPACING_XS,
+                padx=5,
+                pady=1
+            )
+            pill.pack(side="left", padx=(0, Theme.SPACING_XS))
+
+            ctk.CTkLabel(top, text=exp['category'], font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
+            ctk.CTkLabel(top, text=amt_str, font=ctk.CTkFont(size=13, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="right")
 
             bottom = ctk.CTkFrame(card, fg_color="transparent")
             bottom.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_SM))
@@ -749,39 +766,38 @@ class ExpensesView(ctk.CTkFrame):
 
             ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
-
             btn_edit = ctk.CTkButton(
                 btn_box,
-                text="✏️",
+                image=IconHelper.get_icon("edit", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._handle_edit(r, st)
             )
             btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
-                text="📋",
+                image=IconHelper.get_icon("copy", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._handle_duplicate(r, st)
             )
             btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_del = ctk.CTkButton(
                 btn_box,
-                text="🗑️",
+                image=IconHelper.get_icon("trash", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.ERROR_HOVER,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=exp, st=source_tbl: self._prompt_delete(r, st)
             )
             btn_del.pack(side="left", padx=Theme.SPACING_XS)

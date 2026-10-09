@@ -16,6 +16,7 @@ from ui.components import (
     DuplicateModal,
     EmptyState
 )
+from ui.utils.icon_helper import IconHelper
 from controllers.ledger_controller import LedgerController
 from core.event_bus import EventBus
 
@@ -52,7 +53,7 @@ class LedgerView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="📖 Libro Mayor Unificado",
+            text="Libro Mayor Unificado",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -76,7 +77,7 @@ class LedgerView(ctk.CTkFrame):
         # Buscador en tiempo real con debounce
         self.search_entry = ctk.CTkEntry(
             filter_inner,
-            placeholder_text="🔍 Buscar concepto, cliente o notas...",
+            placeholder_text="Buscar concepto, cliente o notas...",
             width=260,
             height=32,
             corner_radius=Theme.SPACING_SM,
@@ -322,7 +323,6 @@ class LedgerView(ctk.CTkFrame):
         if not self.cached_rows:
             EmptyState(
                 self.table_scroll,
-                icon="📖",
                 title="Sin movimientos contables",
                 message="No se encontraron registros que coincidan con los filtros seleccionados."
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XL)
@@ -397,39 +397,39 @@ class LedgerView(ctk.CTkFrame):
 
             btn_e = ctk.CTkButton(
                 btn_box,
-                text="✏️",
+                text="",
+                image=IconHelper.get_icon("edit", size=13, color=Theme.TEXT_SECONDARY),
                 width=24,
                 height=22,
                 corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda it=item: self._handle_edit(it)
             )
             btn_e.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
-                text="📋",
+                text="",
+                image=IconHelper.get_icon("copy", size=13, color=Theme.TEXT_SECONDARY),
                 width=24,
                 height=22,
                 corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda it=item: self._handle_duplicate(it)
             )
             btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_d = ctk.CTkButton(
                 btn_box,
-                text="🗑️",
+                text="",
+                image=IconHelper.get_icon("trash", size=13, color=Theme.TEXT_MUTED),
                 width=24,
                 height=22,
                 corner_radius=Theme.SPACING_XS,
                 fg_color="transparent",
-                hover_color=Theme.ERROR_HOVER,
-                font=ctk.CTkFont(size=11),
+                hover_color=Theme.BORDER_DEFAULT,
                 command=lambda it=item: self._prompt_delete(it)
             )
             btn_d.pack(side="left", padx=Theme.SPACING_XS)

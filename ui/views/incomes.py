@@ -17,8 +17,10 @@ from ui.components import (
     DuplicateModal,
     DatePickerWidget,
     TagSelector,
-    EmptyState
+    EmptyState,
+    StyledSegmentedButton
 )
+from ui.utils.icon_helper import IconHelper
 from ui.theme import Theme
 from core.event_bus import EventBus
 
@@ -45,7 +47,7 @@ class IncomesView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="📥 Gestión de Ingresos",
+            text="Gestión de Ingresos",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -92,7 +94,7 @@ class IncomesView(ctk.CTkFrame):
         form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, Theme.SPACING_SM))
 
         # Selector de Moneda
-        self.currency_seg = ctk.CTkSegmentedButton(
+        self.currency_seg = StyledSegmentedButton(
             form_panel,
             values=[CurrencyLabels.INCOME_USD, CurrencyLabels.INCOME_COP],
             selected_color=Theme.ACCENT_USD,
@@ -100,7 +102,7 @@ class IncomesView(ctk.CTkFrame):
             height=34,
             command=self._on_currency_changed
         )
-        self.currency_seg.set("💵 Ingreso USD")
+        self.currency_seg.set(CurrencyLabels.INCOME_USD)
         self.currency_seg.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_MD, Theme.SPACING_SM))
 
         # Campo: Categoría / Concepto
@@ -198,7 +200,7 @@ class IncomesView(ctk.CTkFrame):
         # Selector de Etiquetas (Tags)
         ctk.CTkLabel(
             form_panel,
-            text="🏷️ Etiquetas / Tags:",
+            text="Etiquetas / Tags:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_XS))
@@ -209,13 +211,13 @@ class IncomesView(ctk.CTkFrame):
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
             form_panel,
-            text="📥 Registrar Ingreso USD",
+            text="Registrar Ingreso USD",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.ACCENT_USD,
             hover_color=Theme.SUCCESS_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            text_color=Theme.BG_APP,
             command=self._handle_submit
         )
         self.btn_submit.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_MD))
@@ -229,16 +231,17 @@ class IncomesView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             hist_header,
-            text="📋 Historial de Ingresos Registrados",
+            text="Historial de Ingresos Registrados",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=15, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
         # Filtro de Moneda en Historial
-        self.hist_filter_seg = ctk.CTkSegmentedButton(
+        self.hist_filter_seg = StyledSegmentedButton(
             hist_header,
             values=FilterOptions.CURRENCY_INCOMES,
             height=28,
+            selected_color=Theme.ACCENT,
             command=lambda _: self._refresh_incomes_list()
         )
         self.hist_filter_seg.set("Todas")
@@ -249,8 +252,8 @@ class IncomesView(ctk.CTkFrame):
 
     def _on_currency_changed(self, choice: str):
         if "USD" in choice:
-            self.currency_seg.configure(selected_color=Theme.ACCENT_USD, selected_hover_color=Theme.SUCCESS_HOVER)
-            self.btn_submit.configure(text="💾 Guardar Ingreso USD", fg_color=Theme.ACCENT_USD, hover_color=Theme.SUCCESS_HOVER)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_USD)
+            self.btn_submit.configure(text="Registrar Ingreso USD", fg_color=Theme.ACCENT_USD, hover_color=Theme.SUCCESS_HOVER, text_color=Theme.BG_APP)
             self.lbl_amount.configure(text="Monto a Ingresar ($ USD):")
             self.amount_entry.configure(placeholder_text="Ej: 1500.00")
             cats = self.controller.get_categories(is_usd_or_type=True)
@@ -260,8 +263,8 @@ class IncomesView(ctk.CTkFrame):
             self.platform_combo.configure(values=Platforms.USD)
             self.platform_combo.set("Wenia")
         else:
-            self.currency_seg.configure(selected_color=Theme.ACCENT_COP, selected_hover_color=Theme.WARNING_HOVER)
-            self.btn_submit.configure(text="💾 Guardar Ingreso COP", fg_color=Theme.ACCENT_COP, hover_color=Theme.WARNING_HOVER)
+            self.currency_seg.configure(selected_color=Theme.ACCENT_COP)
+            self.btn_submit.configure(text="Registrar Ingreso COP", fg_color=Theme.ACCENT_COP, hover_color=Theme.WARNING_HOVER, text_color=Theme.BG_APP)
             self.lbl_amount.configure(text="Monto a Ingresar ($ COP):")
             self.amount_entry.configure(placeholder_text="Ej: 3500000")
             cats = self.controller.get_categories(is_usd_or_type=False)
@@ -330,11 +333,11 @@ class IncomesView(ctk.CTkFrame):
         if not incomes:
             EmptyState(
                 self.incomes_scroll,
-                icon="📥",
+                icon=None,
                 title="Sin ingresos registrados",
                 message="No hay entradas de dinero que coincidan con el filtro seleccionado.",
-                action_text="Limpiar Filtro" if filter_curr != "Todos" else None,
-                action_command=(lambda: self.hist_filter_seg.set("Todos")) if filter_curr != "Todos" else None
+                action_text="Limpiar Filtro" if filter_curr != "Todas" else None,
+                action_command=(lambda: self.hist_filter_seg.set("Todas")) if filter_curr != "Todas" else None
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return
 
@@ -343,8 +346,8 @@ class IncomesView(ctk.CTkFrame):
             is_usd = (curr == "USD")
             amt = float(inc["amount"])
             amt_str = f"+${amt:,.2f} USD" if is_usd else f"+${amt:,.0f} COP"
-            badge = "💵 USD" if is_usd else "🇨🇴 COP"
-            accent_col = Theme.ACCENT_BLUE if is_usd else Theme.ACCENT_GREEN
+            cur_tag = "USD" if is_usd else "COP"
+            accent_col = Theme.ACCENT_USD if is_usd else Theme.ACCENT_COP
             source_tbl = "usd_transactions" if is_usd else "cop_transactions"
 
             card = ctk.CTkFrame(self.incomes_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
@@ -353,7 +356,19 @@ class IncomesView(ctk.CTkFrame):
             top = ctk.CTkFrame(card, fg_color="transparent")
             top.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, 2))
 
-            ctk.CTkLabel(top, text=f"📥 {inc['concept']} [{badge}]", font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
+            pill = ctk.CTkLabel(
+                top,
+                text=cur_tag,
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color=accent_col,
+                fg_color=Theme.BG_CARD,
+                corner_radius=Theme.SPACING_XS,
+                padx=5,
+                pady=1
+            )
+            pill.pack(side="left", padx=(0, Theme.SPACING_XS))
+
+            ctk.CTkLabel(top, text=inc['concept'], font=ctk.CTkFont(size=12, weight="bold"), text_color=Theme.TEXT_PRIMARY).pack(side="left")
             ctk.CTkLabel(top, text=amt_str, font=ctk.CTkFont(size=13, weight="bold"), text_color=accent_col).pack(side="right")
 
             bottom = ctk.CTkFrame(card, fg_color="transparent")
@@ -368,39 +383,38 @@ class IncomesView(ctk.CTkFrame):
 
             ctk.CTkLabel(bottom, text=info, font=ctk.CTkFont(size=10), text_color=Theme.TEXT_MUTED, anchor="w").pack(side="left", fill="x", expand=True, padx=(0, Theme.SPACING_XS))
 
-
             btn_edit = ctk.CTkButton(
                 btn_box,
-                text="✏️",
+                image=IconHelper.get_icon("edit", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._handle_edit(r, st)
             )
             btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_dup = ctk.CTkButton(
                 btn_box,
-                text="📋",
+                image=IconHelper.get_icon("copy", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._handle_duplicate(r, st)
             )
             btn_dup.pack(side="left", padx=Theme.SPACING_XS)
 
             btn_del = ctk.CTkButton(
                 btn_box,
-                text="🗑️",
+                image=IconHelper.get_icon("trash", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.ERROR_HOVER,
-                font=ctk.CTkFont(size=11),
                 command=lambda r=inc, st=source_tbl: self._prompt_delete(r, st)
             )
             btn_del.pack(side="left", padx=Theme.SPACING_XS)

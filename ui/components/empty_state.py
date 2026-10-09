@@ -9,11 +9,15 @@ from typing import Optional, Callable
 from ui.theme import Theme
 
 
+from ui.utils.icon_helper import IconHelper
+
+
 class EmptyState(ctk.CTkFrame):
     def __init__(
         self,
         master,
-        icon: str = "📭",
+        icon: Optional[str] = None,
+        image: Optional[ctk.CTkImage] = None,
         title: str = "No hay datos para mostrar",
         message: str = "Aún no se han registrado elementos en esta sección.",
         action_text: Optional[str] = None,
@@ -26,19 +30,18 @@ class EmptyState(ctk.CTkFrame):
 
         self.action_command = action_command
         pad_y = (10, 10) if compact else (24, 24)
-        icon_size = 28 if compact else 40
         title_size = 13 if compact else 15
         msg_size = 11 if compact else 12
 
         container = ctk.CTkFrame(self, fg_color="transparent")
         container.pack(expand=True, fill="both", pady=pad_y)
 
-        # 1. Badge/Icono grande
+        # 1. Badge/Icono grande (linear icon)
         icon_box = ctk.CTkFrame(
             container,
-            width=50 if compact else 64,
-            height=50 if compact else 64,
-            corner_radius=Theme.SPACING_LG if compact else 32,
+            width=48 if compact else 56,
+            height=48 if compact else 56,
+            corner_radius=Theme.SPACING_LG if compact else 28,
             fg_color=Theme.BG_CARD_SUBTLE,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE
@@ -46,10 +49,11 @@ class EmptyState(ctk.CTkFrame):
         icon_box.pack(pady=(0, 8 if compact else 12))
         icon_box.pack_propagate(False)
 
+        img = image or IconHelper.get_icon("search", size=20 if compact else 24, color=Theme.TEXT_MUTED)
         lbl_icon = ctk.CTkLabel(
             icon_box,
-            text=icon,
-            font=ctk.CTkFont(size=icon_size)
+            text="",
+            image=img
         )
         lbl_icon.place(relx=0.5, rely=0.5, anchor="center")
 

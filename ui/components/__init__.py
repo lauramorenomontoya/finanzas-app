@@ -24,6 +24,7 @@ from .pay_recurring_dialog import PayRecurringDialog
 from .empty_state import EmptyState
 from .about_modal import AboutModal
 from .update_modal import UpdateModal
+from .segmented_button import StyledSegmentedButton
 
 __all__ = [
     "AboutModal",

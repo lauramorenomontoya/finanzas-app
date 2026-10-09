@@ -18,6 +18,8 @@ from ui.components.debt_payment_modal import DebtPaymentModal
 from ui.components.debt_history_modal import DebtHistoryModal
 from ui.components.cc_payment_modal import CCPaymentModal
 from ui.components.empty_state import EmptyState
+from ui.components.segmented_button import StyledSegmentedButton
+from ui.utils.icon_helper import IconHelper
 from controllers.debt_controller import DebtController
 from core.event_bus import EventBus
 
@@ -44,7 +46,7 @@ class DebtView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="💳 Control de Deudas & Préstamos",
+            text="Control de Deudas & Préstamos",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -62,14 +64,14 @@ class DebtView(ctk.CTkFrame):
 
         btn_cc_pay = ctk.CTkButton(
             btn_box,
-            text="💳 Pagar Tarjeta",
+            text="Pagar Tarjeta",
             height=34,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             border_width=1,
-            border_color=Theme.ERROR,
+            border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             command=self._open_cc_payment_modal
         )
@@ -95,9 +97,9 @@ class DebtView(ctk.CTkFrame):
             text="+ Prestar / Por Cobrar",
             height=34,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.ACCENT_BLUE,
-            hover_color=Theme.INFO,
-            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.ACCENT,
+            hover_color=Theme.ACCENT_HOVER,
+            text_color=Theme.BG_APP,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=12, weight="bold"),
             command=lambda: self._open_add_debt_modal(initial_type="RECEIVABLE")
         )
@@ -113,10 +115,9 @@ class DebtView(ctk.CTkFrame):
             title="Deuda Consolidada",
             value="$0 COP",
             subtitle="Obligación total por pagar",
-            icon="🚨",
-            accent_color=Theme.ACCENT_ROSE,
+            accent_color=Theme.DANGER,
             bg_color=Theme.BG_CARD,
-            border_color=Theme.ERROR
+            border_color=Theme.BORDER_DEFAULT
         )
         self.card_total_debt.grid(row=0, column=0, padx=(0, Theme.SPACING_SM), sticky="nsew")
 
@@ -125,8 +126,7 @@ class DebtView(ctk.CTkFrame):
             title="Tarjeta de Crédito",
             value="$0 COP",
             subtitle="Cupo utilizado a corte",
-            icon="💳",
-            accent_color="#f43f5e",
+            accent_color=Theme.DANGER,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -137,8 +137,7 @@ class DebtView(ctk.CTkFrame):
             title="Mis Deudas (Debo)",
             value="$0 COP",
             subtitle="0 deudas activas",
-            icon="🤝",
-            accent_color="#f59e0b",
+            accent_color=Theme.WARNING,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -149,8 +148,7 @@ class DebtView(ctk.CTkFrame):
             title="Por Cobrar (Me Deben)",
             value="$0 COP",
             subtitle="0 por cobrar",
-            icon="📥",
-            accent_color=Theme.ACCENT_GREEN,
+            accent_color=Theme.SUCCESS,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -161,7 +159,7 @@ class DebtView(ctk.CTkFrame):
         self.scroll_area.pack(fill="both", expand=True, padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         # Selector de Vista: Mis Deudas (Pasivos) vs Dinero que me deben (Por Cobrar)
-        self.seg_view_mode = ctk.CTkSegmentedButton(
+        self.seg_view_mode = StyledSegmentedButton(
             self.scroll_area,
             values=["Mis Deudas (Pasivos)", "Dinero que me deben (Por Cobrar)"],
             height=34,
@@ -220,7 +218,7 @@ class DebtView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             left,
-            text="💳 Tarjeta de Crédito (Saldo al Corte)",
+            text="Tarjeta de Crédito (Saldo al Corte)",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -269,7 +267,7 @@ class DebtView(ctk.CTkFrame):
         ctrl_bar = ctk.CTkFrame(self.personal_section, fg_color="transparent")
         ctrl_bar.pack(fill="x", pady=(0, Theme.SPACING_SM))
 
-        sec_title = "📥 Dinero que me deben (Cuentas por Cobrar a Terceros)" if is_receivable else "📋 Mis Deudas Personales (Pasivos por Pagar)"
+        sec_title = "Dinero que me deben (Cuentas por Cobrar a Terceros)" if is_receivable else "Mis Deudas Personales (Pasivos por Pagar)"
         ctk.CTkLabel(
             ctrl_bar,
             text=sec_title,
@@ -319,7 +317,6 @@ class DebtView(ctk.CTkFrame):
             )
             EmptyState(
                 self.personal_section,
-                icon="📥" if is_receivable else "🤝",
                 title=empty_title,
                 message=empty_msg,
                 action_text=cta_text,
@@ -349,19 +346,18 @@ class DebtView(ctk.CTkFrame):
         title_frame = ctk.CTkFrame(top_row, fg_color="transparent")
         title_frame.pack(side="left")
 
-        icon = "📥" if is_receivable else "🤝"
         ctk.CTkLabel(
             title_frame,
-            text=f"{icon} {debt['creditor']}",
+            text=f"{debt['creditor']}",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
         # Badge de Estado
         if is_receivable:
-            badge_text = "COBRADO COMPLETO 🎉" if is_paid else "POR COBRAR"
+            badge_text = "COBRADO COMPLETO" if is_paid else "POR COBRAR"
         else:
-            badge_text = "LIQUIDADA 🎉" if is_paid else "ACTIVA"
+            badge_text = "LIQUIDADA" if is_paid else "ACTIVA"
 
         badge_color = Theme.SUCCESS if is_paid else Theme.WARNING
         badge_bg = Theme.USD_BANNER_BG if is_paid else Theme.COP_BANNER_BG
@@ -382,9 +378,8 @@ class DebtView(ctk.CTkFrame):
         actions_frame.pack(side="right")
 
         if not is_paid:
-            btn_action_text = "💵 Registrar Pago" if is_receivable else "💰 Abonar"
-            btn_action_color = Theme.ACCENT_BLUE if is_receivable else Theme.ACCENT_GREEN
-            btn_hover_color = "#0284c7" if is_receivable else "#059669"
+            btn_action_text = "Registrar Cobro" if is_receivable else "Abonar"
+            btn_action_color = Theme.ACCENT if is_receivable else Theme.ACCENT_COP
             btn_pay = ctk.CTkButton(
                 actions_frame,
                 text=btn_action_text,
@@ -392,14 +387,14 @@ class DebtView(ctk.CTkFrame):
                 height=28,
                 corner_radius=Theme.SPACING_XS,
                 fg_color=btn_action_color,
-                hover_color=btn_hover_color,
-                text_color=Theme.TEXT_ON_COLOR,
+                hover_color=Theme.ACCENT_HOVER if is_receivable else Theme.COP_BANNER_BORDER,
+                text_color=Theme.BG_APP,
                 font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
                 command=lambda d=debt: self._open_payment_modal(d)
             )
             btn_pay.pack(side="left", padx=Theme.SPACING_XS)
 
-        hist_label = f"📜 Pagos ({debt['payments_count']})" if is_receivable else f"📜 Abonos ({debt['payments_count']})"
+        hist_label = f"Pagos ({debt['payments_count']})" if is_receivable else f"Abonos ({debt['payments_count']})"
         btn_history = ctk.CTkButton(
             actions_frame,
             text=hist_label,
@@ -416,26 +411,26 @@ class DebtView(ctk.CTkFrame):
 
         btn_edit = ctk.CTkButton(
             actions_frame,
-            text="✏️",
+            text="",
+            image=IconHelper.get_icon("edit", size=14, color=Theme.TEXT_SECONDARY),
             width=30,
             height=28,
             corner_radius=Theme.SPACING_XS,
             fg_color="transparent",
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.TEXT_SECONDARY,
             command=lambda d=debt: self._open_add_debt_modal(d)
         )
         btn_edit.pack(side="left", padx=Theme.SPACING_XS)
 
         btn_delete = ctk.CTkButton(
             actions_frame,
-            text="🗑️",
+            text="",
+            image=IconHelper.get_icon("trash", size=14, color=Theme.TEXT_MUTED),
             width=30,
             height=28,
             corner_radius=Theme.SPACING_XS,
             fg_color="transparent",
             hover_color=Theme.BORDER_DEFAULT,
-            text_color=Theme.ACCENT_ROSE,
             command=lambda did=debt['id'], name=debt['creditor']: self._confirm_delete_debt(did, name)
         )
         btn_delete.pack(side="left", padx=Theme.SPACING_XS)
@@ -485,10 +480,10 @@ class DebtView(ctk.CTkFrame):
         bot_row = ctk.CTkFrame(inner, fg_color="transparent")
         bot_row.pack(fill="x")
 
-        date_label = "📅 Prestado" if is_receivable else "📅 Adquirida"
+        date_label = "Prestado" if is_receivable else "Adquirida"
         date_text = f"{date_label}: {debt['start_date']}"
         if debt["due_date"]:
-            date_text += f"  |  ⏰ Límite: {debt['due_date']}"
+            date_text += f"  |  Límite: {debt['due_date']}"
         if debt["last_payment_date"]:
             last_word = "Último cobro" if is_receivable else "Último abono"
             date_text += f"  |  {last_word}: {debt['last_payment_date']}"
@@ -503,7 +498,7 @@ class DebtView(ctk.CTkFrame):
         if debt["notes"]:
             ctk.CTkLabel(
                 bot_row,
-                text=f"📝 {debt['notes']}",
+                text=f"{debt['notes']}",
                 font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, slant="italic"),
                 text_color=Theme.TEXT_SECONDARY
             ).pack(side="right")

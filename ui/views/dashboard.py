@@ -14,6 +14,7 @@ from ui.components.empty_state import EmptyState
 from ui.theme import Theme
 from services.currency_service import CurrencyService
 from controllers.dashboard_controller import DashboardController
+from core.constants import format_month_year_es
 
 
 class DashboardView(ctk.CTkFrame):
@@ -44,7 +45,7 @@ class DashboardView(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
 
-        current_date_str = datetime.now().strftime("%B %Y").capitalize()
+        current_date_str = format_month_year_es()
         ctk.CTkLabel(
             title_box,
             text=f"Resumen general y métricas de {current_date_str}",
@@ -55,7 +56,7 @@ class DashboardView(ctk.CTkFrame):
         # Botón CSV en la cabecera
         btn_csv = ctk.CTkButton(
             header_frame,
-            text="📄 Importar CSV",
+            text="Importar CSV",
             height=32,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_CARD,
@@ -78,9 +79,9 @@ class DashboardView(ctk.CTkFrame):
 
         self.lbl_trm_info = ctk.CTkLabel(
             self.trm_badge,
-            text=f"💵 TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP",
+            text=f"TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP",
             font=ctk.CTkFont(size=11, weight="bold"),
-            text_color=Theme.ACCENT_BLUE
+            text_color=Theme.ACCENT_USD
         )
         self.lbl_trm_info.pack(padx=Theme.SPACING_SM, pady=Theme.SPACING_XS)
 
@@ -99,9 +100,9 @@ class DashboardView(ctk.CTkFrame):
 
         self.lbl_banner_title = ctk.CTkLabel(
             banner_top,
-            text="🌟 SALUD FINANCIERA & BALANCE REAL DEL MES (COP + USD)",
+            text="SALUD FINANCIERA & BALANCE REAL DEL MES (COP + USD)",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
-            text_color=Theme.ACCENT_BLUE
+            text_color=Theme.TEXT_SECONDARY
         )
         self.lbl_banner_title.pack(side="left")
 
@@ -110,7 +111,7 @@ class DashboardView(ctk.CTkFrame):
 
         self.btn_toggle_details = ctk.CTkButton(
             top_right_box,
-            text="Ver desglose ▼",
+            text="Ver desglose ▾",
             width=100,
             height=24,
             corner_radius=Theme.SPACING_XS,
@@ -124,10 +125,10 @@ class DashboardView(ctk.CTkFrame):
 
         self.badge_status = ctk.CTkLabel(
             top_right_box,
-            text="🟢 SUPERÁVIT DEL MES",
+            text="SUPERÁVIT DEL MES",
             font=ctk.CTkFont(size=11, weight="bold"),
             fg_color=Theme.SUCCESS,
-            text_color=Theme.TEXT_ON_COLOR,
+            text_color=Theme.BG_APP,
             corner_radius=Theme.SPACING_XS,
             padx=Theme.SPACING_SM,
             pady=Theme.SPACING_XS
@@ -166,13 +167,13 @@ class DashboardView(ctk.CTkFrame):
         )
         self.lbl_net_desc.pack(anchor="w")
 
-        # Columna 2: Liquidez Inmediata Consolidada
+        # Columna 2: Liquidez Inmediata Consolidada (Total combinado en TEXT_PRIMARY)
         col_liq = ctk.CTkFrame(kpi_row, fg_color="transparent")
         col_liq.grid(row=0, column=1, sticky="w", padx=(Theme.SPACING_SM, 0))
 
         ctk.CTkLabel(
             col_liq,
-            text="💧 Liquidez Inmediata Total (Bancolombia + Wenia disponible):",
+            text="Liquidez Inmediata Total (Bancolombia + Wenia disponible):",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w")
@@ -181,7 +182,7 @@ class DashboardView(ctk.CTkFrame):
             col_liq,
             text="+$0 COP",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=26, weight="bold"),
-            text_color=Theme.INFO
+            text_color=Theme.TEXT_PRIMARY
         )
         self.lbl_real_liquidity.pack(anchor="w", pady=(2, 2))
 
@@ -223,7 +224,7 @@ class DashboardView(ctk.CTkFrame):
             title="Bóveda USD",
             value="$0.00 USD",
             subtitle="Liquidez en dólares",
-            icon="🏦",
+            icon=None,
             accent_color=Theme.ACCENT_USD,
             value_color=Theme.ACCENT_USD,
             bg_color=Theme.BG_CARD,
@@ -237,7 +238,7 @@ class DashboardView(ctk.CTkFrame):
             title="Disponible Bancolombia",
             value="$0 COP",
             subtitle="Saldo en cuenta operativa",
-            icon="💳",
+            icon=None,
             accent_color=Theme.ACCENT_COP,
             value_color=Theme.ACCENT_COP,
             bg_color=Theme.BG_CARD,
@@ -245,30 +246,30 @@ class DashboardView(ctk.CTkFrame):
         )
         self.card_cop.grid(row=0, column=1, padx=Theme.SPACING_XS, sticky="nsew")
 
-        # Tarjeta 3: Deudas Totales (Mundo Alertas / Deuda -> Coral)
+        # Tarjeta 3: Deudas Totales (Línea coral, texto neutral en TEXT_PRIMARY)
         self.card_cc_debt = StatCard(
             cards_container,
             title="Deudas Totales",
             value="$0 COP",
             subtitle="TC y compromisos",
-            icon="🤝",
+            icon=None,
             accent_color=Theme.DANGER,
-            value_color=Theme.DANGER,
+            value_color=Theme.TEXT_PRIMARY,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
         self.card_cc_debt.grid(row=0, column=2, padx=Theme.SPACING_XS, sticky="nsew")
         self.card_cc_debt.bind("<Button-1>", lambda _: self._trigger_nav("debts"))
 
-        # Tarjeta 4: Gastos del Mes COP (Egresos -> Coral)
+        # Tarjeta 4: Gastos del Mes COP (Línea coral, texto neutral en TEXT_PRIMARY)
         self.card_expenses = StatCard(
             cards_container,
             title="Gastos del Mes",
             value="$0 COP",
             subtitle="Egresos en pesos",
-            icon="📉",
+            icon=None,
             accent_color=Theme.DANGER,
-            value_color=Theme.DANGER,
+            value_color=Theme.TEXT_PRIMARY,
             bg_color=Theme.BG_CARD,
             border_color=Theme.BORDER_DEFAULT
         )
@@ -290,14 +291,14 @@ class DashboardView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             left_header,
-            text="📊 Gastos por Categoría (Mes Actual)",
+            text="Gastos por Categoría (Mes Actual)",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
 
         btn_go_budget = ctk.CTkButton(
             left_header,
-            text="🎯 Presupuestos",
+            text="Presupuestos",
             width=95,
             height=24,
             corner_radius=Theme.SPACING_XS,
@@ -315,24 +316,25 @@ class DashboardView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             quick_actions_box,
-            text="⚡ Acciones Rápidas",
+            text="Acciones Rápidas",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.TEXT_SECONDARY
         ).pack(anchor="w", padx=Theme.SPACING_SM, pady=(Theme.SPACING_SM, Theme.SPACING_XS))
 
-        # Rejilla Unificada: 3 columnas perfectamente idénticas en ancho y altura
+        # Rejilla Unificada: 3 columnas. 1 acción principal rellena (ACCENT), las demás con fondo BG_CARD y borde.
         actions_grid = ctk.CTkFrame(quick_actions_box, fg_color="transparent")
         actions_grid.pack(fill="x", padx=Theme.SPACING_XS, pady=(0, Theme.SPACING_SM))
         actions_grid.grid_columnconfigure((0, 1, 2), weight=1, uniform="quick_actions")
         actions_grid.grid_rowconfigure((0, 1), weight=1)
 
         # Fila 0: Entradas y Salidas Operativas
+        # Acción Principal: + Ingreso (única con relleno de acento y texto de alto contraste)
         btn_deposit = ctk.CTkButton(
             actions_grid,
-            text="📥 + Ingreso",
-            fg_color=Theme.INFO,
-            hover_color=Theme.INFO_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            text="+ Ingreso",
+            fg_color=Theme.ACCENT,
+            hover_color=Theme.ACCENT_HOVER,
+            text_color=Theme.BG_APP,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -342,10 +344,12 @@ class DashboardView(ctk.CTkFrame):
 
         btn_convert = ctk.CTkButton(
             actions_grid,
-            text="🔄 Puente USD",
-            fg_color=Theme.INFO,
-            hover_color=Theme.INFO_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            text="Puente USD",
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BG_CARD_HOVER,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -355,10 +359,12 @@ class DashboardView(ctk.CTkFrame):
 
         btn_expense = ctk.CTkButton(
             actions_grid,
-            text="💸 - Egreso",
-            fg_color=Theme.ERROR,
-            hover_color=Theme.ERROR_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            text="- Egreso",
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BG_CARD_HOVER,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -369,10 +375,12 @@ class DashboardView(ctk.CTkFrame):
         # Fila 1: Compromisos y Navegación
         btn_pay_cc = ctk.CTkButton(
             actions_grid,
-            text="💳 Pagar TC",
-            fg_color=Theme.ERROR,
-            hover_color=Theme.ERROR_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            text="Pagar TC",
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BG_CARD_HOVER,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -382,10 +390,12 @@ class DashboardView(ctk.CTkFrame):
 
         btn_ledger = ctk.CTkButton(
             actions_grid,
-            text="📖 Libro Mayor",
-            fg_color=("#cbd5e1", "#334155"),
-            hover_color=("#94a3b8", "#475569"),
-            text_color=("#0f172a", "#f8fafc"),
+            text="Libro Mayor",
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BG_CARD_HOVER,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -395,10 +405,12 @@ class DashboardView(ctk.CTkFrame):
 
         btn_inv = ctk.CTkButton(
             actions_grid,
-            text="📈 Inversiones",
-            fg_color=("#cbd5e1", "#334155"),
-            hover_color=("#94a3b8", "#475569"),
-            text_color=("#0f172a", "#f8fafc"),
+            text="Inversiones",
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BG_CARD_HOVER,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             height=32,
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11, weight="bold"),
             corner_radius=Theme.SPACING_SM,
@@ -419,7 +431,7 @@ class DashboardView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             right_header,
-            text="🕒 Últimos Movimientos",
+            text="Últimos Movimientos",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
@@ -488,21 +500,21 @@ class DashboardView(ctk.CTkFrame):
 
         # 1. Actualizar badge de tasa
         if hasattr(self, "lbl_trm_info") and self.lbl_trm_info.winfo_exists():
-            self.lbl_trm_info.configure(text=f"💵 TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP")
+            self.lbl_trm_info.configure(text=f"TRM Oficial: 1 USD ≈ ${self.exchange_rate:,.2f} COP")
 
         # 2. Actualizar Banner de Salud Financiera
         net_result = summary["net_monthly_result"]
         if hasattr(self, "lbl_net_result") and self.lbl_net_result.winfo_exists():
             if net_result >= 0:
                 self.lbl_net_result.configure(text=f"+${net_result:,.0f} COP", text_color=Theme.SUCCESS)
-                self.badge_status.configure(text="🟢 SUPERÁVIT DEL MES", fg_color=Theme.SUCCESS)
-                self.lbl_net_desc.configure(text=f"🎉 ¡Mes positivo! Ganaste ${net_result:,.0f} COP más de lo que gastaste.")
+                self.badge_status.configure(text="SUPERÁVIT DEL MES", fg_color=Theme.SUCCESS)
+                self.lbl_net_desc.configure(text=f"¡Mes positivo! Ganaste ${net_result:,.0f} COP más de lo que gastaste.")
             else:
-                self.lbl_net_result.configure(text=f"-${abs(net_result):,.0f} COP", text_color=Theme.ERROR)
-                self.badge_status.configure(text="🔴 DÉFICIT DEL MES", fg_color=Theme.ERROR)
+                self.lbl_net_result.configure(text=f"-${abs(net_result):,.0f} COP", text_color=Theme.DANGER)
+                self.badge_status.configure(text="DÉFICIT DEL MES", fg_color=Theme.DANGER)
                 self.lbl_net_desc.configure(text=f"Gastos superaron ingresos por ${abs(net_result):,.0f} COP.")
 
-        # Liquidez Inmediata Consolidada
+        # Liquidez Inmediata Consolidada (Total combinado en TEXT_PRIMARY)
         net_liq = summary["net_immediate_liquidity"]
         cop_liq = summary["cop_liquid"]
         usd_liq = summary["usd_liquid"]
@@ -510,23 +522,23 @@ class DashboardView(ctk.CTkFrame):
 
         if hasattr(self, "lbl_real_liquidity") and self.lbl_real_liquidity.winfo_exists():
             if net_liq >= 0:
-                self.lbl_real_liquidity.configure(text=f"+${net_liq:,.0f} COP", text_color=Theme.INFO)
+                self.lbl_real_liquidity.configure(text=f"+${net_liq:,.0f} COP", text_color=Theme.TEXT_PRIMARY)
                 self.lbl_liq_desc.configure(
                     text=f"Bancolombia: ${cop_liq:,.0f} COP  •  Wenia: ${usd_liq:,.2f} USD (≈ ${usd_cop:,.0f} COP)"
                 )
             else:
-                self.lbl_real_liquidity.configure(text=f"-${abs(net_liq):,.0f} COP", text_color=Theme.ERROR)
+                self.lbl_real_liquidity.configure(text=f"-${abs(net_liq):,.0f} COP", text_color=Theme.DANGER)
                 self.lbl_liq_desc.configure(text="Atención: Saldo líquido total negativo.")
 
         # Franja detallada inferior
         if hasattr(self, "lbl_summary_details") and self.lbl_summary_details.winfo_exists():
-            income_text = f"📥 Ingresos Totales: ${summary['total_consolidated_income']:,.0f} COP  (COP Directo: ${summary['cop_direct_income']:,.0f} | USD: ${summary['usd_income']:,.2f} ≈ ${summary['usd_income_in_cop']:,.0f})"
-            expense_text = f"📤 Gastos Totales: ${summary['total_consolidated_expenses']:,.0f} COP  (Fijos: ${summary['cop_fixed']:,.0f} | Variables: ${summary['cop_var']:,.0f})"
+            income_text = f"Ingresos Totales: ${summary['total_consolidated_income']:,.0f} COP  (COP Directo: ${summary['cop_direct_income']:,.0f} | USD: ${summary['usd_income']:,.2f} ≈ ${summary['usd_income_in_cop']:,.0f})"
+            expense_text = f"Gastos Totales: ${summary['total_consolidated_expenses']:,.0f} COP  (Fijos: ${summary['cop_fixed']:,.0f} | Variables: ${summary['cop_var']:,.0f})"
 
             detail_lines = [f"{income_text}\n{expense_text}"]
             if summary.get("extraordinary_purchases"):
                 equip_notes = ", ".join([f"{p.get('notes') or 'Compra de activo'} (${p['amount']:,.0f} COP)" for p in summary["extraordinary_purchases"]])
-                detail_lines.append(f"💡 Compra de equipo/activo de contado: {equip_notes}. (Gastos corrientes de vida: ${summary['routine_expenses']:,.0f} COP).")
+                detail_lines.append(f"Compra de equipo/activo de contado: {equip_notes}. (Gastos corrientes de vida: ${summary['routine_expenses']:,.0f} COP).")
 
             self.lbl_summary_details.configure(text="\n".join(detail_lines))
 
@@ -562,11 +574,11 @@ class DashboardView(ctk.CTkFrame):
         # 1. Actualizar banner de salud, tasa y tarjetas de liquidez
         summary = self._update_rates_and_banner(self.exchange_rate)
 
-        # 2. Actualizar Tarjeta de Deudas Totales
+        # 2. Actualizar Tarjeta de Deudas Totales (Color neutral TEXT_PRIMARY)
         debts_summary = self.controller.get_debts_summary()
         grand_debt = debts_summary["grand_total_debt"]
         if grand_debt == 0:
-            debt_sub = "Sin deudas pendientes 🎉"
+            debt_sub = "Sin deudas pendientes"
         elif debts_summary["personal_remaining"] > 0 and debts_summary["credit_card_debt"] > 0:
             debt_sub = f"TC mes: ${debts_summary['credit_card_debt']:,.0f} | Papá (PC): ${debts_summary['personal_remaining']:,.0f}"
         elif debts_summary["personal_remaining"] > 0:
@@ -577,10 +589,10 @@ class DashboardView(ctk.CTkFrame):
         self.card_cc_debt.update_value(
             f"${grand_debt:,.0f} COP",
             debt_sub,
-            new_color=Theme.DANGER if grand_debt > 0 else Theme.TEXT_PRIMARY
+            new_color=Theme.TEXT_PRIMARY
         )
 
-        # 3. Actualizar Tarjeta de Gastos del Mes COP
+        # 3. Actualizar Tarjeta de Gastos del Mes COP (Color neutral TEXT_PRIMARY)
         if summary.get("extraordinary_sum", 0) > 0:
             exp_sub = f"Vida ordinaria: ${summary['routine_expenses']:,.0f} | Activo: ${summary['extraordinary_sum']:,.0f}"
         else:
@@ -589,7 +601,7 @@ class DashboardView(ctk.CTkFrame):
         self.card_expenses.update_value(
             f"${summary['cop_expenses']:,.0f} COP",
             exp_sub,
-            new_color=Theme.DANGER if summary['cop_expenses'] > 0 else Theme.TEXT_PRIMARY
+            new_color=Theme.TEXT_PRIMARY
         )
 
         # 4. Actualizar Desglose de Gastos
@@ -607,7 +619,7 @@ class DashboardView(ctk.CTkFrame):
         if not categories:
             empty_state = EmptyState(
                 self.categories_scroll,
-                icon="📊",
+                icon=None,
                 title="Sin gastos este mes",
                 message="Aún no se registran egresos para el periodo actual.",
                 compact=True
@@ -624,17 +636,17 @@ class DashboardView(ctk.CTkFrame):
             if b_amt > 0:
                 pct = (amount / b_amt * 100.0)
                 if pct >= 100:
-                    bar_color = "#f43f5e"
+                    bar_color = Theme.DANGER
                 elif pct >= 75:
-                    bar_color = "#f59e0b"
+                    bar_color = Theme.WARNING
                 else:
-                    bar_color = "#10b981"
+                    bar_color = Theme.SUCCESS
                 text_label = f"${amount:,.0f} / ${b_amt:,.0f} ({pct:.0f}%)"
                 val_color = bar_color
                 bar_ratio = min(pct / 100.0, 1.0)
             else:
                 pct = (amount / total_expenses * 100) if total_expenses > 0 else 0
-                bar_color = "#64748b"
+                bar_color = Theme.TEXT_MUTED
                 text_label = f"${amount:,.0f} COP"
                 val_color = Theme.TEXT_SECONDARY
                 bar_ratio = min(pct / 100.0, 1.0)
@@ -693,7 +705,7 @@ class DashboardView(ctk.CTkFrame):
         if not activities:
             empty_state = EmptyState(
                 self.activities_scroll,
-                icon="🕒",
+                icon=None,
                 title="Sin movimientos recientes",
                 message="Comienza registrando un ingreso o egreso para activar tus métricas.",
                 action_text="+ Registrar Ingreso",
@@ -723,31 +735,33 @@ class DashboardView(ctk.CTkFrame):
             card = ctk.CTkFrame(self.activities_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
             card.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
-            # Estilo según tipo
+            # Estilo según tipo: etiqueta de moneda limpia en lugar de emojis
+            is_usd = ("usd" in act["color_type"])
+            cur_tag = "USD" if is_usd else "COP"
+            cur_color = Theme.ACCENT_USD if is_usd else Theme.ACCENT_COP
+
+            # Los gastos van en TEXT_PRIMARY con signo menos; los ingresos en su color de mundo
             if act["color_type"] == "income_usd":
-                badge_icon = "💵"
-                amount_color = Theme.ACCENT_BLUE
-            elif act["color_type"] == "expense_cop":
-                badge_icon = "📉"
-                amount_color = Theme.ACCENT_ROSE
-            elif act["color_type"] == "cc_payment":
-                badge_icon = "💳"
-                amount_color = Theme.ACCENT_INDIGO
-            elif act["color_type"] == "yield_income":
-                badge_icon = "📈"
-                amount_color = Theme.ACCENT_GREEN
-            elif act["color_type"] == "investment_out":
-                badge_icon = "🏦"
-                amount_color = Theme.ACCENT_BLUE
-            else:  # transfer_cop
-                badge_icon = "🔄"
-                amount_color = Theme.ACCENT_GREEN
+                amount_color = Theme.ACCENT_USD
+            elif act["color_type"] in ("yield_income", "transfer_cop"):
+                amount_color = Theme.SUCCESS
+            else:
+                amount_color = Theme.TEXT_PRIMARY
 
             top_row = ctk.CTkFrame(card, fg_color="transparent")
             top_row.pack(fill="x", padx=Theme.SPACING_SM, pady=(Theme.SPACING_XS, 2))
 
-            icon_lbl = ctk.CTkLabel(top_row, text=badge_icon, font=ctk.CTkFont(size=14))
-            icon_lbl.pack(side="left", padx=(0, Theme.SPACING_XS))
+            pill_lbl = ctk.CTkLabel(
+                top_row,
+                text=cur_tag,
+                font=ctk.CTkFont(size=9, weight="bold"),
+                text_color=cur_color,
+                fg_color=Theme.BG_CARD,
+                corner_radius=Theme.SPACING_XS,
+                padx=5,
+                pady=1
+            )
+            pill_lbl.pack(side="left", padx=(0, Theme.SPACING_XS))
 
             title_lbl = ctk.CTkLabel(
                 top_row,
@@ -765,23 +779,24 @@ class DashboardView(ctk.CTkFrame):
             )
             amount_lbl.pack(side="right")
 
-            # Fila inferior: Fuente y notas
+            # Fila inferior: Fuente y notas en una sola línea fluida con elipsis para evitar solapamientos
             bottom_row = ctk.CTkFrame(card, fg_color="transparent")
             bottom_row.pack(fill="x", padx=Theme.SPACING_SM, pady=(0, Theme.SPACING_XS))
 
-            source_lbl = ctk.CTkLabel(
-                bottom_row,
-                text=act['source'],
-                font=ctk.CTkFont(size=11),
-                text_color=Theme.TEXT_MUTED
-            )
-            source_lbl.pack(side="left")
+            source_text = act.get("source", "").strip()
+            notes_text = act.get("notes", "").strip() if act.get("notes") else ""
+            if notes_text:
+                if len(notes_text) > 40:
+                    notes_text = notes_text[:40].strip() + "…"
+                detail_text = f"{source_text} • \"{notes_text}\""
+            else:
+                detail_text = source_text
 
-            if act.get("notes"):
-                notes_lbl = ctk.CTkLabel(
-                    bottom_row,
-                    text=f"\"{act['notes']}\"",
-                    font=ctk.CTkFont(size=11, slant="italic"),
-                    text_color=Theme.TEXT_SECONDARY
-                )
-                notes_lbl.pack(side="right")
+            detail_lbl = ctk.CTkLabel(
+                bottom_row,
+                text=detail_text,
+                font=ctk.CTkFont(size=11),
+                text_color=Theme.TEXT_MUTED,
+                anchor="w"
+            )
+            detail_lbl.pack(side="left", fill="x", expand=True)

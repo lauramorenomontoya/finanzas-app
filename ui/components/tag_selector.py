@@ -29,47 +29,61 @@ class TagSelector(ctk.CTkFrame):
         self.tag_buttons.clear()
         tags = self.db.get_tags()
 
-        row_frame = ctk.CTkFrame(self.chips_container, fg_color="transparent")
-        row_frame.pack(fill="x", pady=Theme.SPACING_XS)
+        current_row = ctk.CTkFrame(self.chips_container, fg_color="transparent")
+        current_row.pack(fill="x", pady=1)
+
+        chars_in_row = 0
+        MAX_CHARS_PER_ROW = 28
 
         for tag in tags:
             tag_id = tag["id"]
             name = tag["name"]
-            color = tag.get("color", "#38bdf8")
+            color = tag.get("color", Theme.ACCENT)
             is_selected = tag_id in self.selected_tag_ids
 
+            # Si excede el ancho estimado de la fila, envolver en una nueva fila
+            if chars_in_row > 0 and (chars_in_row + len(name)) > MAX_CHARS_PER_ROW:
+                current_row = ctk.CTkFrame(self.chips_container, fg_color="transparent")
+                current_row.pack(fill="x", pady=1)
+                chars_in_row = 0
+
             btn = ctk.CTkButton(
-                row_frame,
+                current_row,
                 text=f"{name}",
                 height=26,
                 corner_radius=Theme.SPACING_SM,
                 fg_color=color if is_selected else Theme.BG_CARD_SUBTLE,
                 hover_color=color,
-                text_color=Theme.TEXT_ON_COLOR if is_selected else Theme.TEXT_PRIMARY,
+                text_color=Theme.BG_APP if is_selected else Theme.TEXT_PRIMARY,
                 border_width=1,
                 border_color=color if is_selected else Theme.BORDER_SUBTLE,
                 font=ctk.CTkFont(size=11, weight="bold" if is_selected else "normal"),
                 command=lambda t_id=tag_id: self._toggle_tag(t_id)
             )
-            btn.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+            btn.pack(side="left", padx=Theme.SPACING_XS, pady=2)
             self.tag_buttons[tag_id] = (btn, color, name)
+            chars_in_row += len(name) + 3
 
         # Botón para añadir nueva etiqueta
+        if chars_in_row > MAX_CHARS_PER_ROW - 6:
+            current_row = ctk.CTkFrame(self.chips_container, fg_color="transparent")
+            current_row.pack(fill="x", pady=1)
+
         btn_add = ctk.CTkButton(
-            row_frame,
+            current_row,
             text="+ Tag",
             height=26,
             width=50,
             corner_radius=Theme.SPACING_SM,
             fg_color="transparent",
             hover_color=Theme.BG_CARD_SUBTLE,
-            text_color=Theme.ACCENT_BLUE,
+            text_color=Theme.ACCENT,
             border_width=1,
-            border_color=Theme.ACCENT_BLUE,
+            border_color=Theme.BORDER_DEFAULT,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self._prompt_new_tag
         )
-        btn_add.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+        btn_add.pack(side="left", padx=Theme.SPACING_XS, pady=2)
 
     def _toggle_tag(self, tag_id: int):
         if tag_id in self.selected_tag_ids:
@@ -83,17 +97,16 @@ class TagSelector(ctk.CTkFrame):
             is_selected = tag_id in self.selected_tag_ids
             btn.configure(
                 fg_color=color if is_selected else Theme.BG_CARD_SUBTLE,
-                text_color=Theme.TEXT_ON_COLOR if is_selected else Theme.TEXT_PRIMARY,
+                text_color=Theme.BG_APP if is_selected else Theme.TEXT_PRIMARY,
                 border_color=color if is_selected else Theme.BORDER_SUBTLE,
                 font=ctk.CTkFont(size=11, weight="bold" if is_selected else "normal")
             )
 
     def _prompt_new_tag(self):
-        dialog = ctk.CTkInputDialog(text="Nombre de la nueva etiqueta (ej: 💡 Innovación):", title="Nueva Etiqueta")
+        dialog = ctk.CTkInputDialog(text="Nombre de la nueva etiqueta (ej: Proyecto A):", title="Nueva Etiqueta")
         name = dialog.get_input()
         if name and name.strip():
-            # Asignar un color aleatorio o rotativo
-            palette = ["#38bdf8", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"]
+            palette = [Theme.ACCENT, Theme.ACCENT_COP, Theme.INFO, Theme.WARNING, Theme.ACCENT_PURPLE, Theme.ACCENT_BLUE]
             color = palette[len(self.tag_buttons) % len(palette)]
             new_id = self.db.add_tag(name.strip(), color)
             if new_id:

@@ -16,6 +16,7 @@ from ui.components import (
     EmptyState
 )
 from services.currency_service import CurrencyService
+from ui.utils.icon_helper import IconHelper
 from ui.theme import Theme
 from core.event_bus import EventBus
 
@@ -41,7 +42,7 @@ class ConversionView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="🔄 Puente de Conversión (USD ➔ COP)",
+            text="Puente de Conversión (USD ➔ COP)",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -74,7 +75,7 @@ class ConversionView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             status_row,
-            text="🏦 Saldo actual en Bóveda USD:",
+            text="Saldo actual en Bóveda USD:",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=Theme.USD_BANNER_TEXT
         ).pack(side="left")
@@ -120,7 +121,7 @@ class ConversionView(ctk.CTkFrame):
 
         self.btn_live_rate = ctk.CTkButton(
             rate_header,
-            text="🌐 Tasa en Vivo",
+            text="Tasa en Vivo",
             height=24,
             width=100,
             corner_radius=Theme.SPACING_XS,
@@ -165,7 +166,7 @@ class ConversionView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             preview_inner,
-            text="💰 PREVISUALIZACIÓN DE MONTO A RECIBIR:",
+            text="PREVISUALIZACIÓN DE MONTO A RECIBIR:",
             font=ctk.CTkFont(size=10, weight="bold"),
             text_color=Theme.TEXT_MUTED
         ).pack(anchor="w")
@@ -202,13 +203,13 @@ class ConversionView(ctk.CTkFrame):
         # Botón de Confirmación
         self.btn_convert = ctk.CTkButton(
             form_panel,
-            text="⚡ Ejecutar Conversión y Transferir a COP",
+            text="Ejecutar Conversión y Transferir a COP",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=42,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.ACCENT,
-            hover_color=Theme.SUCCESS_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            hover_color=Theme.ACCENT_HOVER,
+            text_color=Theme.BG_APP,
             command=self._handle_convert
         )
         self.btn_convert.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_LG))
@@ -222,7 +223,7 @@ class ConversionView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             hist_header,
-            text="📜 Historial de Conversiones",
+            text="Historial de Conversiones",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=16, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(side="left")
@@ -253,7 +254,7 @@ class ConversionView(ctk.CTkFrame):
 
                 if usd_val > current_balance:
                     self.lbl_preview_detail.configure(
-                        text=f"⚠️ Excede tu saldo disponible en Bóveda (${current_balance:,.2f} USD)",
+                        text=f"Excede tu saldo disponible en Bóveda (${current_balance:,.2f} USD)",
                         text_color=Theme.ERROR
                     )
                     self.btn_convert.configure(state="disabled", fg_color=Theme.TEXT_MUTED)
@@ -262,25 +263,25 @@ class ConversionView(ctk.CTkFrame):
                         text=f"${usd_val:,.2f} USD × ${rate_val:,.2f} COP/USD",
                         text_color=Theme.SUCCESS
                     )
-                    self.btn_convert.configure(state="normal", fg_color=Theme.ACCENT_INDIGO)
+                    self.btn_convert.configure(state="normal", fg_color=Theme.ACCENT, hover_color=Theme.ACCENT_HOVER, text_color=Theme.BG_APP)
             else:
                 self.lbl_preview_cop.configure(text="$0 COP")
                 self.lbl_preview_detail.configure(
                     text="Ingresa el monto y la tasa para ver el cálculo.",
                     text_color=Theme.TEXT_MUTED
                 )
-                self.btn_convert.configure(state="normal", fg_color=Theme.ACCENT_INDIGO)
+                self.btn_convert.configure(state="normal", fg_color=Theme.ACCENT, hover_color=Theme.ACCENT_HOVER, text_color=Theme.BG_APP)
         except ValueError:
             self.lbl_preview_cop.configure(text="$0 COP")
             self.lbl_preview_detail.configure(text="Valores numéricos inválidos.", text_color=Theme.ERROR)
 
     def _fetch_live_rate(self):
-        self.btn_live_rate.configure(text="⏳ Consultando...", state="disabled")
+        self.btn_live_rate.configure(text="Consultando...", state="disabled")
         CurrencyService.fetch_rate_async(self._on_live_rate_fetched)
 
     def _on_live_rate_fetched(self, rate: Optional[float]):
         def update_ui():
-            self.btn_live_rate.configure(text="🌐 Tasa en Vivo", state="normal")
+            self.btn_live_rate.configure(text="Tasa en Vivo", state="normal")
             if rate is not None and rate > 0:
                 self.rate_entry.delete(0, "end")
                 self.rate_entry.insert(0, f"{rate:.2f}")
@@ -341,7 +342,7 @@ class ConversionView(ctk.CTkFrame):
         if not conversions:
             EmptyState(
                 self.history_scroll,
-                icon="🔄",
+                icon=None,
                 title="Sin conversiones registradas",
                 message="Usa el formulario superior para monetizar dólares hacia tu cuenta en COP."
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XL)
@@ -356,12 +357,12 @@ class ConversionView(ctk.CTkFrame):
 
             ctk.CTkLabel(
                 top_row,
-                text=f"🔄 -${conv['usd_amount']:,.2f} USD  ➔  +${conv['cop_amount']:,.0f} COP",
+                text=f"-${conv['usd_amount']:,.2f} USD  ➔  +${conv['cop_amount']:,.0f} COP",
                 font=ctk.CTkFont(size=13, weight="bold"),
                 text_color=Theme.TEXT_PRIMARY
             ).pack(side="left")
 
-            # Fila inferior con fecha, tasa, notas y botones ✏️ y 🗑️
+            # Fila inferior con fecha, tasa, notas y botones de edición y eliminación
             bottom_row = ctk.CTkFrame(card, fg_color="transparent")
             bottom_row.pack(fill="x", padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
 
@@ -382,12 +383,12 @@ class ConversionView(ctk.CTkFrame):
             # Botón Editar
             btn_edit = ctk.CTkButton(
                 btn_box,
-                text="✏️",
+                image=IconHelper.get_icon("edit", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.BORDER_DEFAULT,
-                font=ctk.CTkFont(size=11),
                 command=lambda c=conv: self._handle_edit_conv(c)
             )
             btn_edit.pack(side="left", padx=Theme.SPACING_XS)
@@ -395,12 +396,12 @@ class ConversionView(ctk.CTkFrame):
             # Botón Eliminar
             btn_del = ctk.CTkButton(
                 btn_box,
-                text="🗑️",
+                image=IconHelper.get_icon("trash", size=(13, 13)),
+                text="",
                 width=24,
-                height=20,
+                height=22,
                 fg_color="transparent",
                 hover_color=Theme.ERROR_HOVER,
-                font=ctk.CTkFont(size=11),
                 command=lambda c=conv: self._prompt_delete_conv(c)
             )
             btn_del.pack(side="left", padx=Theme.SPACING_XS)
@@ -408,7 +409,7 @@ class ConversionView(ctk.CTkFrame):
         if len(conversions) < total_count:
             btn_load_more = ctk.CTkButton(
                 self.history_scroll,
-                text=f"⬇️ Cargar más conversiones (+20)...",
+                text="Cargar más conversiones (+20)...",
                 height=32,
                 corner_radius=Theme.SPACING_SM,
                 fg_color=Theme.BG_CARD,

@@ -19,12 +19,12 @@ class Currencies:
 
 
 class CurrencyLabels:
-    COP = "🇨🇴 Pesos (COP)"
-    USD = "💵 Dólares (USD)"
-    INCOME_COP = "🇨🇴 Ingreso COP"
-    INCOME_USD = "💵 Ingreso USD"
-    EXPENSE_COP = "🇨🇴 Gasto en COP"
-    EXPENSE_USD = "💵 Gasto Directo USD"
+    COP = "COP (Pesos)"
+    USD = "USD (Dólares)"
+    INCOME_COP = "Ingreso COP"
+    INCOME_USD = "Ingreso USD"
+    EXPENSE_COP = "Gasto COP"
+    EXPENSE_USD = "Gasto Directo USD"
 
 
 class Platforms:
@@ -67,22 +67,22 @@ class Categories:
 
 
 class PaymentMethods:
-    OPTIONS = ["💳 Débito / Cuenta Operativa", "💳 Tarjeta de Crédito", "💵 Efectivo"]
+    OPTIONS = ["Débito / Cuenta Operativa", "Tarjeta de Crédito", "Efectivo"]
     FILTER = ["Todos", "Débito", "TC"]
 
 
 class FilterOptions:
     CURRENCY = ["Todas", "COP", "USD"]
     CURRENCY_INCOMES = ["Todas", "USD", "COP"]
-    TAB_EXPENSES = ["📋 Checklist Gastos Fijos (Agenda)", "📑 Movimientos de Egresos"]
+    TAB_EXPENSES = ["Checklist Gastos Fijos", "Movimientos de Egresos"]
 
 
 class SettingsTabs:
     OPTIONS = [
-        "🏷️  Categorías",
-        "🏦  Cuentas & Fiducias",
-        "📋  Gastos Fijos Multimoneda",
-        "🤖  Asistente IA (MCP)",
+        "Categorías",
+        "Cuentas & Inversiones",
+        "Gastos Fijos",
+        "Asistente IA",
     ]
     CATEGORY_TYPES = [
         "Ingresos USD",
@@ -90,3 +90,16 @@ class SettingsTabs:
         "Ingresos COP",
         "Gastos COP",
     ]
+
+
+MESES_ES = [
+    "", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+]
+
+
+def format_month_year_es(dt=None) -> str:
+    from datetime import datetime
+    if dt is None:
+        dt = datetime.now()
+    return f"{MESES_ES[dt.month]} {dt.year}"

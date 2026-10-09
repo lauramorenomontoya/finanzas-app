@@ -11,6 +11,7 @@ from ui.theme import Theme
 from core.constants import SettingsTabs
 from controllers.settings_controller import SettingsController
 from ui.components import ToastNotification, CSVImporterModal
+from ui.components.segmented_button import StyledSegmentedButton
 from ui.views.settings import CategoriesTab, AccountsTab, RecurringTab, AITab
 from core.event_bus import EventBus
 
@@ -35,7 +36,7 @@ class SettingsView(ctk.CTkFrame):
 
         ctk.CTkLabel(
             title_box,
-            text="⚙️ Configuración & Personalización",
+            text="Configuración & Personalización",
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=24, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -49,13 +50,15 @@ class SettingsView(ctk.CTkFrame):
 
         btn_import = ctk.CTkButton(
             header_frame,
-            text="📥 Importar",
+            text="Importar",
             height=36,
             width=100,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.INFO,
-            hover_color=Theme.INFO_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BORDER_DEFAULT,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._open_importer
         )
@@ -63,13 +66,15 @@ class SettingsView(ctk.CTkFrame):
 
         btn_export = ctk.CTkButton(
             header_frame,
-            text="💾 Exportar Backup",
+            text="Exportar Backup",
             height=36,
             width=130,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.SUCCESS,
-            hover_color=Theme.SUCCESS_HOVER,
-            text_color=Theme.TEXT_ON_COLOR,
+            fg_color=Theme.BG_CARD,
+            hover_color=Theme.BORDER_DEFAULT,
+            border_width=1,
+            border_color=Theme.BORDER_DEFAULT,
+            text_color=Theme.TEXT_PRIMARY,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._export_backup
         )
@@ -77,14 +82,14 @@ class SettingsView(ctk.CTkFrame):
 
         btn_update = ctk.CTkButton(
             header_frame,
-            text="🔄 Actualizaciones",
+            text="Actualizaciones",
             height=36,
             width=135,
             corner_radius=Theme.SPACING_SM,
-            fg_color=Theme.BG_CARD_SUBTLE,
+            fg_color=Theme.BG_CARD,
             hover_color=Theme.BORDER_DEFAULT,
             border_width=1,
-            border_color=Theme.BORDER_SUBTLE,
+            border_color=Theme.BORDER_DEFAULT,
             text_color=Theme.TEXT_PRIMARY,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._check_for_updates
@@ -92,13 +97,13 @@ class SettingsView(ctk.CTkFrame):
         btn_update.pack(side="right", padx=(0, Theme.SPACING_SM))
 
         # 2. Selector de Sección
-        self.section_seg = ctk.CTkSegmentedButton(
+        self.section_seg = StyledSegmentedButton(
             self,
             values=SettingsTabs.OPTIONS,
             height=36,
             command=self._on_section_changed
         )
-        self.section_seg.set("🏷️  Categorías")
+        self.section_seg.set(SettingsTabs.CATEGORIES)
         self.section_seg.pack(fill="x", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_MD))
 
         # 3. Contenedor de contenido

@@ -15,7 +15,7 @@ class StatCard(ctk.CTkFrame):
         title: str,
         value: str,
         subtitle: str = "",
-        icon: str = "💵",
+        icon: Optional[Union[str, ctk.CTkImage]] = None,
         accent_color: Union[str, Tuple[str, str]] = ("#0284c7", "#38bdf8"),
         value_color: Optional[Union[str, Tuple[str, str]]] = None,
         bg_color: Union[str, Tuple[str, str]] = Theme.BG_CARD,
@@ -51,13 +51,24 @@ class StatCard(ctk.CTkFrame):
         top_frame = ctk.CTkFrame(self, fg_color="transparent")
         top_frame.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_XS, 2))
 
-        self.icon_label = ctk.CTkLabel(
-            top_frame,
-            text=icon,
-            font=ctk.CTkFont(size=18),
-            text_color=accent_color
-        )
-        self.icon_label.pack(side="left", padx=(0, Theme.SPACING_SM))
+        if icon:
+            if isinstance(icon, ctk.CTkImage):
+                self.icon_label = ctk.CTkLabel(
+                    top_frame,
+                    text="",
+                    image=icon
+                )
+                self.icon_label.pack(side="left", padx=(0, Theme.SPACING_SM))
+            else:
+                self.icon_label = ctk.CTkLabel(
+                    top_frame,
+                    text=icon,
+                    font=ctk.CTkFont(size=14),
+                    text_color=accent_color
+                )
+                self.icon_label.pack(side="left", padx=(0, Theme.SPACING_SM))
+        else:
+            self.icon_label = None
 
         self.title_label = ctk.CTkLabel(
             top_frame,
