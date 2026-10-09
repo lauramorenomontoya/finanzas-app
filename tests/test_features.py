@@ -10,16 +10,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.db_manager import DatabaseManager
 
 
+import tempfile
+import shutil
+
 class TestNewFeatures(unittest.TestCase):
     def setUp(self):
-        self.test_db_path = "test_features.db"
-        if os.path.exists(self.test_db_path):
-            os.remove(self.test_db_path)
+        self.temp_dir = tempfile.mkdtemp()
+        self.test_db_path = os.path.join(self.temp_dir, "test_features.db")
         self.db = DatabaseManager(self.test_db_path)
 
     def tearDown(self):
-        if os.path.exists(self.test_db_path):
-            os.remove(self.test_db_path)
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_default_categories_initialized(self):
         usd_cats = self.db.get_categories("INCOME_USD")

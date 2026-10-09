@@ -1,7 +1,0 @@
-# Invitación Gabi - Grados
-
-Fecha Gasto: 7 de febrero de 2026
-Mes: Febrero 2026 (../Gasto%20anual/Febrero%202026%202bcacd5f78e38177a4b6cd06e12c05b1.md)
-Gasto: 94.050,00 COP
-Categorías: Resto/Tienda (../Categor%C3%ADas/Resto%20Tienda%202bcacd5f78e38157a0adc2ce12b4d259.md)
-Checkbox: Pagado

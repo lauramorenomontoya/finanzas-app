@@ -1,1 +1,0 @@
-# Septiembre 2026

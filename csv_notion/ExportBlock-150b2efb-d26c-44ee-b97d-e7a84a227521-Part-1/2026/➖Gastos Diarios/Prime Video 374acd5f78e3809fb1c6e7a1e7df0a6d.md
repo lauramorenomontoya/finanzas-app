@@ -1,8 +1,0 @@
-# Prime Video
-
-Fecha Gasto: 29 de julio de 2026
-Mes: Julio 2026 (../Gasto%20anual/Julio%202026%202bcacd5f78e3814d90f9edde7c1d46eb.md)
-Gasto: 24.900,00 COP
-Categorías: Suscripciones (../Categor%C3%ADas/Suscripciones%202bcacd5f78e381afa650d9e099c4761b.md)
-Checkbox: Pagado
-Descripción: FIJO MENSUAL

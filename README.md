@@ -30,39 +30,41 @@ El entorno virtual ya ha sido creado e instalado con todas sus dependencias. Par
 
 ```bash
 cd /Users/lauramoreno/Desktop/Scripts/ControlFinanciero
-./venv/bin/python3 main.py
+./scripts/run.sh
 ```
 
-O si activas el entorno virtual:
+O si prefieres ejecutar directamente con Python:
 ```bash
-source venv/bin/activate
-python3 main.py
+./venv/bin/python3 main.py
 ```
 
 ---
 
-## 🛠️ Estructura del Código
+## 🛠️ Estructura del Proyecto
 
 ```text
 ControlFinanciero/
-├── main.py                # Punto de entrada principal
-├── requirements.txt       # Dependencias (customtkinter, pillow)
-├── test_db.py             # Pruebas unitarias de la base de datos
-├── README.md              # Documentación de uso
-├── database/
-│   ├── __init__.py
-│   └── db_manager.py      # Lógica de base de datos SQLite y transacciones
-└── ui/
-    ├── __init__.py
-    ├── app.py             # Ventana principal y enrutador de vistas
-    ├── components/
-    │   ├── stat_card.py   # Tarjeta de métricas y saldos
-    │   └── toast.py       # Notificaciones flotantes
-    └── views/
-        ├── dashboard.py   # Vista principal con métricas y feed
-        ├── usd_vault.py   # Vista Bóveda de Ahorros USD
-        ├── cop_budget.py  # Vista Presupuesto Operativo COP
-        └── conversion.py  # Vista Puente de Conversión (USD -> COP)
+├── main.py                # Punto de entrada de la aplicación
+├── requirements.txt       # Dependencias principales
+├── README.md              # Documentación general
+├── ControlFinanciero.spec # Configuración de empaquetado PyInstaller
+├── version_info.txt       # Metadatos para build de Windows
+├── mcp_server.py          # Servidor MCP para el IDE
+├── finanzas.db            # Base de datos local (SQLite)
+├── docs/                  # 📚 Documentación técnica, planes y auditorías
+│   ├── AUDITORIA_V2.md
+│   └── PLAN_MEJORAS.md
+├── scripts/               # 🛠️ Scripts y automatizaciones
+│   ├── run.sh             # Lanzador inteligente local
+│   ├── sync_db.py         # Sincronizador de base de datos desde la app instalada
+│   ├── build_mac.sh       # Compilador local para macOS (.dmg)
+│   └── build_windows.bat  # Compilador local para Windows (.zip)
+├── controllers/           # Controladores de la interfaz (MVC)
+├── core/                  # Event bus, constantes y configuración
+├── database/              # Conexión SQLite, esquemas y mixins de datos
+├── services/              # Integración TRM, backups y servicios auxiliares
+├── ui/                    # Vistas y componentes visuales en CustomTkinter
+└── tests/                 # Pruebas unitarias automatizadas
 ```
 
 ---

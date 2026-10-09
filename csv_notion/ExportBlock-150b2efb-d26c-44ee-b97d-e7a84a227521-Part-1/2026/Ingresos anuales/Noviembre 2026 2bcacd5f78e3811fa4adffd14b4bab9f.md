@@ -1,1 +1,0 @@
-# Noviembre 2026

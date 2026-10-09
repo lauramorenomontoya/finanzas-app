@@ -1,4 +1,0 @@
-# Deuda MESA BASCULANTE
-
-$: 1.257.500,00 COP
-Select: DEUDA

@@ -1,7 +1,0 @@
-# Shampoo
-
-Fecha Gasto: 16 de agosto de 2026
-Mes: Agosto 2026 (../Gasto%20anual/Agosto%202026%202bcacd5f78e38166b96bc7e61d504c8d.md)
-Gasto: 59.190,00 COP
-Categorías: Cuidado (../Categor%C3%ADas/Cuidado%202bcacd5f78e381e7a058c7802b661834.md)
-Checkbox: Pagado

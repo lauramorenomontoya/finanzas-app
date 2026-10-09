@@ -1,7 +1,0 @@
-# Pollo sofi
-
-Fecha Gasto: 24 de mayo de 2026
-Mes: Mayo 2026 (../Gasto%20anual/Mayo%202026%202bcacd5f78e381e7a4e3cf59f2e9500a.md)
-Gasto: 11.900,00 COP
-Categorías: Resto/Tienda (../Categor%C3%ADas/Resto%20Tienda%202bcacd5f78e38157a0adc2ce12b4d259.md)
-Checkbox: Pagado

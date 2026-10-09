@@ -1,6 +1,0 @@
-# Intereses - Cesantías
-
-Cantidad: 300.000,00 COP
-Categorías de Ingreso: Nómina (../Categor%C3%ADas%20de%20Ingreso/N%C3%B3mina%202bcacd5f78e3815f953dcc51b5ff3462.md)
-Fecha: 30 de enero de 2026
-Mes: Enero 2026 (../Ingresos%20anuales/Enero%202026%202bcacd5f78e3811aa92cec7730d7878f.md)

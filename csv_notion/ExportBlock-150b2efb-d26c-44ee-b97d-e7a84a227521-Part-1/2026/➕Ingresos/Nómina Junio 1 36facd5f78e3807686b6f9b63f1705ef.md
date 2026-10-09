@@ -1,6 +1,0 @@
-# Nómina Junio 1
-
-Cantidad: 1.236.506,00 COP
-Categorías de Ingreso: Nómina (../Categor%C3%ADas%20de%20Ingreso/N%C3%B3mina%202bcacd5f78e3815f953dcc51b5ff3462.md)
-Fecha: 12 de junio de 2026
-Mes: Junio 2026 (../Ingresos%20anuales/Junio%202026%202bcacd5f78e381018bb6dc73c00cecc2.md)

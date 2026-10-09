@@ -1,7 +1,0 @@
-# Cívica
-
-Fecha Gasto: 9 de abril de 2026
-Mes: Abril 2026 (../Gasto%20anual/Abril%202026%202bcacd5f78e3818bb158e6edc649e946.md)
-Gasto: 15.000,00 COP
-Categorías: Transporte Público (../Categor%C3%ADas/Transporte%20P%C3%BAblico%202bcacd5f78e381a3be89d57ca921824d.md)
-Checkbox: Pagado

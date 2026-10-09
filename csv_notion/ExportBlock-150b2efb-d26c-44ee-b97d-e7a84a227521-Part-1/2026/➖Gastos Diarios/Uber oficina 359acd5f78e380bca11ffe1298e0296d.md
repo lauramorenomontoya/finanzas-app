@@ -1,7 +1,0 @@
-# Uber oficina
-
-Fecha Gasto: 4 de mayo de 2026
-Mes: Mayo 2026 (../Gasto%20anual/Mayo%202026%202bcacd5f78e381e7a4e3cf59f2e9500a.md)
-Gasto: 11.343,00 COP
-Categorías: Taxi (../Categor%C3%ADas/Taxi%202bcacd5f78e3811982ede26e80310af0.md)
-Checkbox: Pagado

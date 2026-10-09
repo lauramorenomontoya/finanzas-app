@@ -1,7 +1,0 @@
-# Crepes
-
-Fecha Gasto: 30 de julio de 2026
-Mes: Julio 2026 (../Gasto%20anual/Julio%202026%202bcacd5f78e3814d90f9edde7c1d46eb.md)
-Gasto: 36.900,00 COP
-Categorías: Resto/Tienda (../Categor%C3%ADas/Resto%20Tienda%202bcacd5f78e38157a0adc2ce12b4d259.md)
-Checkbox: Pagado

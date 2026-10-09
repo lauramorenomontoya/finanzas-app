@@ -1,1 +1,0 @@
-# Diciembre 2026
