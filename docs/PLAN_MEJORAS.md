@@ -1,4 +1,4 @@
-# 🔍 Diagnóstico & Plan de Mejoras — Control Financiero
+# 🔍 Diagnóstico & Plan de Mejoras — Montu
 
 > **Evaluado el:** 28 de septiembre de 2026  
 > **Stack:** Python · CustomTkinter · SQLite · Matplotlib  

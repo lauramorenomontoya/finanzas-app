@@ -1,6 +1,6 @@
 """
 Servicio de Conexión Automática con Asistentes de IA (MCP).
-Permite configurar en 1-clic el servidor MCP de Control Financiero
+Permite configurar en 1-clic el servidor MCP de Montu
 en Google Antigravity, Claude Desktop y Cursor (macOS y Windows).
 """
 
@@ -10,19 +10,15 @@ import json
 import shutil
 from typing import Dict, Any, List, Tuple, Optional
 
+from database.db_manager import DatabaseManager
+
 
 class AIConnectionService:
     @staticmethod
     def get_data_dir() -> str:
-        """Obtiene el directorio de datos persistentes del sistema."""
-        if sys.platform == "darwin":
-            path = os.path.expanduser("~/Library/Application Support/ControlFinanciero")
-        elif sys.platform == "win32":
-            path = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ControlFinanciero")
-        else:
-            path = os.path.expanduser("~/.local/share/ControlFinanciero")
-        os.makedirs(path, exist_ok=True)
-        return path
+        """Obtiene el directorio de datos persistentes del sistema para Montu."""
+        return DatabaseManager.get_app_data_dir()
+
 
     @classmethod
     def get_installed_mcp_script_path(cls) -> str:
@@ -108,7 +104,7 @@ class AIConnectionService:
                     with open(cfg_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
                     mcp_servers = data.get("mcpServers", {})
-                    if "ControlFinanciero" in mcp_servers:
+                    if "montu" in mcp_servers or "ControlFinanciero" in mcp_servers or "control-financiero" in mcp_servers:
                         is_connected = True
                 except Exception:
                     pass
@@ -120,7 +116,7 @@ class AIConnectionService:
 
     @classmethod
     def connect_client(cls, client_id: str) -> Tuple[bool, str]:
-        """Conecta un cliente específico agregando el servidor MCP de Control Financiero."""
+        """Conecta un cliente específico agregando el servidor MCP de Montu y removiendo nombres legados."""
         clients = {c["id"]: c for c in cls.get_clients_metadata()}
         if client_id not in clients:
             return False, f"Cliente '{client_id}' no reconocido."
@@ -142,8 +138,12 @@ class AIConnectionService:
             except Exception:
                 config_data = {"mcpServers": {}}
 
-        # Inyectar servidor ControlFinanciero
-        config_data["mcpServers"]["ControlFinanciero"] = {
+        # Detectar y eliminar entradas antiguas del servidor sin tocar otras configuraciones
+        for old_name in ["ControlFinanciero", "control-financiero", "control_financiero"]:
+            config_data["mcpServers"].pop(old_name, None)
+
+        # Inyectar servidor montu
+        config_data["mcpServers"]["montu"] = {
             "command": python_cmd,
             "args": [mcp_script]
         }

@@ -1,5 +1,5 @@
 """
-Modal 'Acerca de...' (About) para Control Financiero.
+Modal 'Acerca de...' (About) para Montu.
 Muestra información de versión, descripción del sistema y firma de autoría de Laura Moreno Montoya.
 """
 
@@ -7,7 +7,7 @@ import customtkinter as ctk
 from typing import Optional
 from ui.theme import Theme
 from ui.components.base_modal import BaseModal
-from core.constants import APP_VERSION, APP_AUTHOR, APP_COPYRIGHT
+from core.constants import APP_VERSION, APP_AUTHOR, APP_COPYRIGHT, APP_NAME_VISIBLE
 
 
 class AboutModal(BaseModal):
@@ -16,7 +16,7 @@ class AboutModal(BaseModal):
     def __init__(self, parent):
         super().__init__(
             parent=parent,
-            title="Acerca de Control Financiero",
+            title=f"Acerca de {APP_NAME_VISIBLE}",
             width=460,
             height=430,
             resizable_x=False,
@@ -35,15 +35,15 @@ class AboutModal(BaseModal):
 
         icon_lbl = ctk.CTkLabel(
             header_frame,
-            text="💎",
+            text="🪙",
             font=ctk.CTkFont(size=36)
         )
         icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_XS))
 
         app_name = ctk.CTkLabel(
             header_frame,
-            text="Control Financiero Pro",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
+            text=APP_NAME_VISIBLE,
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         app_name.pack(anchor="center")

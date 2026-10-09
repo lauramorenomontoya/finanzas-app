@@ -1,11 +1,11 @@
 @echo off
 REM ===================================================
-REM Compilación de Control Financiero para Windows
+REM Compilación de Montu para Windows
 REM ===================================================
 REM Cambiar al directorio raíz del proyecto
 cd /d "%~dp0\.."
 echo =============================================
-echo   Compilando Control Financiero para Windows
+echo        Compilando Montu para Windows         
 echo =============================================
 
 REM Verificar Python
@@ -31,15 +31,15 @@ pyarmor gen -O build\obf -r main.py controllers core database services ui
 
 REM Compilar con PyInstaller
 echo Empaquetando aplicación ejecutable (.exe)...
-pyinstaller ControlFinanciero.spec --noconfirm --clean
+pyinstaller montu.spec --noconfirm --clean
 
 REM Comprimir carpeta de distribución en ZIP
 echo Generando archivo ZIP para compartir...
-powershell -Command "Compress-Archive -Path 'dist\ControlFinanciero' -DestinationPath 'dist\ControlFinanciero_Windows.zip' -Force"
+powershell -Command "Compress-Archive -Path 'dist\montu' -DestinationPath 'dist\Montu_Windows.zip' -Force"
 
 echo =============================================
 echo [OK] ¡Compilación completada exitosamente!
 echo Archivo listo para compartir:
-echo dist\ControlFinanciero_Windows.zip
+echo dist\Montu_Windows.zip
 echo =============================================
 pause

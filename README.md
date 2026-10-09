@@ -1,4 +1,4 @@
-# 💰 Control Financiero | Gestor Multimoneda (USD / COP)
+# 🪙 Montu | Gestor Multimoneda (USD / COP)
 
 Una aplicación de escritorio moderna y nativa para **macOS** diseñada en Python con **CustomTkinter** y persistencia local en **SQLite**.
 
@@ -43,11 +43,11 @@ O si prefieres ejecutar directamente con Python:
 ## 🛠️ Estructura del Proyecto
 
 ```text
-ControlFinanciero/
+Montu/
 ├── main.py                # Punto de entrada de la aplicación
 ├── requirements.txt       # Dependencias principales
 ├── README.md              # Documentación general
-├── ControlFinanciero.spec # Configuración de empaquetado PyInstaller
+├── montu.spec             # Configuración de empaquetado PyInstaller
 ├── version_info.txt       # Metadatos para build de Windows
 ├── mcp_server.py          # Servidor MCP para el IDE
 ├── finanzas.db            # Base de datos local (SQLite)

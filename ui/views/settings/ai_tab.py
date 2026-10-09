@@ -1,5 +1,5 @@
 """
-Pestaña de Conexión con Asistentes de IA (MCP) para Control Financiero.
+Pestaña de Conexión con Asistentes de IA (MCP) para Montu.
 Permite vincular la base de datos con Google Antigravity, Claude Desktop o Cursor en 1-clic.
 """
 

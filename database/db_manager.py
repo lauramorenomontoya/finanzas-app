@@ -1,5 +1,5 @@
 """
-Módulo Central de Gestión de Base de Datos SQLite para Control Financiero.
+Módulo Central de Gestión de Base de Datos SQLite para Montu.
 Combina arquitectura modular de Mixins con soporte transaccional, Write-Ahead Logging (WAL)
 y control de concurrencia thread-safe.
 """
@@ -9,8 +9,11 @@ import os
 import sys
 import shutil
 import threading
+import logging
 from datetime import datetime
 from typing import Optional
+
+logger = logging.getLogger("montu.DatabaseManager")
 
 from database.managers import (
     IncomeMixin,
@@ -44,19 +47,55 @@ class DatabaseManager(
     BudgetMixin,
     DebtMixin,
 ):
+    @staticmethod
+    def get_app_data_dir() -> str:
+        """
+        Retorna la ruta del directorio de datos de la aplicación en modo empaquetado.
+        Si existe la carpeta antigua (ControlFinanciero) y aún no la nueva (Montu),
+        copia de manera segura todo el directorio a Montu (nunca mueve ni borra).
+        Mantiene fallback a la carpeta antigua si ocurriese cualquier error.
+        """
+        if sys.platform == "darwin":
+            new_dir = os.path.expanduser("~/Library/Application Support/Montu")
+            old_dir = os.path.expanduser("~/Library/Application Support/ControlFinanciero")
+        elif sys.platform == "win32":
+            appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+            new_dir = os.path.join(appdata, "Montu")
+            old_dir = os.path.join(appdata, "ControlFinanciero")
+        else:
+            new_dir = os.path.expanduser("~/.local/share/Montu")
+            old_dir = os.path.expanduser("~/.local/share/ControlFinanciero")
+
+        # 1. Si existe la carpeta antigua y aún no la nueva, migrar copiando
+        if os.path.exists(old_dir) and not os.path.exists(new_dir):
+            try:
+                shutil.copytree(old_dir, new_dir)
+                logger.info(f"Migración completada con éxito: {old_dir} -> {new_dir}")
+            except Exception as e:
+                logger.warning(f"No se pudo copiar {old_dir} a {new_dir}: {e}")
+
+        # 2. Resguardo de base de datos: si new_dir existe pero no tiene finanzas.db y old_dir sí
+        old_db = os.path.join(old_dir, "finanzas.db")
+        new_db = os.path.join(new_dir, "finanzas.db")
+        if os.path.exists(old_db) and not os.path.exists(new_db):
+            try:
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.copy2(old_db, new_db)
+                logger.info(f"Base de datos copiada con éxito de {old_db} a {new_db}")
+            except Exception as e:
+                logger.warning(f"Error copiando {old_db} a {new_db}, usando fallback: {e}")
+                return old_dir
+
+        os.makedirs(new_dir, exist_ok=True)
+        return new_dir
+
     def __init__(self, db_path: Optional[str] = None):
         """Inicializa la conexión, lock de escritura thread-safe y esquema de datos."""
         self._write_lock = threading.RLock()
 
         if db_path is None:
             if getattr(sys, "frozen", False):
-                if sys.platform == "darwin":
-                    data_dir = os.path.expanduser("~/Library/Application Support/ControlFinanciero")
-                elif sys.platform == "win32":
-                    data_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ControlFinanciero")
-                else:
-                    data_dir = os.path.expanduser("~/.local/share/ControlFinanciero")
-                os.makedirs(data_dir, exist_ok=True)
+                data_dir = self.get_app_data_dir()
                 self.db_path = os.path.join(data_dir, "finanzas.db")
             else:
                 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

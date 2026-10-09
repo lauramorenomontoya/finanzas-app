@@ -14,11 +14,21 @@ import datetime
 
 def get_prod_db_path() -> str:
     if sys.platform == "darwin":
-        return os.path.expanduser("~/Library/Application Support/ControlFinanciero/finanzas.db")
+        new_path = os.path.expanduser("~/Library/Application Support/Montu/finanzas.db")
+        old_path = os.path.expanduser("~/Library/Application Support/ControlFinanciero/finanzas.db")
     elif sys.platform == "win32":
-        return os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ControlFinanciero", "finanzas.db")
+        appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+        new_path = os.path.join(appdata, "Montu", "finanzas.db")
+        old_path = os.path.join(appdata, "ControlFinanciero", "finanzas.db")
     else:
-        return os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
+        new_path = os.path.expanduser("~/.local/share/Montu/finanzas.db")
+        old_path = os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
+
+    if os.path.exists(new_path):
+        return new_path
+    if os.path.exists(old_path):
+        return old_path
+    return new_path
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +37,7 @@ def main():
     prod_db = get_prod_db_path()
 
     print("=" * 60)
-    print(" Sincronizador de Base de Datos - Control Financiero")
+    print(" Sincronizador de Base de Datos - Montu")
     print("=" * 60)
     print(f"Origen (App Instalada): {prod_db}")
     print(f"Destino (Repo Local):    {local_db}")

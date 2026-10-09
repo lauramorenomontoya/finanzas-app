@@ -33,7 +33,7 @@ class CurrencyService:
         Si no responde en el tiempo límite, recurre a APIs internacionales de respaldo.
         """
         headers = {
-            "User-Agent": "ControlFinanciero/1.0 (Macintosh; Intel)",
+            "User-Agent": "Montu/1.0 (Macintosh; Intel)",
             "Accept": "application/json"
         }
 

@@ -1,5 +1,5 @@
 """
-Servicio de Detección de Actualizaciones para Control Financiero.
+Servicio de Detección de Actualizaciones para Montu.
 Consulta la API pública de GitHub Releases en segundo plano para verificar si existe
 una versión más reciente del sistema y proveer el enlace de descarga correspondiente.
 """
@@ -14,7 +14,7 @@ import urllib.request
 import urllib.error
 from typing import Callable, Dict, Any, Optional, Tuple
 
-logger = logging.getLogger("ControlFinanciero.UpdateService")
+logger = logging.getLogger("montu.UpdateService")
 
 GITHUB_REPO = "lauramorenomontoya/finanzas-app"
 LATEST_RELEASE_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
@@ -57,7 +57,7 @@ class UpdateService:
         req = urllib.request.Request(
             LATEST_RELEASE_URL,
             headers={
-                "User-Agent": "ControlFinanciero-DesktopApp",
+                "User-Agent": "Montu-DesktopApp",
                 "Accept": "application/vnd.github.v3+json"
             }
         )

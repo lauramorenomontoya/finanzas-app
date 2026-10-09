@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 echo "============================================="
-echo "   Compilando Control Financiero para macOS  "
+echo "        Compilando Montu para macOS          "
 echo "============================================="
 
 # Verificar entorno virtual
@@ -20,7 +20,7 @@ fi
 ./venv/bin/pip install -q pyinstaller pyarmor
 
 # Desmontar imagen DMG si estaba montada previamente
-hdiutil detach "/Volumes/Control Financiero" -force >/dev/null 2>&1 || true
+hdiutil detach "/Volumes/Montu" -force >/dev/null 2>&1 || true
 
 # Limpiar compilaciones anteriores
 rm -rf build dist
@@ -31,14 +31,14 @@ echo "Ofuscando código fuente con PyArmor..."
 
 # Compilar la aplicación con PyInstaller
 echo "Empaquetando aplicación .app..."
-./venv/bin/pyinstaller ControlFinanciero.spec --noconfirm --clean
+./venv/bin/pyinstaller montu.spec --noconfirm --clean
 
 # Crear el instalador .dmg para compartir
 echo "Generando instalador .dmg..."
-hdiutil create -volname "Control Financiero" -srcfolder "dist/ControlFinanciero.app" -ov -format UDZO "dist/ControlFinanciero_macOS.dmg"
+hdiutil create -volname "Montu" -srcfolder "dist/Montu.app" -ov -format UDZO "dist/Montu_macOS.dmg"
 
 echo "============================================="
 echo "✅ ¡Compilación completada exitosamente!"
 echo "📦 Instalador listo para compartir:"
-echo "   $(pwd)/dist/ControlFinanciero_macOS.dmg"
+echo "   $(pwd)/dist/Montu_macOS.dmg"
 echo "============================================="

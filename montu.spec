@@ -83,7 +83,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='ControlFinanciero',
+    name='montu',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -105,20 +105,20 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='ControlFinanciero',
+    name='montu',
 )
 
 if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
-        name='ControlFinanciero.app',
+        name='Montu.app',
         icon=None,
-        bundle_identifier='com.controlfinanciero.app',
+        bundle_identifier='com.lauramoreno.montu',
         info_plist={
-            'CFBundleName': 'Control Financiero',
-            'CFBundleDisplayName': 'Control Financiero',
-            'CFBundleGetInfoString': 'Gestor Financiero Multimoneda creado por Laura Moreno Montoya',
-            'CFBundleIdentifier': 'com.controlfinanciero.app',
+            'CFBundleName': 'Montu',
+            'CFBundleDisplayName': 'Montu',
+            'CFBundleGetInfoString': 'Montu - Gestor Financiero Multimoneda creado por Laura Moreno Montoya',
+            'CFBundleIdentifier': 'com.lauramoreno.montu',
             'CFBundleVersion': '1.2.1',
             'CFBundleShortVersionString': '1.2.1',
             'NSHumanReadableCopyright': '© 2026 Laura Moreno Montoya. Todos los derechos reservados.',

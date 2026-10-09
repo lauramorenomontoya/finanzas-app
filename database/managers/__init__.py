@@ -1,5 +1,5 @@
 """
-Módulo de Mixins de Base de Datos para Control Financiero.
+Módulo de Mixins de Base de Datos para Montu.
 """
 
 from .income_mixin import IncomeMixin

@@ -1,5 +1,5 @@
 """
-Vista Principal (Dashboard) para Control Financiero.
+Vista Principal (Dashboard) para Montu.
 Muestra el estado global de la Bóveda USD, el Presupuesto COP, Deuda de Tarjeta de Crédito,
 Inversiones, desglose de gastos y feed de movimientos recientes.
 """

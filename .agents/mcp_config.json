@@ -1,6 +1,6 @@
 {
     "mcpServers": {
-        "ControlFinanciero": {
+        "montu": {
             "command": "/Users/lauramoreno/Desktop/Scripts/ControlFinanciero/venv/bin/python",
             "args": [
                 "/Users/lauramoreno/Desktop/Scripts/ControlFinanciero/mcp_server.py"

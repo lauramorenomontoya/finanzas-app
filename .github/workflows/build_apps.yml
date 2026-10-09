@@ -31,17 +31,17 @@ jobs:
 
       - name: Compilar con PyInstaller
         run: |
-          pyinstaller ControlFinanciero.spec --noconfirm --clean
+          pyinstaller montu.spec --noconfirm --clean
 
       - name: Crear instalador DMG
         run: |
-          hdiutil create -volname "Control Financiero" -srcfolder "dist/ControlFinanciero.app" -ov -format UDZO "dist/ControlFinanciero_macOS.dmg"
+          hdiutil create -volname "Montu" -srcfolder "dist/Montu.app" -ov -format UDZO "dist/Montu_macOS.dmg"
 
       - name: Subir instalador de Mac
         uses: actions/upload-artifact@v4
         with:
-          name: ControlFinanciero_macOS
-          path: dist/ControlFinanciero_macOS.dmg
+          name: Montu_macOS
+          path: dist/Montu_macOS.dmg
 
   build-windows:
     name: Compilar para Windows (.exe)
@@ -67,17 +67,17 @@ jobs:
 
       - name: Compilar con PyInstaller
         run: |
-          pyinstaller ControlFinanciero.spec --noconfirm --clean
+          pyinstaller montu.spec --noconfirm --clean
 
       - name: Comprimir paquete de Windows
         run: |
-          powershell -Command "Compress-Archive -Path 'dist/ControlFinanciero' -DestinationPath 'dist/ControlFinanciero_Windows.zip' -Force"
+          powershell -Command "Compress-Archive -Path 'dist/montu' -DestinationPath 'dist/Montu_Windows.zip' -Force"
 
       - name: Subir paquete de Windows
         uses: actions/upload-artifact@v4
         with:
-          name: ControlFinanciero_Windows
-          path: dist/ControlFinanciero_Windows.zip
+          name: Montu_Windows
+          path: dist/Montu_Windows.zip
 
   release:
     name: Publicar Release en GitHub
@@ -90,13 +90,13 @@ jobs:
       - name: Descargar artefacto macOS
         uses: actions/download-artifact@v4
         with:
-          name: ControlFinanciero_macOS
+          name: Montu_macOS
           path: ./release_assets
 
       - name: Descargar artefacto Windows
         uses: actions/download-artifact@v4
         with:
-          name: ControlFinanciero_Windows
+          name: Montu_Windows
           path: ./release_assets
 
       - name: Crear GitHub Release en finanzas-app
@@ -111,7 +111,7 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             --repo lauramorenomontoya/finanzas-app \
             --target main \
-            --title "Control Financiero ${{ github.ref_name }}" \
-            --notes "Instaladores oficiales de Control Financiero ${{ github.ref_name }}." \
-            ./release_assets/ControlFinanciero_macOS.dmg \
-            ./release_assets/ControlFinanciero_Windows.zip
+            --title "Montu ${{ github.ref_name }}" \
+            --notes "Instaladores oficiales de Montu ${{ github.ref_name }}." \
+            ./release_assets/Montu_macOS.dmg \
+            ./release_assets/Montu_Windows.zip

@@ -1,5 +1,5 @@
 """
-Ventana Principal y Controlador de Interfaz Gráfica para Control Financiero.
+Ventana Principal y Controlador de Interfaz Gráfica para Montu.
 Desarrollada con CustomTkinter con módulos de 'Ingresos' y 'Egresos' multimoneda,
 búsqueda global (Cmd+K), sincronización reactiva y arquitectura modular.
 """
@@ -21,7 +21,7 @@ from ui.views.settings_view import SettingsView
 from ui.views.budget_view import BudgetView
 from ui.views.debt_view import DebtView
 from core.event_bus import EventBus
-from core.constants import APP_VERSION
+from core.constants import APP_VERSION, APP_NAME_VISIBLE
 
 
 class FinancialApp(ctk.CTk):
@@ -35,7 +35,7 @@ class FinancialApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.title(f"Control Financiero v{APP_VERSION} | Ingresos, Egresos & Patrimonio Multimoneda")
+        self.title(f"{APP_NAME_VISIBLE} v{APP_VERSION} | Ingresos, Egresos & Patrimonio Multimoneda")
 
         # Configuración de Ventana Adaptativa y Centrada
         screen_w = self.winfo_screenwidth()
@@ -97,15 +97,15 @@ class FinancialApp(ctk.CTk):
 
         app_title = ctk.CTkLabel(
             brand_frame,
-            text="💎 Finanzas Pro",
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=19, weight="bold"),
+            text=APP_NAME_VISIBLE,
+            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
         )
         app_title.pack(anchor="w")
 
         app_subtitle = ctk.CTkLabel(
             brand_frame,
-            text=f"Gestor Multimoneda v{APP_VERSION} (USD & COP)",
+            text=f"Finanzas Multimoneda v{APP_VERSION}",
             font=ctk.CTkFont(family=Theme.FONT_TEXT, size=11),
             text_color=Theme.TEXT_MUTED
         )
@@ -434,7 +434,7 @@ class FinancialApp(ctk.CTk):
         import tkinter as tk
         import platform
 
-        # 1. En macOS: Conectar con el menú nativo "About Control Financiero" de Apple
+        # 1. En macOS: Conectar con el menú nativo "About Montu" de Apple
         if platform.system() == "Darwin":
             try:
                 self.createcommand("tkAboutDialog", self._open_about_modal)
@@ -451,7 +451,7 @@ class FinancialApp(ctk.CTk):
                 )
                 help_menu.add_separator()
                 help_menu.add_command(
-                    label="Acerca de Control Financiero",
+                    label=f"Acerca de {APP_NAME_VISIBLE}",
                     command=self._open_about_modal,
                     accelerator="F1"
                 )
@@ -494,7 +494,7 @@ class FinancialApp(ctk.CTk):
                     ))
                 else:
                     self.after(0, lambda: messagebox.showinfo(
-                        "Control Financiero al día",
+                        f"{APP_NAME_VISIBLE} al día",
                         f"¡Tienes la versión más reciente instalada! (v{APP_VERSION})"
                     ))
 

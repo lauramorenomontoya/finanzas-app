@@ -1,5 +1,5 @@
 """
-Pruebas Unitarias Automatizadas para Control Financiero (Multimoneda USD/COP).
+Pruebas Unitarias Automatizadas para Montu (Multimoneda USD/COP).
 Valida Ingresos, Egresos, Gastos Fijos Multimoneda en Checklist, Edición de Gastos Fijos (update_recurring_expense),
 TRM en vivo desde APIs gratuitas (open.er-api.com / exchangerate-api.com), CRUD de Categorías y Patrimonio Neto.
 """

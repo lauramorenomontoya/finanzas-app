@@ -184,7 +184,7 @@ class CSVImporterModal(ctk.CTkToplevel):
         dest_path = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("Archivos CSV", "*.csv")],
-            initialfile="plantilla_control_financiero.csv",
+            initialfile="plantilla_montu.csv",
             title="Guardar Plantilla CSV de Ejemplo"
         )
         if dest_path:

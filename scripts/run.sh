@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lanzador Inteligente de Control Financiero (macOS/Linux)
+# Lanzador Inteligente de Montu (macOS/Linux)
 
 # Cambiar al directorio raíz del proyecto
 cd "$(dirname "$0")/.."

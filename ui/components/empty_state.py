@@ -1,5 +1,5 @@
 """
-Componente reutilizable de Estado Vacío (Empty State) para Control Financiero.
+Componente reutilizable de Estado Vacío (Empty State) para Montu.
 Diseñado con estética moderna y jerarquía visual: Icono grande, Título en FONT_DISPLAY,
 descripción explicativa en FONT_TEXT y botón de llamada a la acción (CTA) opcional.
 """

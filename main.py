@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Control Financiero - Gestor Financiero Multimoneda (USD / COP)
+Montu - Gestor Financiero Multimoneda (USD / COP)
 Punto de entrada principal de la aplicación.
 """
 
@@ -14,7 +14,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-logger = logging.getLogger("ControlFinanciero")
+logger = logging.getLogger("montu")
 
 # Asegurar que el directorio raíz esté en sys.path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +44,7 @@ from ui.utils.scroll_helper import ScrollHelper
 
 def main():
     try:
-        logger.info("Iniciando Control Financiero...")
+        logger.info("Iniciando Montu...")
         ScrollHelper.enable_smooth_scrolling()
         app = FinancialApp()
         app.mainloop()

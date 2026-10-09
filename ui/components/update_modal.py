@@ -1,5 +1,5 @@
 """
-Modal de Notificación de Actualización para Control Financiero.
+Modal de Notificación de Actualización para Montu.
 Presenta las novedades de la versión disponible y permite la descarga directa
 del instalador sin comprometer la base de datos local.
 """

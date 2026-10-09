@@ -1,5 +1,5 @@
 """
-Vista del Puente de Conversión (USD ➔ COP) para Control Financiero.
+Vista del Puente de Conversión (USD ➔ COP) para Montu.
 Permite retirar dólares de la Bóveda USD aplicando una tasa de cambio,
 descontándolos de USD y acreditando los pesos automáticamente en el Presupuesto COP.
 Incluye Edición ✏️ y Eliminación 🗑️ con Seguridad de Saldo Inteligente.

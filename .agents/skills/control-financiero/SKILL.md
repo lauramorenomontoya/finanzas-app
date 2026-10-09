@@ -1,17 +1,17 @@
 ---
 name: control-financiero
 description: >-
-  Asistente y gestor de finanzas personales multimoneda (COP/USD) para Control Financiero.
+  Asistente y gestor de finanzas personales multimoneda (COP/USD) para Montu.
   Úsalo cuando el usuario pida registrar un gasto, egreso, ingreso, depósito, consultar
   sus balances, revisar el estado de su presupuesto, ver movimientos recientes o pedir
   análisis de su base de datos financiera en SQLite.
 ---
 
-# Skill: Control Financiero
+# Skill: Montu
 
-Esta habilidad permite al asistente gestionar la base de datos financiera personal del usuario en `finanzas.db` (ubicada en `~/Library/Application Support/ControlFinanciero/finanzas.db`).
+Esta habilidad permite al asistente gestionar la base de datos financiera personal del usuario en `finanzas.db` (ubicada en `~/Library/Application Support/Montu/finanzas.db` con fallback a `ControlFinanciero`).
 
-## Herramientas Disponibles (MCP Server: ControlFinanciero)
+## Herramientas Disponibles (MCP Server: montu)
 
 1. `get_financial_summary`:
    - Devuelve la liquidez en USD, saldo operativo COP, TRM, ingresos/egresos del mes y deudas activas.

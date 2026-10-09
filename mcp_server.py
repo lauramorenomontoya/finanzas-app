@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Servidor MCP (Model Context Protocol) para Control Financiero.
+Servidor MCP (Model Context Protocol) para Montu.
 Permite a modelos de inteligencia artificial interactuar con la base de datos
 financiera personal: consultar balances, registrar ingresos/gastos y realizar análisis.
 """
@@ -20,18 +20,27 @@ if CURRENT_DIR not in sys.path:
 from database.db_manager import DatabaseManager
 from mcp.server.mcpserver import MCPServer
 
-# Resolver ruta de la base de datos preferida (macOS, Windows o local)
+# Resolver ruta de la base de datos preferida (Montu con fallback seguro a ControlFinanciero o local)
 if sys.platform == "darwin":
-    PROD_DB = os.path.expanduser("~/Library/Application Support/ControlFinanciero/finanzas.db")
+    NEW_PROD_DB = os.path.expanduser("~/Library/Application Support/Montu/finanzas.db")
+    OLD_PROD_DB = os.path.expanduser("~/Library/Application Support/ControlFinanciero/finanzas.db")
 elif sys.platform == "win32":
-    PROD_DB = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ControlFinanciero", "finanzas.db")
+    appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+    NEW_PROD_DB = os.path.join(appdata, "Montu", "finanzas.db")
+    OLD_PROD_DB = os.path.join(appdata, "ControlFinanciero", "finanzas.db")
 else:
-    PROD_DB = os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
+    NEW_PROD_DB = os.path.expanduser("~/.local/share/Montu/finanzas.db")
+    OLD_PROD_DB = os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
 
-DB_PATH = PROD_DB if os.path.exists(PROD_DB) else os.path.join(CURRENT_DIR, "finanzas.db")
+if os.path.exists(NEW_PROD_DB):
+    DB_PATH = NEW_PROD_DB
+elif os.path.exists(OLD_PROD_DB):
+    DB_PATH = OLD_PROD_DB
+else:
+    DB_PATH = os.path.join(CURRENT_DIR, "finanzas.db")
 
 db = DatabaseManager(db_path=DB_PATH)
-mcp = MCPServer("ControlFinanciero")
+mcp = MCPServer("montu")
 
 
 @mcp.tool()
