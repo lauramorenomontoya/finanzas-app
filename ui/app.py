@@ -508,3 +508,11 @@ class FinancialApp(ctk.CTk):
                     ))
 
         UpdateService.check_for_updates_async(APP_VERSION, callback=_manual_callback)
+
+    def destroy(self):
+        try:
+            EventBus.unsubscribe("DATA_UPDATED", self.on_data_updated)
+        except Exception:
+            pass
+        super().destroy()
+

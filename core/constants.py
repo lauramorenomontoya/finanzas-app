@@ -74,6 +74,12 @@ class PaymentMethods:
     OPTIONS = [DEBIT, CREDIT_CARD, CASH]
     FILTER = ["Todos", "Débito", "TC"]
 
+    # Códigos internos normalizados en la base de datos (cop_transactions.payment_method)
+    CODE_DEBIT = "DEBIT"
+    CODE_CREDIT_CARD = "CREDIT_CARD"
+    CODE_CASH = "CASH"
+
+
 
 class FilterOptions:
     CURRENCY = ["Todas", "COP", "USD"]

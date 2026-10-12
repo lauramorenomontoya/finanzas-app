@@ -14,7 +14,13 @@ class IconHelper:
     _base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "icons"))
 
     @classmethod
+    def clear_cache(cls):
+        """Limpia la caché de imágenes (esencial al recrear ventanas Tkinter en tests)."""
+        cls._cache.clear()
+
+    @classmethod
     def _hex_to_rgb(cls, hex_color: str) -> Tuple[int, int, int]:
+
         if not hex_color or not isinstance(hex_color, str):
             return (255, 255, 255)
         clean = hex_color.lstrip("#")

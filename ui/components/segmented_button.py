@@ -63,8 +63,8 @@ class StyledSegmentedButton(ctk.CTkSegmentedButton):
         if value in self._buttons_dict:
             self._buttons_dict[value].configure(text_color=self._unselected_text_color)
 
-    def set(self, value: str, from_variable_callback: bool = False):
-        super().set(value, from_variable_callback=from_variable_callback)
+    def set(self, value: str, *args, **kwargs):
+        super().set(value, *args, **kwargs)
         self._apply_contrast_to_all()
 
     def configure(self, **kwargs):

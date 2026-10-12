@@ -130,6 +130,7 @@ class Theme:
     ACCENT_ROSE = ("#E11D48", "#D97878")        # Coral
     ACCENT_INDIGO = ("#4F46E5", "#75D9A5")
     ACCENT_AMBER = ("#D97706", "#E3B368")       # Ámbar
+    ACCENT_PURPLE = ("#7C3AED", "#A78BFA")      # Púrpura suave
 
     # Estados y Feedback
     SUCCESS = ("#059669", "#75D9A5")            # Verde Esmeralda
