@@ -320,6 +320,70 @@ class TestUISmoke(unittest.TestCase):
         finally:
             app.destroy()
 
+    def test_styled_segmented_buttons_real_click_simulation(self):
+        """
+        Simula el clic real (invocando seg._buttons_dict[valor].invoke())
+        en TODOS los StyledSegmentedButton de la aplicación.
+        Garantiza que CustomTkinter no falle con argumentos como from_button_callback.
+        """
+        from ui.components.segmented_button import StyledSegmentedButton
+
+        app, captured_errors = self._setup_app_with_error_capture()
+
+        def _find_segmented_buttons(widget):
+            found = []
+            if isinstance(widget, StyledSegmentedButton):
+                found.append(widget)
+            for child in widget.winfo_children():
+                found.extend(_find_segmented_buttons(child))
+            return found
+
+        views_to_test = [
+            "dashboard",
+            "incomes",
+            "expenses",
+            "budget",
+            "debts",
+            "conversion",
+            "investments",
+            "ledger",
+            "analytics",
+            "settings"
+        ]
+
+        total_buttons_clicked = 0
+
+        try:
+            for view_name in views_to_test:
+                app.show_view(view_name)
+                app.update()
+                view_widget = app.views[view_name]
+
+                seg_buttons = _find_segmented_buttons(view_widget)
+                for seg in seg_buttons:
+                    for val, btn in list(seg._buttons_dict.items()):
+                        captured_errors.clear()
+                        # Simulación del clic nativo de CustomTkinter
+                        btn.invoke()
+                        app.update()
+
+                        if captured_errors:
+                            err_msg = "".join(traceback.format_exception(*captured_errors[0]))
+                            self.fail(
+                                f"Error en clic real de StyledSegmentedButton '{val}' en vista '{view_name}':\n{err_msg}"
+                            )
+
+                        self.assertEqual(
+                            seg.get(), val,
+                            f"El valor activo de segmented button no coincidió tras clic en '{val}' en '{view_name}'"
+                        )
+                        total_buttons_clicked += 1
+
+            self.assertGreater(total_buttons_clicked, 0, "No se encontró ningún StyledSegmentedButton para probar")
+        finally:
+            app.destroy()
+
 
 if __name__ == "__main__":
     unittest.main()
+
