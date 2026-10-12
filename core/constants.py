@@ -1,4 +1,5 @@
-# core/constants.py
+import os
+import sys
 
 # Variables de Marca
 APP_NAME = "Montu"
@@ -9,6 +10,18 @@ APP_BUNDLE_ID = "com.lauramoreno.montu"
 APP_VERSION = "1.2.1"
 APP_AUTHOR = "Laura Moreno Montoya"
 APP_COPYRIGHT = "© 2026 Laura Moreno Montoya. Todos los derechos reservados."
+
+
+def get_asset_path(*rel_parts: str) -> str:
+    """
+    Retorna la ruta absoluta a un activo dentro de 'assets/'.
+    Es compatible tanto con desarrollo local como con PyInstaller (sys._MEIPASS).
+    """
+    base = getattr(sys, "_MEIPASS", None)
+    if not base:
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(base, "assets", *rel_parts)
+
 
 
 

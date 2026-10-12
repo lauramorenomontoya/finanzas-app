@@ -9,14 +9,23 @@ from PIL import Image
 import customtkinter as ctk
 
 
+import sys
+
 class IconHelper:
     _cache: Dict[str, ctk.CTkImage] = {}
-    _base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "icons"))
+
+    @classmethod
+    def _get_base_dir(cls) -> str:
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return os.path.join(meipass, "assets", "icons")
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "icons"))
 
     @classmethod
     def clear_cache(cls):
         """Limpia la caché de imágenes (esencial al recrear ventanas Tkinter en tests)."""
         cls._cache.clear()
+
 
     @classmethod
     def _hex_to_rgb(cls, hex_color: str) -> Tuple[int, int, int]:
@@ -74,9 +83,10 @@ class IconHelper:
         if cache_key in cls._cache:
             return cls._cache[cache_key]
 
-        icon_path = os.path.join(cls._base_dir, f"{name}.png")
+        icon_path = os.path.join(cls._get_base_dir(), f"{name}.png")
         if not os.path.exists(icon_path):
             return None
+
 
         try:
             light_img = cls._tint_image(icon_path, light_color)

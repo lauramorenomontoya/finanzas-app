@@ -14,6 +14,9 @@ if SRC_DIR != '.' and os.path.abspath(SRC_DIR) not in sys.path:
 datas = collect_data_files('customtkinter')
 if os.path.exists('mcp_server.py'):
     datas.append(('mcp_server.py', '.'))
+if os.path.exists('assets'):
+    datas.append(('assets', 'assets'))
+
 
 # Módulos ocultos requeridos (estándar y terceros para soportar ofuscación)
 hiddenimports = [
@@ -95,6 +98,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version='version_info.txt' if os.path.exists('version_info.txt') else None,
+    icon='assets/icon.icns' if sys.platform == 'darwin' and os.path.exists('assets/icon.icns') else ('assets/icon.ico' if os.path.exists('assets/icon.ico') else None),
 )
 
 coll = COLLECT(
@@ -112,7 +116,7 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
         name='Montu.app',
-        icon=None,
+        icon='assets/icon.icns' if os.path.exists('assets/icon.icns') else None,
         bundle_identifier='com.lauramoreno.montu',
         info_plist={
             'CFBundleName': 'Montu',
@@ -125,3 +129,4 @@ if sys.platform == 'darwin':
             'NSHighResolutionCapable': 'True',
         },
     )
+

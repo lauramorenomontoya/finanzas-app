@@ -3,11 +3,13 @@ Modal 'Acerca de...' (About) para Montu.
 Muestra información de versión, descripción del sistema y firma de autoría de Laura Moreno Montoya.
 """
 
+import os
 import customtkinter as ctk
 from typing import Optional
 from ui.theme import Theme
 from ui.components.base_modal import BaseModal
-from core.constants import APP_VERSION, APP_AUTHOR, APP_COPYRIGHT, APP_NAME_VISIBLE
+from core.constants import APP_VERSION, APP_AUTHOR, APP_COPYRIGHT, APP_NAME_VISIBLE, get_asset_path
+
 
 
 class AboutModal(BaseModal):
@@ -33,12 +35,23 @@ class AboutModal(BaseModal):
         header_frame = ctk.CTkFrame(main_card, fg_color="transparent")
         header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_SM))
 
-        icon_lbl = ctk.CTkLabel(
-            header_frame,
-            text="🪙",
-            font=ctk.CTkFont(size=36)
-        )
+        logo_path = get_asset_path("logo.png")
+        if os.path.exists(logo_path):
+            try:
+                from PIL import Image
+                logo_pil = Image.open(logo_path)
+                self.about_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(44, 44))
+                icon_lbl = ctk.CTkLabel(
+                    header_frame,
+                    image=self.about_logo_img,
+                    text=""
+                )
+            except Exception:
+                icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
+        else:
+            icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
         icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_XS))
+
 
         app_name = ctk.CTkLabel(
             header_frame,

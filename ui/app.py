@@ -21,7 +21,9 @@ from ui.views.settings_view import SettingsView
 from ui.views.budget_view import BudgetView
 from ui.views.debt_view import DebtView
 from core.event_bus import EventBus
-from core.constants import APP_VERSION, APP_NAME_VISIBLE
+from core.constants import APP_VERSION, APP_NAME_VISIBLE, get_asset_path
+import os
+import sys
 
 
 class FinancialApp(ctk.CTk):
@@ -36,6 +38,7 @@ class FinancialApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title(f"{APP_NAME_VISIBLE} v{APP_VERSION} | Ingresos, Egresos & Patrimonio Multimoneda")
+        self._set_app_icon()
 
         # Configuración de Ventana Adaptativa y Centrada
         screen_w = self.winfo_screenwidth()
@@ -91,6 +94,30 @@ class FinancialApp(ctk.CTk):
         # Verificación automática de actualizaciones en segundo plano (2s tras abrir)
         self.after(2000, self._check_updates_background)
 
+    def _set_app_icon(self):
+        """Configura el ícono de la ventana según la plataforma."""
+        try:
+            if sys.platform.startswith("darwin"):
+                icon_path = get_asset_path("icon.png")
+                if os.path.exists(icon_path):
+                    from PIL import Image, ImageTk
+                    pil_img = Image.open(icon_path).resize((64, 64), Image.Resampling.LANCZOS)
+                    self._tk_icon = ImageTk.PhotoImage(pil_img)
+                    self.iconphoto(False, self._tk_icon)
+            elif sys.platform.startswith("win"):
+                ico_path = get_asset_path("icon.ico")
+                if os.path.exists(ico_path):
+                    self.iconbitmap(ico_path)
+            else:
+                icon_path = get_asset_path("icon.png")
+                if os.path.exists(icon_path):
+                    from PIL import Image, ImageTk
+                    pil_img = Image.open(icon_path).resize((64, 64), Image.Resampling.LANCZOS)
+                    self._tk_icon = ImageTk.PhotoImage(pil_img)
+                    self.iconphoto(False, self._tk_icon)
+        except Exception:
+            pass
+
     def _build_sidebar(self):
         """Construye la barra de navegación lateral."""
         self.sidebar = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=Theme.BG_SIDEBAR, border_width=1, border_color=Theme.BORDER_SIDEBAR)
@@ -101,8 +128,25 @@ class FinancialApp(ctk.CTk):
         brand_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         brand_frame.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
+        brand_header = ctk.CTkFrame(brand_frame, fg_color="transparent")
+        brand_header.pack(fill="x")
+
+        logo_path = get_asset_path("logo.png")
+        if os.path.exists(logo_path):
+            try:
+                from PIL import Image
+                logo_pil = Image.open(logo_path)
+                self.sidebar_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(30, 30))
+                lbl_logo = ctk.CTkLabel(brand_header, image=self.sidebar_logo_img, text="")
+                lbl_logo.pack(side="left", padx=(0, Theme.SPACING_SM))
+            except Exception:
+                pass
+
+        title_col = ctk.CTkFrame(brand_header, fg_color="transparent")
+        title_col.pack(side="left", fill="both")
+
         app_title = ctk.CTkLabel(
-            brand_frame,
+            title_col,
             text=APP_NAME_VISIBLE,
             font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
             text_color=Theme.TEXT_PRIMARY
@@ -116,6 +160,7 @@ class FinancialApp(ctk.CTk):
             text_color=Theme.TEXT_MUTED
         )
         app_subtitle.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
+
 
         # Botón de Búsqueda Rápida Spotlight (Cmd+K)
         btn_search = ctk.CTkButton(
