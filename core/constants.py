@@ -67,7 +67,11 @@ class Categories:
 
 
 class PaymentMethods:
-    OPTIONS = ["Débito / Cuenta Operativa", "Tarjeta de Crédito", "Efectivo"]
+    DEBIT = "Débito / Cuenta Operativa"
+    CREDIT_CARD = "Tarjeta de Crédito"
+    CASH = "Efectivo"
+    DEFAULT = "Débito / Cuenta Operativa"
+    OPTIONS = [DEBIT, CREDIT_CARD, CASH]
     FILTER = ["Todos", "Débito", "TC"]
 
 
@@ -78,11 +82,15 @@ class FilterOptions:
 
 
 class SettingsTabs:
+    CATEGORIES = "Categorías"
+    ACCOUNTS = "Cuentas & Inversiones"
+    RECURRING = "Gastos Fijos"
+    AI = "Asistente IA"
     OPTIONS = [
-        "Categorías",
-        "Cuentas & Inversiones",
-        "Gastos Fijos",
-        "Asistente IA",
+        CATEGORIES,
+        ACCOUNTS,
+        RECURRING,
+        AI,
     ]
     CATEGORY_TYPES = [
         "Ingresos USD",

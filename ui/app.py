@@ -26,7 +26,7 @@ from core.constants import APP_VERSION, APP_NAME_VISIBLE
 
 class FinancialApp(ctk.CTk):
 
-    def __init__(self):
+    def __init__(self, db_manager=None, db_path=None):
         super().__init__()
         from ui.utils.scroll_helper import ScrollHelper
         ScrollHelper.enable_smooth_scrolling()
@@ -58,8 +58,14 @@ class FinancialApp(ctk.CTk):
         self.geometry(f"{default_w}x{default_h}+{pos_x}+{pos_y}")
 
         # Inicialización de la Base de Datos y Respaldo Automático
-        self.db = DatabaseManager()
-        self.db.create_backup()
+        if db_manager is not None:
+            self.db = db_manager
+        elif db_path is not None:
+            self.db = DatabaseManager(db_path)
+        else:
+            self.db = DatabaseManager()
+            self.db.create_backup()
+
 
         # Layout Principal: Sidebar + Área de Contenido
         self.grid_columnconfigure(1, weight=1)

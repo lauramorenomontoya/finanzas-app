@@ -4,7 +4,7 @@ Carga y tinta íconos PNG desde assets/icons con soporte para modo claro y modo 
 """
 
 import os
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, Union
 from PIL import Image
 import customtkinter as ctk
 
@@ -15,9 +15,14 @@ class IconHelper:
 
     @classmethod
     def _hex_to_rgb(cls, hex_color: str) -> Tuple[int, int, int]:
+        if not hex_color or not isinstance(hex_color, str):
+            return (255, 255, 255)
         clean = hex_color.lstrip("#")
         if len(clean) == 6:
-            return (int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+            try:
+                return (int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+            except ValueError:
+                return (255, 255, 255)
         return (255, 255, 255)
 
     @classmethod
@@ -33,14 +38,32 @@ class IconHelper:
     def get_icon(
         cls,
         name: str,
-        size: Tuple[int, int] = (14, 14),
-        light_color: str = "#475569",
-        dark_color: str = "#8D9B92"
+        size: Union[int, Tuple[int, int]] = (14, 14),
+        color: Optional[Union[str, Tuple[str, str]]] = None,
+        light_color: Optional[str] = None,
+        dark_color: Optional[str] = None
     ) -> Optional[ctk.CTkImage]:
         """
         Retorna un CTkImage tintado según la paleta.
-        Usa caché interna para optimizar rendimiento.
+        Acepta size como int o tupla (w, h).
+        Acepta color como string hex o tupla (light, dark) de CustomTkinter.
         """
+        if isinstance(size, int):
+            size = (size, size)
+
+        if color is not None:
+            if isinstance(color, (tuple, list)) and len(color) >= 2:
+                light_color = str(color[0])
+                dark_color = str(color[1])
+            elif isinstance(color, str):
+                light_color = color
+                dark_color = color
+
+        if not light_color:
+            light_color = "#475569"
+        if not dark_color:
+            dark_color = "#8D9B92"
+
         cache_key = f"{name}_{size}_{light_color}_{dark_color}"
         if cache_key in cls._cache:
             return cls._cache[cache_key]
@@ -57,3 +80,4 @@ class IconHelper:
             return ctk_img
         except Exception:
             return None
+
