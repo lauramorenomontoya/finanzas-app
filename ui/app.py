@@ -483,31 +483,31 @@ class FinancialApp(ctk.CTk):
         import tkinter as tk
         import platform
 
-        # 1. En macOS: Conectar con el menú nativo "About Montu" de Apple
-        if platform.system() == "Darwin":
-            try:
-                self.createcommand("tkAboutDialog", self._open_about_modal)
-            except Exception:
-                pass
-        else:
-            # 2. En Windows / Linux: Barra de menú estándar con 'Ayuda ➔ Acerca de...' y 'Buscar Actualizaciones'
-            try:
-                menubar = tk.Menu(self)
-                help_menu = tk.Menu(menubar, tearoff=0)
-                help_menu.add_command(
-                    label="Buscar Actualizaciones...",
-                    command=self.check_for_updates_manual
-                )
-                help_menu.add_separator()
-                help_menu.add_command(
-                    label=f"Acerca de {APP_NAME_VISIBLE}",
-                    command=self._open_about_modal,
-                    accelerator="F1"
-                )
-                menubar.add_cascade(label="Ayuda", menu=help_menu)
-                self.config(menu=menubar)
-            except Exception:
-                pass
+        try:
+            # 1. En macOS: Conectar con el diálogo nativo de Apple About
+            if platform.system() == "Darwin":
+                try:
+                    self.createcommand("tkAboutDialog", self._open_about_modal)
+                except Exception:
+                    pass
+
+            # 2. Barra de menú superior (Ayuda ➔ Buscar Actualizaciones... y Acerca de...)
+            menubar = tk.Menu(self)
+            help_menu = tk.Menu(menubar, tearoff=0)
+            help_menu.add_command(
+                label="Buscar Actualizaciones...",
+                command=self.check_for_updates_manual
+            )
+            help_menu.add_separator()
+            help_menu.add_command(
+                label=f"Acerca de {APP_NAME_VISIBLE}",
+                command=self._open_about_modal,
+                accelerator="F1" if platform.system() != "Darwin" else ""
+            )
+            menubar.add_cascade(label="Ayuda", menu=help_menu)
+            self.config(menu=menubar)
+        except Exception:
+            pass
 
     def _open_about_modal(self):
         """Abre la ventana modal 'Acerca de...' con los créditos de autoría."""

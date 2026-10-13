@@ -32,6 +32,8 @@ class BaseModal(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         center_window(self, parent, width, height)
+        self.lift()
+        self.focus_force()
 
     def create_standard_frame(self, border_color: Optional[str] = None) -> ctk.CTkFrame:
         """Crea y retorna el marco principal unificado para contenido."""
