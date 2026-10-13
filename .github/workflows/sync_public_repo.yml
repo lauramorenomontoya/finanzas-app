@@ -23,4 +23,3 @@ jobs:
         run: |
           git remote add public "https://x-access-token:${PUBLIC_TOKEN}@github.com/lauramorenomontoya/finanzas-app.git"
           git push public main --force
-          git push public --tags --force || true
