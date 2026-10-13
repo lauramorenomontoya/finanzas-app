@@ -7,7 +7,7 @@ APP_NAME_VISIBLE = "Montu"
 APP_NAME_TECHNICAL = "montu"
 APP_BUNDLE_ID = "com.lauramoreno.montu"
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.3.0"
 APP_AUTHOR = "Laura Moreno Montoya"
 APP_COPYRIGHT = "© 2026 Laura Moreno Montoya. Todos los derechos reservados."
 

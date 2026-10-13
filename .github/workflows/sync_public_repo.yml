@@ -1,0 +1,25 @@
+name: Sincronizar Repositorio Público
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-to-public:
+    name: Sincronizar a finanzas-app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enviar cambios al repositorio público
+        env:
+          PUBLIC_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          git remote add public "https://x-access-token:${PUBLIC_TOKEN}@github.com/lauramorenomontoya/finanzas-app.git"
+          git push public main --force
+          git push public --tags --force || true

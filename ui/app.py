@@ -97,26 +97,21 @@ class FinancialApp(ctk.CTk):
     def _set_app_icon(self):
         """Configura el ícono de la ventana según la plataforma."""
         try:
-            if sys.platform.startswith("darwin"):
-                icon_path = get_asset_path("icon.png")
-                if os.path.exists(icon_path):
-                    from PIL import Image, ImageTk
-                    pil_img = Image.open(icon_path).resize((64, 64), Image.Resampling.LANCZOS)
-                    self._tk_icon = ImageTk.PhotoImage(pil_img)
-                    self.iconphoto(False, self._tk_icon)
-            elif sys.platform.startswith("win"):
+            if sys.platform.startswith("win"):
                 ico_path = get_asset_path("icon.ico")
                 if os.path.exists(ico_path):
                     self.iconbitmap(ico_path)
-            else:
+            elif sys.platform.startswith("linux"):
                 icon_path = get_asset_path("icon.png")
                 if os.path.exists(icon_path):
                     from PIL import Image, ImageTk
                     pil_img = Image.open(icon_path).resize((64, 64), Image.Resampling.LANCZOS)
                     self._tk_icon = ImageTk.PhotoImage(pil_img)
                     self.iconphoto(False, self._tk_icon)
+            # En macOS Cocoa el ícono lo gestiona el Bundle .app (icon.icns) nativamente en el Dock.
         except Exception:
             pass
+
 
     def _build_sidebar(self):
         """Construye la barra de navegación lateral."""

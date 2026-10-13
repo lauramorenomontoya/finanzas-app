@@ -38,10 +38,10 @@ else:
     NEW_PROD_DB = os.path.expanduser("~/.local/share/Montu/finanzas.db")
     OLD_PROD_DB = os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
 
-if os.path.exists(NEW_PROD_DB):
-    DB_PATH = NEW_PROD_DB
-elif os.path.exists(OLD_PROD_DB):
+if os.path.exists(OLD_PROD_DB):
     DB_PATH = OLD_PROD_DB
+elif os.path.exists(NEW_PROD_DB):
+    DB_PATH = NEW_PROD_DB
 else:
     DB_PATH = os.path.join(CURRENT_DIR, "finanzas.db")
 
@@ -332,5 +332,31 @@ def query_database(sql_query: str) -> str:
         return json.dumps({"error": f"Error SQL: {str(e)}"}, ensure_ascii=False)
 
 
+@mcp.tool()
+def add_debt_payment(
+    debt_id: int,
+    amount: float,
+    date: str = "",
+    notes: str = "",
+    deduct_from_balance: bool = True
+) -> str:
+    """
+    Registra un abono a una deuda o el pago recibido de una cuenta por cobrar.
+    """
+    try:
+        clean_date = date.strip() if date and date.lower() != "hoy" else datetime.now().strftime("%Y-%m-%d")
+        success, msg = db.add_debt_payment(
+            debt_id=int(debt_id),
+            amount=float(amount),
+            date=clean_date,
+            notes=notes.strip(),
+            deduct_from_balance=deduct_from_balance
+        )
+        return json.dumps({"exito": success, "mensaje": msg}, indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": f"Error al registrar pago de deuda: {str(e)}"}, ensure_ascii=False)
+
+
 if __name__ == "__main__":
     mcp.run()
+
