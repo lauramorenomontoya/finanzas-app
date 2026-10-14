@@ -47,8 +47,12 @@ class NotionImporter:
                 m_name = m_text.group(2)
                 year = int(m_text.group(3))
                 month = cls.MONTHS_ES.get(m_name)
-                if month and 1 <= day <= 31:
-                    return f"{year:04d}-{month:02d}-{day:02d}"
+                if month:
+                    try:
+                        valid_d = datetime(year, month, day)
+                        return valid_d.strftime("%Y-%m-%d")
+                    except ValueError:
+                        pass
 
             # 2. Formato día/mes/año 'DD/MM/YYYY' o 'DD-MM-YYYY'
             m_dmy = re.search(r"^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$", d_clean)
@@ -56,8 +60,11 @@ class NotionImporter:
                 day = int(m_dmy.group(1))
                 month = int(m_dmy.group(2))
                 year = int(m_dmy.group(3))
-                if 1 <= month <= 12 and 1 <= day <= 31:
-                    return f"{year:04d}-{month:02d}-{day:02d}"
+                try:
+                    valid_d = datetime(year, month, day)
+                    return valid_d.strftime("%Y-%m-%d")
+                except ValueError:
+                    pass
 
             # 3. Formato ISO 'YYYY-MM-DD'
             m_iso = re.search(r"^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$", d_clean)
@@ -65,8 +72,11 @@ class NotionImporter:
                 year = int(m_iso.group(1))
                 month = int(m_iso.group(2))
                 day = int(m_iso.group(3))
-                if 1 <= month <= 12 and 1 <= day <= 31:
-                    return f"{year:04d}-{month:02d}-{day:02d}"
+                try:
+                    valid_d = datetime(year, month, day)
+                    return valid_d.strftime("%Y-%m-%d")
+                except ValueError:
+                    pass
 
         # 4. Fallback: extraer mes y año del campo 'Mes' (ej. 'Agosto 2026' o 'Enero 2026')
         if fallback_month_str:

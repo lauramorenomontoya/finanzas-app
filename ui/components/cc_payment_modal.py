@@ -4,6 +4,8 @@ from typing import Callable, Optional
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
 from ui.components.base_modal import BaseModal
+from core.utils import parse_currency_amount
+from core.event_bus import EventBus
 
 
 class CCPaymentModal(BaseModal):
@@ -24,15 +26,22 @@ class CCPaymentModal(BaseModal):
             min_width=440,
             min_height=500
         )
+        self._build_ui()
 
-    def build_ui(self):
-        main_frame = self.create_standard_frame(self.main_container)
+    def _build_ui(self):
+        main_frame = self.create_standard_frame()
 
         self.create_header(
             parent=main_frame,
-            title="💳 Pago de Tarjeta de Crédito",
-            subtitle="Descuenta de tu cuenta operativa para saldar tu deuda de TC."
+            title="Pago de Tarjeta de Crédito",
+            icon="💳"
         )
+        ctk.CTkLabel(
+            main_frame,
+            text="Descuenta de tu cuenta operativa para saldar tu deuda de TC.",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_MUTED
+        ).pack(anchor="w", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         scroll_body = ctk.CTkScrollableFrame(main_frame, fg_color="transparent")
         scroll_body.pack(fill="both", expand=True, padx=Theme.SPACING_MD, pady=(0, Theme.SPACING_SM))
@@ -111,54 +120,20 @@ class CCPaymentModal(BaseModal):
         self.lbl_error = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11), text_color=Theme.ACCENT_ROSE, wraplength=420)
         self.lbl_error.pack(anchor="w", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_XS))
 
-        footer, btn_cancel, self.btn_confirm = self.create_footer_buttons(
+        self.create_footer_buttons(
             parent=main_frame,
-            cancel_command=self.destroy,
-            confirm_command=self._handle_pay,
-            confirm_text="💸 Confirmar Pago",
-            destructive=False
+            on_cancel=self.destroy,
+            on_confirm=self._handle_pay,
+            confirm_text="💸 Confirmar Pago"
         )
-
-        self.btn_confirm.configure(fg_color=Theme.SUCCESS, hover_color=Theme.SUCCESS, text_color=Theme.TEXT_ON_COLOR)
 
     def _set_full_amount(self, debt: float):
         self.amount_entry.delete(0, "end")
         self.amount_entry.insert(0, str(int(debt)))
 
-    def _clean_cop_amount(self, raw: str) -> float:
-        s = raw.strip().replace("$", "").replace("COP", "").replace("\xa0", "").replace(" ", "")
-        if not s:
-            raise ValueError("Monto vacío")
-
-        if "," in s and "." in s:
-            if s.rfind(",") > s.rfind("."):
-                s = s.replace(".", "").replace(",", ".")
-            else:
-                s = s.replace(",", "")
-        elif "," in s:
-            parts = s.split(",")
-            if len(parts) > 2:
-                s = "".join(parts)
-            elif len(parts) == 2 and len(parts[1]) == 3:
-                s = "".join(parts)
-            else:
-                s = s.replace(",", ".")
-        elif "." in s:
-            parts = s.split(".")
-            if len(parts) > 2:
-                s = "".join(parts)
-            elif len(parts) == 2 and len(parts[1]) == 3:
-                s = "".join(parts)
-
-        val = float(s)
-        if val <= 0:
-            raise ValueError("El monto debe ser mayor a 0")
-        return val
-
     def _handle_pay(self):
-        try:
-            amount = self._clean_cop_amount(self.amount_entry.get())
-        except ValueError:
+        amount = parse_currency_amount(self.amount_entry.get(), "COP")
+        if amount <= 0:
             self.lbl_error.configure(text="⚠️ Ingresa un monto válido mayor a 0.")
             return
 
@@ -174,6 +149,7 @@ class CCPaymentModal(BaseModal):
         try:
             success, msg = self.db.pay_credit_card(date=date_str, amount=amount, notes=notes)
             if success:
+                EventBus.publish("DATA_UPDATED")
                 if self.on_success:
                     self.on_success()
                 self.destroy()

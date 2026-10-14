@@ -25,10 +25,14 @@ class EventBus:
 
     @classmethod
     def publish(cls, event_type: str, *args, **kwargs):
-        """Emite un evento a todos los suscriptores."""
+        """Emite un evento a todos los suscriptores con protección contra excepciones."""
         if event_type in cls._subscribers:
-            for callback in cls._subscribers[event_type]:
-                callback(*args, **kwargs)
+            for callback in list(cls._subscribers[event_type]):
+                try:
+                    callback(*args, **kwargs)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Error en suscriptor de EventBus para '{event_type}': {e}", exc_info=True)
 
     @classmethod
     def clear(cls):

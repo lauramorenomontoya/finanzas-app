@@ -49,7 +49,7 @@ class TestNewFeatures(unittest.TestCase):
 
     def test_recurring_expenses_crud_and_apply(self):
         # Añadir gasto recurrente
-        rec_id = self.db.add_recurring_expense("Educación / Cursos", "Curso inglés", 200000.0, 15)
+        rec_id = self.db.add_recurring_expense("Educación / Cursos", "Curso inglés", 200000.0, currency="COP", due_day=15)
         self.assertGreater(rec_id, 0)
 
         items = self.db.get_recurring_expenses()

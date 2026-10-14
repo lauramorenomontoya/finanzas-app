@@ -35,31 +35,59 @@ class AboutModal(BaseModal):
         header_frame = ctk.CTkFrame(main_card, fg_color="transparent")
         header_frame.pack(fill="x", padx=Theme.SPACING_LG, pady=(Theme.SPACING_LG, Theme.SPACING_SM))
 
-        logo_path = get_asset_path("logo.png")
-        if os.path.exists(logo_path):
+        official_logo_path = get_asset_path("montu_logo_sin_eslogan_alpha.png")
+        if os.path.exists(official_logo_path):
             try:
                 from PIL import Image
-                logo_pil = Image.open(logo_path)
-                self.about_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(44, 44))
+                logo_pil = Image.open(official_logo_path)
+                bbox = logo_pil.getbbox()
+                if bbox:
+                    logo_pil = logo_pil.crop(bbox)
+                aspect = logo_pil.width / max(1, logo_pil.height)
+                target_w = 190
+                target_h = max(28, int(target_w / aspect))
+                self.about_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(target_w, target_h))
                 icon_lbl = ctk.CTkLabel(
                     header_frame,
                     image=self.about_logo_img,
                     text=""
                 )
+                icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_SM))
             except Exception:
                 icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
+                icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_XS))
+                app_name = ctk.CTkLabel(
+                    header_frame,
+                    text=APP_NAME_VISIBLE,
+                    font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
+                    text_color=Theme.TEXT_PRIMARY
+                )
+                app_name.pack(anchor="center")
         else:
-            icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
-        icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_XS))
+            logo_path = get_asset_path("logo.png")
+            if os.path.exists(logo_path):
+                try:
+                    from PIL import Image
+                    logo_pil = Image.open(logo_path)
+                    self.about_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(44, 44))
+                    icon_lbl = ctk.CTkLabel(
+                        header_frame,
+                        image=self.about_logo_img,
+                        text=""
+                    )
+                except Exception:
+                    icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
+            else:
+                icon_lbl = ctk.CTkLabel(header_frame, text="M", font=ctk.CTkFont(size=32, weight="bold"))
+            icon_lbl.pack(anchor="center", pady=(0, Theme.SPACING_XS))
 
-
-        app_name = ctk.CTkLabel(
-            header_frame,
-            text=APP_NAME_VISIBLE,
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        )
-        app_name.pack(anchor="center")
+            app_name = ctk.CTkLabel(
+                header_frame,
+                text=APP_NAME_VISIBLE,
+                font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=22, weight="bold"),
+                text_color=Theme.TEXT_PRIMARY
+            )
+            app_name.pack(anchor="center")
 
         # Badge de versión
         version_badge = ctk.CTkFrame(

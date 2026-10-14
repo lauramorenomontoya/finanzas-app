@@ -15,6 +15,7 @@ from ui.theme import Theme
 from services.currency_service import CurrencyService
 from controllers.dashboard_controller import DashboardController
 from core.constants import format_month_year_es
+from ui.utils.icon_helper import IconHelper
 
 
 class DashboardView(ctk.CTkFrame):
@@ -27,7 +28,6 @@ class DashboardView(ctk.CTkFrame):
         self.show_banner_details = False
 
         self._build_ui()
-        self.refresh_data()
         self._fetch_rate_on_start()
 
     def _build_ui(self):
@@ -331,7 +331,9 @@ class DashboardView(ctk.CTkFrame):
         # Acción Principal: + Ingreso (única con relleno de acento y texto de alto contraste)
         btn_deposit = ctk.CTkButton(
             actions_grid,
-            text="+ Ingreso",
+            text=" Ingreso",
+            image=IconHelper.get_icon("plus", size=12, color=Theme.BG_APP),
+            compound="left",
             fg_color=Theme.ACCENT,
             hover_color=Theme.ACCENT_HOVER,
             text_color=Theme.BG_APP,
@@ -438,8 +440,10 @@ class DashboardView(ctk.CTkFrame):
 
         btn_refresh = ctk.CTkButton(
             right_header,
-            text="Actualizar",
-            width=75,
+            text=" Actualizar",
+            image=IconHelper.get_icon("refresh", size=11, color=Theme.TEXT_PRIMARY),
+            compound="left",
+            width=88,
             height=24,
             fg_color=Theme.BORDER_DEFAULT,
             hover_color=Theme.TEXT_MUTED,

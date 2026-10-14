@@ -39,7 +39,6 @@ class LedgerView(ctk.CTkFrame):
         self.controller = LedgerController(db_manager)
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -223,6 +222,8 @@ class LedgerView(ctk.CTkFrame):
 
         self.current_page = 1
         self.page_size = 25
+        self._row_pool = []
+        self._empty_state = None
 
     def _on_search_key(self):
         """Aplica debounce de 250ms al tipear en el buscador para no congelar la UI."""
@@ -312,25 +313,114 @@ class LedgerView(ctk.CTkFrame):
 
         self._render_current_page()
 
-    def _render_current_page(self):
-        for widget in self.table_scroll.winfo_children():
-            widget.destroy()
+    def _create_pooled_row(self):
+        row_frame = ctk.CTkFrame(self.table_scroll, fg_color="transparent", corner_radius=Theme.SPACING_XS, height=32)
 
+        lbl_d = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["date"], anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_PRIMARY)
+        lbl_d.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_m = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["module"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_MUTED)
+        lbl_m.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_c = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["concept"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_PRIMARY)
+        lbl_c.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_cur = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["currency"], anchor="center", font=ctk.CTkFont(size=10, weight="bold"))
+        lbl_cur.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_in = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["inflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"))
+        lbl_in.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_out = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["outflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"))
+        lbl_out.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_det = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["detail"], anchor="w", font=ctk.CTkFont(size=10))
+        lbl_det.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        lbl_not = ctk.CTkLabel(row_frame, text="", width=self.COL_WIDTHS["notes"], anchor="w", font=ctk.CTkFont(size=10, slant="italic"), text_color=Theme.TEXT_MUTED)
+        lbl_not.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        btn_box = ctk.CTkFrame(row_frame, width=self.COL_WIDTHS["actions"], fg_color="transparent")
+        btn_box.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+
+        btn_e = ctk.CTkButton(
+            btn_box,
+            text="",
+            image=IconHelper.get_icon("edit", size=13, color=Theme.TEXT_SECONDARY),
+            width=24,
+            height=22,
+            corner_radius=Theme.SPACING_XS,
+            fg_color="transparent",
+            hover_color=Theme.BORDER_DEFAULT
+        )
+        btn_e.pack(side="left", padx=Theme.SPACING_XS)
+
+        btn_dup = ctk.CTkButton(
+            btn_box,
+            text="",
+            image=IconHelper.get_icon("copy", size=13, color=Theme.TEXT_SECONDARY),
+            width=24,
+            height=22,
+            corner_radius=Theme.SPACING_XS,
+            fg_color="transparent",
+            hover_color=Theme.BORDER_DEFAULT
+        )
+        btn_dup.pack(side="left", padx=Theme.SPACING_XS)
+
+        btn_d = ctk.CTkButton(
+            btn_box,
+            text="",
+            image=IconHelper.get_icon("trash", size=13, color=Theme.TEXT_MUTED),
+            width=24,
+            height=22,
+            corner_radius=Theme.SPACING_XS,
+            fg_color="transparent",
+            hover_color=Theme.BORDER_DEFAULT
+        )
+        btn_d.pack(side="left", padx=Theme.SPACING_XS)
+
+        return {
+            "frame": row_frame,
+            "lbl_d": lbl_d,
+            "lbl_m": lbl_m,
+            "lbl_c": lbl_c,
+            "lbl_cur": lbl_cur,
+            "lbl_in": lbl_in,
+            "lbl_out": lbl_out,
+            "lbl_det": lbl_det,
+            "lbl_not": lbl_not,
+            "btn_e": btn_e,
+            "btn_dup": btn_dup,
+            "btn_d": btn_d,
+            "clickable_widgets": [row_frame, lbl_d, lbl_m, lbl_c, lbl_cur, lbl_in, lbl_out, lbl_det, lbl_not]
+        }
+
+    def _render_current_page(self):
         self.lbl_page_info.configure(text=f"Página {self.current_page} de {self.total_pages} ({len(self.cached_rows)} total)")
         self.btn_prev_page.configure(state="normal" if self.current_page > 1 else "disabled")
         self.btn_next_page.configure(state="normal" if self.current_page < self.total_pages else "disabled")
 
         if not self.cached_rows:
-            EmptyState(
-                self.table_scroll,
-                title="Sin movimientos contables",
-                message="No se encontraron registros que coincidan con los filtros seleccionados."
-            ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XL)
+            for row in self._row_pool:
+                row["frame"].pack_forget()
+            if not self._empty_state:
+                self._empty_state = EmptyState(
+                    self.table_scroll,
+                    title="Sin movimientos contables",
+                    message="No se encontraron registros que coincidan con los filtros seleccionados."
+                )
+            self._empty_state.pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_XL)
             return
+
+        if self._empty_state:
+            self._empty_state.pack_forget()
 
         start_idx = (self.current_page - 1) * self.page_size
         end_idx = start_idx + self.page_size
         page_rows = self.cached_rows[start_idx:end_idx]
+
+        while len(self._row_pool) < len(page_rows):
+            self._row_pool.append(self._create_pooled_row())
 
         for idx, item in enumerate(page_rows):
             curr = item["currency"]
@@ -341,98 +431,39 @@ class LedgerView(ctk.CTkFrame):
             out_str = f"-${outflow:,.2f}" if (outflow > 0 and curr == "USD") else (f"-${outflow:,.0f}" if outflow > 0 else "-")
 
             bg_col = Theme.BG_CARD_SUBTLE if idx % 2 == 0 else "transparent"
-            row_frame = ctk.CTkFrame(self.table_scroll, fg_color=bg_col, corner_radius=Theme.SPACING_XS, height=32)
-            row_frame.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
+            row = self._row_pool[idx]
+            row["frame"].configure(fg_color=bg_col)
 
-            # Doble clic en la fila para editar
-            row_frame.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            # Actualizar bindings de doble clic
+            for w in row["clickable_widgets"]:
+                w.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
 
-            # 0. Fecha
-            lbl_d = ctk.CTkLabel(row_frame, text=item["date"], width=self.COL_WIDTHS["date"], anchor="w", font=ctk.CTkFont(size=11), text_color=Theme.TEXT_PRIMARY)
-            lbl_d.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_d.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            row["lbl_d"].configure(text=item["date"])
+            row["lbl_m"].configure(text=item["module"])
+            row["lbl_c"].configure(text=item["concept"][:26])
 
-            # 1. Módulo
-            lbl_m = ctk.CTkLabel(row_frame, text=item["module"], width=self.COL_WIDTHS["module"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_MUTED)
-            lbl_m.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_m.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
-
-            # 2. Concepto
-            lbl_c = ctk.CTkLabel(row_frame, text=item["concept"][:26], width=self.COL_WIDTHS["concept"], anchor="w", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.TEXT_PRIMARY)
-            lbl_c.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_c.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
-
-            # 3. Moneda
             curr_col = Theme.ACCENT_GREEN if curr == "COP" else Theme.ACCENT_BLUE
-            lbl_cur = ctk.CTkLabel(row_frame, text=curr, width=self.COL_WIDTHS["currency"], anchor="center", font=ctk.CTkFont(size=10, weight="bold"), text_color=curr_col)
-            lbl_cur.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_cur.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            row["lbl_cur"].configure(text=curr, text_color=curr_col)
 
-            # 4. Ingreso
-            lbl_in = ctk.CTkLabel(row_frame, text=in_str, width=self.COL_WIDTHS["inflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.ACCENT_GREEN if inflow > 0 else Theme.TEXT_MUTED)
-            lbl_in.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_in.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            row["lbl_in"].configure(text=in_str, text_color=Theme.ACCENT_GREEN if inflow > 0 else Theme.TEXT_MUTED)
+            row["lbl_out"].configure(text=out_str, text_color=Theme.ACCENT_ROSE if outflow > 0 else Theme.TEXT_MUTED)
 
-            # 5. Egreso
-            lbl_out = ctk.CTkLabel(row_frame, text=out_str, width=self.COL_WIDTHS["outflow"], anchor="e", font=ctk.CTkFont(size=11, weight="bold"), text_color=Theme.ACCENT_ROSE if outflow > 0 else Theme.TEXT_MUTED)
-            lbl_out.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_out.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
-
-            # 6. Detalle & Tags
             item_tags = item.get("tags", [])
             tag_str = f" [{', '.join([t['name'] for t in item_tags])}]" if item_tags else ""
             det_text = f"{item['extra_info']}{tag_str}"[:20]
-            lbl_det = ctk.CTkLabel(row_frame, text=det_text, width=self.COL_WIDTHS["detail"], anchor="w", font=ctk.CTkFont(size=10), text_color=Theme.ACCENT_INDIGO if item_tags else Theme.TEXT_MUTED)
-            lbl_det.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_det.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            row["lbl_det"].configure(text=det_text, text_color=Theme.ACCENT_INDIGO if item_tags else Theme.TEXT_MUTED)
 
-            # 7. Notas
-            lbl_not = ctk.CTkLabel(row_frame, text=item["notes"][:22], width=self.COL_WIDTHS["notes"], anchor="w", font=ctk.CTkFont(size=10, slant="italic"), text_color=Theme.TEXT_MUTED)
-            lbl_not.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
-            lbl_not.bind("<Double-Button-1>", lambda e, it=item: self._handle_edit(it))
+            row["lbl_not"].configure(text=item["notes"][:22])
 
-            # 8. Botones de Acción
-            btn_box = ctk.CTkFrame(row_frame, width=self.COL_WIDTHS["actions"], fg_color="transparent")
-            btn_box.pack(side="left", padx=Theme.SPACING_XS, pady=Theme.SPACING_XS)
+            row["btn_e"].configure(command=lambda it=item: self._handle_edit(it))
+            row["btn_dup"].configure(command=lambda it=item: self._handle_duplicate(it))
+            row["btn_d"].configure(command=lambda it=item: self._prompt_delete(it))
 
-            btn_e = ctk.CTkButton(
-                btn_box,
-                text="",
-                image=IconHelper.get_icon("edit", size=13, color=Theme.TEXT_SECONDARY),
-                width=24,
-                height=22,
-                corner_radius=Theme.SPACING_XS,
-                fg_color="transparent",
-                hover_color=Theme.BORDER_DEFAULT,
-                command=lambda it=item: self._handle_edit(it)
-            )
-            btn_e.pack(side="left", padx=Theme.SPACING_XS)
+            row["frame"].pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
 
-            btn_dup = ctk.CTkButton(
-                btn_box,
-                text="",
-                image=IconHelper.get_icon("copy", size=13, color=Theme.TEXT_SECONDARY),
-                width=24,
-                height=22,
-                corner_radius=Theme.SPACING_XS,
-                fg_color="transparent",
-                hover_color=Theme.BORDER_DEFAULT,
-                command=lambda it=item: self._handle_duplicate(it)
-            )
-            btn_dup.pack(side="left", padx=Theme.SPACING_XS)
-
-            btn_d = ctk.CTkButton(
-                btn_box,
-                text="",
-                image=IconHelper.get_icon("trash", size=13, color=Theme.TEXT_MUTED),
-                width=24,
-                height=22,
-                corner_radius=Theme.SPACING_XS,
-                fg_color="transparent",
-                hover_color=Theme.BORDER_DEFAULT,
-                command=lambda it=item: self._prompt_delete(it)
-            )
-            btn_d.pack(side="left", padx=Theme.SPACING_XS)
+        # Ocultar filas no utilizadas en la página actual
+        for idx in range(len(page_rows), len(self._row_pool)):
+            self._row_pool[idx]["frame"].pack_forget()
 
     def _handle_edit(self, item: Dict[str, Any]):
         table_name = item["source_table"]
@@ -498,5 +529,4 @@ class LedgerView(ctk.CTkFrame):
         return self.controller.fetch_full_record(table_name, record_id)
 
     def _on_action_success(self):
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")

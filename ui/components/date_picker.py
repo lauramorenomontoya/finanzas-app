@@ -282,6 +282,9 @@ class DatePickerWidget(ctk.CTkFrame):
     def get(self) -> str:
         return self.entry.get().strip()
 
+    def get_date(self) -> str:
+        return self.get()
+
     def set_date(self, date_str: str):
         self.entry.delete(0, "end")
         self.entry.insert(0, date_str.strip())

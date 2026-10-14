@@ -32,7 +32,6 @@ class DebtView(ctk.CTkFrame):
         self.view_mode = "PAYABLE"   # PAYABLE, RECEIVABLE
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -64,7 +63,9 @@ class DebtView(ctk.CTkFrame):
 
         btn_cc_pay = ctk.CTkButton(
             btn_box,
-            text="Pagar Tarjeta",
+            text="  Pagar Tarjeta",
+            image=IconHelper.get_icon("check", size=13, color=Theme.TEXT_PRIMARY),
+            compound="left",
             height=34,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_CARD,
@@ -79,7 +80,9 @@ class DebtView(ctk.CTkFrame):
 
         btn_add_debt = ctk.CTkButton(
             btn_box,
-            text="+ Nueva Deuda (Debo)",
+            text="  Nueva Deuda (Debo)",
+            image=IconHelper.get_icon("plus", size=13, color=Theme.TEXT_PRIMARY),
+            compound="left",
             height=34,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.BG_CARD,
@@ -94,7 +97,9 @@ class DebtView(ctk.CTkFrame):
 
         btn_add_receivable = ctk.CTkButton(
             btn_box,
-            text="+ Prestar / Por Cobrar",
+            text="  Prestar / Por Cobrar",
+            image=IconHelper.get_icon("plus", size=13, color=Theme.BG_APP),
+            compound="left",
             height=34,
             corner_radius=Theme.SPACING_SM,
             fg_color=Theme.ACCENT,
@@ -514,7 +519,6 @@ class DebtView(ctk.CTkFrame):
 
     def _open_add_debt_modal(self, debt: Optional[Dict[str, Any]] = None, initial_type: Optional[str] = None):
         def on_saved():
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
             self.toast.show("¡Registro guardado correctamente!")
 
@@ -523,7 +527,6 @@ class DebtView(ctk.CTkFrame):
 
     def _open_payment_modal(self, debt: Dict[str, Any]):
         def on_paid():
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
             action_desc = "Pago recibido" if debt.get("debt_type") == "RECEIVABLE" else "Abono"
             self.toast.show(f"¡{action_desc} de {debt['creditor']} registrado!")
@@ -532,14 +535,12 @@ class DebtView(ctk.CTkFrame):
 
     def _open_history_modal(self, debt_id: int):
         def on_changed():
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
 
         DebtHistoryModal(self.winfo_toplevel(), self.controller.db, debt_id=debt_id, on_data_changed=on_changed)
 
     def _open_cc_payment_modal(self):
         def on_cc_paid():
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
             self.toast.show("¡Pago de Tarjeta de Crédito registrado!")
 
@@ -549,7 +550,6 @@ class DebtView(ctk.CTkFrame):
         def on_confirmed():
             success = self.controller.delete_debt(debt_id)
             if success:
-                self.refresh_data()
                 EventBus.publish("DATA_UPDATED")
                 self.toast.show(f"Registro de {creditor} eliminado.")
 

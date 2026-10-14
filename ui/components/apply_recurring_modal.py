@@ -5,6 +5,7 @@ from typing import Callable, Optional, List, Dict, Any
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
 from ui.components.base_modal import BaseModal
+from core.event_bus import EventBus
 
 
 class ApplyRecurringModal(BaseModal):
@@ -29,6 +30,7 @@ class ApplyRecurringModal(BaseModal):
             min_width=620,
             min_height=480
         )
+        self._build_ui()
 
     def _format_month_name(self, ym: str) -> str:
         try:
@@ -46,19 +48,25 @@ class ApplyRecurringModal(BaseModal):
         # Filtrar únicamente los que no han sido pagados
         self.items_data = [item for item in all_status if not item["is_paid"]]
 
-    def build_ui(self):
+    def _build_ui(self):
         self._load_data()
         
-        main_card = self.create_standard_frame(self.main_container)
+        main_card = self.create_standard_frame()
 
         m_name = self._format_month_name(self.target_ym)
         self.title(f"Aplicar Gastos Fijos - {m_name}")
 
         self.create_header(
             parent=main_card,
-            title=f"📅 Aplicar Gastos Fijos de {m_name}",
-            subtitle=f"Registra masivamente los gastos periódicos pendientes para {m_name}."
+            title=f"Aplicar Gastos Fijos de {m_name}",
+            icon="📅"
         )
+        ctk.CTkLabel(
+            main_card,
+            text=f"Registra masivamente los gastos periódicos pendientes para {m_name}.",
+            font=ctk.CTkFont(size=11),
+            text_color=Theme.TEXT_MUTED
+        ).pack(anchor="w", padx=Theme.SPACING_LG, pady=(0, Theme.SPACING_SM))
 
         # 2. Barra de Configuración: Fecha y Acciones Rápidas
         config_bar = ctk.CTkFrame(main_card, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
@@ -274,6 +282,7 @@ class ApplyRecurringModal(BaseModal):
         if res.get("success"):
             applied = res.get("applied", 0)
             m_name = self._format_month_name(self.target_ym)
+            EventBus.publish("DATA_UPDATED")
             messagebox.showinfo(
                 "Gastos Fijos Aplicados",
                 f"¡Operación completada con éxito!\n\nSe registraron {applied} gastos fijos para {m_name} con fecha {date_str}."

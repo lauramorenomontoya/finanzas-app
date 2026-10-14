@@ -98,7 +98,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version='version_info.txt' if os.path.exists('version_info.txt') else None,
-    icon='assets/icon.icns' if sys.platform == 'darwin' and os.path.exists('assets/icon.icns') else ('assets/icon.ico' if os.path.exists('assets/icon.ico') else None),
+    icon='assets/montu_icon_1024.icns' if (sys.platform == 'darwin' and os.path.exists('assets/montu_icon_1024.icns')) else ('assets/icon.icns' if sys.platform == 'darwin' and os.path.exists('assets/icon.icns') else ('assets/montu_icon_alpha_1024.ico' if os.path.exists('assets/montu_icon_alpha_1024.ico') else ('assets/icon.ico' if os.path.exists('assets/icon.ico') else None))),
 )
 
 coll = COLLECT(
@@ -116,15 +116,15 @@ if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
         name='Montu.app',
-        icon='assets/icon.icns' if os.path.exists('assets/icon.icns') else None,
+        icon='assets/montu_icon_1024.icns' if os.path.exists('assets/montu_icon_1024.icns') else ('assets/icon.icns' if os.path.exists('assets/icon.icns') else None),
         bundle_identifier='com.lauramoreno.montu',
         info_plist={
             'CFBundleName': 'Montu',
             'CFBundleDisplayName': 'Montu',
             'CFBundleGetInfoString': 'Montu - Gestor Financiero Multimoneda creado por Laura Moreno Montoya',
             'CFBundleIdentifier': 'com.lauramoreno.montu',
-            'CFBundleVersion': '1.3.0',
-            'CFBundleShortVersionString': '1.3.0',
+            'CFBundleVersion': '1.3.1',
+            'CFBundleShortVersionString': '1.3.1',
             'NSHumanReadableCopyright': '© 2026 Laura Moreno Montoya. Todos los derechos reservados.',
             'NSHighResolutionCapable': 'True',
         },

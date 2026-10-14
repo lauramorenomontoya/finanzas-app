@@ -26,7 +26,6 @@ class InvestmentsView(ctk.CTkFrame):
         self.controller = InvestmentController(db_manager)
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         # 1. Toast
@@ -196,7 +195,6 @@ class InvestmentsView(ctk.CTkFrame):
 
     def _on_account_saved(self):
         self.toast.show("Cuenta actualizada exitosamente.", is_error=False)
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
 
     def _open_account_action(self, account: Dict[str, Any], action_type: str):
@@ -210,7 +208,6 @@ class InvestmentsView(ctk.CTkFrame):
 
     def _on_action_success(self):
         self.toast.show("Movimiento registrado con éxito.", is_error=False)
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
 
     def refresh_data(self):
@@ -261,7 +258,7 @@ class InvestmentsView(ctk.CTkFrame):
                 title="Sin cuentas registradas",
                 message="Crea una cuenta, fiducia o bolsillo para monitorear tu patrimonio.",
                 action_text="+ Nueva Cuenta",
-                action_command=self._open_new_account_modal,
+                action_command=self._handle_create_account,
                 action_variant="primary"
             ).pack(fill="x", padx=Theme.SPACING_SM, pady=Theme.SPACING_LG)
             return

@@ -33,7 +33,6 @@ class IncomesView(ctk.CTkFrame):
         self.display_limit = 25
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -211,7 +210,9 @@ class IncomesView(ctk.CTkFrame):
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
             form_panel,
-            text="Registrar Ingreso USD",
+            text="  Registrar Ingreso USD",
+            image=IconHelper.get_icon("plus", size=14, color=Theme.BG_APP),
+            compound="left",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=Theme.SPACING_SM,
@@ -299,7 +300,6 @@ class IncomesView(ctk.CTkFrame):
             self.notes_entry.delete(0, "end")
             if hasattr(self, "tag_selector"):
                 self.tag_selector.clear()
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
         else:
             self.toast.show(msg, is_error=True)
@@ -465,5 +465,4 @@ class IncomesView(ctk.CTkFrame):
             self.toast.show(msg, is_error=True)
 
     def _on_action_success(self):
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")

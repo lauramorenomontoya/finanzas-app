@@ -9,12 +9,12 @@ class SettingsController:
         self.db = db_manager
 
     def export_database_backup(self, dest_path: str) -> Tuple[bool, str]:
-        """Realiza un backup en caliente seguro usando VACUUM INTO."""
+        """Realiza un backup en caliente seguro usando el SQLite Online Backup API."""
         try:
-            with self.db.get_connection() as conn:
-                # VACUUM INTO requiere SQLite 3.27+ y garantiza copia íntegra con WAL
-                conn.execute(f"VACUUM INTO '{dest_path}'")
-            return True, f"¡Backup exportado correctamente!"
+            result = self.db.create_backup(dest_path)
+            if result:
+                return True, "¡Backup exportado correctamente!"
+            return False, "No se pudo generar el archivo de backup."
         except Exception as e:
             return False, f"Error al exportar backup: {str(e)}"
 

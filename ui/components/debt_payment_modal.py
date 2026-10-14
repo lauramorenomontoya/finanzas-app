@@ -9,6 +9,7 @@ from typing import Callable, Optional, Dict, Any
 from ui.theme import Theme
 from ui.components.date_picker import DatePickerWidget
 from ui.utils.modal_helper import center_window
+from core.utils import parse_currency_amount
 
 
 class DebtPaymentModal(ctk.CTkToplevel):
@@ -278,16 +279,13 @@ class DebtPaymentModal(ctk.CTkToplevel):
         self.entry_amount.insert(0, str(amount))
 
     def _confirm_payment(self):
-        amount_raw = self.entry_amount.get().strip().replace("$", "").replace(",", "").replace(".", "")
+        curr = self.debt.get("currency", "COP")
+        amount = parse_currency_amount(self.entry_amount.get(), curr)
         date = self.date_picker.get_date()
         notes = self.entry_notes.get().strip()
         deduct = self.var_deduct.get()
 
-        try:
-            amount = float(amount_raw)
-            if amount <= 0:
-                raise ValueError()
-        except ValueError:
+        if amount <= 0:
             self.lbl_error.configure(text="⚠️ Ingresa un monto numérico válido mayor a 0.")
             return
 

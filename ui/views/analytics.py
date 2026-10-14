@@ -39,7 +39,6 @@ class AnalyticsView(ctk.CTkFrame):
 
         self._build_ui()
         self._fetch_rate_on_start()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -615,24 +614,35 @@ class AnalyticsView(ctk.CTkFrame):
         ctk.CTkLabel(tot_frame, text=glob_tot_str, width=self.ANNUAL_COL_WIDTHS["global_net"], anchor="e", font=ctk.CTkFont(size=12, weight="bold"), text_color=glob_tot_color).pack(side="left", padx=6, pady=Theme.SPACING_SM)
 
     def _refresh_charts(self):
-        """Genera y renderiza las gráficas visuales con Matplotlib de forma segura."""
-        if not hasattr(self, "_active_figures"):
-            self._active_figures = []
-        for fig in self._active_figures:
-            try:
-                fig.clf()
-            except Exception:
-                pass
-        self._active_figures.clear()
+        """Genera y renderiza las gráficas visuales con Matplotlib reutilizando los lienzos."""
+        if not hasattr(self, "_chart_initialized") or not self._chart_initialized:
+            self._chart_fig1 = Figure(figsize=(8, 3.2), dpi=100)
+            self._chart_ax1 = self._chart_fig1.add_subplot(111)
+            card1 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card1.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
+            self._chart_canvas1 = FigureCanvasTkAgg(self._chart_fig1, master=card1)
+            self._chart_canvas1.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
 
-        for widget in self.charts_scroll.winfo_children():
-            widget.destroy()
+            self._chart_fig2 = Figure(figsize=(8, 3.4), dpi=100)
+            self._chart_ax2 = self._chart_fig2.add_subplot(111)
+            card2 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card2.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
+            self._chart_canvas2 = FigureCanvasTkAgg(self._chart_fig2, master=card2)
+            self._chart_canvas2.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
+
+            self._chart_fig3 = Figure(figsize=(8, 3.2), dpi=100)
+            self._chart_ax3 = self._chart_fig3.add_subplot(111)
+            card3 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
+            card3.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
+            self._chart_canvas3 = FigureCanvasTkAgg(self._chart_fig3, master=card3)
+            self._chart_canvas3.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
+
+            self._chart_initialized = True
 
         try:
             year = int(self.year_combo.get())
         except ValueError:
             year = self.current_year
-
 
         is_dark = (ctk.get_appearance_mode() == "Dark")
         bg_color = "#1e293b" if is_dark else "#ffffff"
@@ -642,9 +652,9 @@ class AnalyticsView(ctk.CTkFrame):
 
         # 1. Gráfica de Donut: Gastos COP por Categoría del Mes
         categories = self.controller.get_expenses_by_category()
-        fig1 = Figure(figsize=(8, 3.2), dpi=100, facecolor=bg_color)
-        ax1 = fig1.add_subplot(111)
-        ax1.set_facecolor(bg_color)
+        self._chart_fig1.set_facecolor(bg_color)
+        self._chart_ax1.clear()
+        self._chart_ax1.set_facecolor(bg_color)
 
         if categories:
             top_cats = categories[:6]
@@ -652,7 +662,7 @@ class AnalyticsView(ctk.CTkFrame):
             sizes = [c["total"] for c in top_cats]
             palette = ["#f43f5e", "#fb7185", "#f59e0b", "#8b5cf6", "#38bdf8", "#10b981"]
             
-            wedges, texts, autotexts = ax1.pie(
+            wedges, texts, autotexts = self._chart_ax1.pie(
                 sizes,
                 labels=labels,
                 autopct="%1.1f%%",
@@ -664,17 +674,12 @@ class AnalyticsView(ctk.CTkFrame):
             for at in autotexts:
                 at.set_color("#ffffff")
                 at.set_weight("bold")
-            ax1.set_title("Distribución de Gastos COP por Categoría (Mes Actual)", color=text_color, fontsize=12, fontweight="bold", pad=12)
+            self._chart_ax1.set_title("Distribución de Gastos COP por Categoría (Mes Actual)", color=text_color, fontsize=12, fontweight="bold", pad=12)
         else:
-            ax1.text(0.5, 0.5, "No hay gastos registrados en el mes actual", color=muted_color, ha="center", va="center", fontsize=11)
-            ax1.axis("off")
+            self._chart_ax1.text(0.5, 0.5, "No hay gastos registrados en el mes actual", color=muted_color, ha="center", va="center", fontsize=11)
+            self._chart_ax1.axis("off")
 
-        chart_card1 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card1.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
-
-        canvas1 = FigureCanvasTkAgg(fig1, master=chart_card1)
-        canvas1.draw()
-        canvas1.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
+        self._chart_canvas1.draw_idle()
 
         # 2. Gráfica de Barras: Flujo Mensual (Ingresos vs Gastos vs Superávit)
         overview = self.controller.get_annual_overview(year)
@@ -682,58 +687,46 @@ class AnalyticsView(ctk.CTkFrame):
         cop_in = [m["cop_total_income"] / 1000000.0 for m in overview["months"]]
         cop_out = [m["cop_expenses"] / 1000000.0 for m in overview["months"]]
 
-        fig2 = Figure(figsize=(8, 3.4), dpi=100, facecolor=bg_color)
-        ax2 = fig2.add_subplot(111)
-        ax2.set_facecolor(bg_color)
+        self._chart_fig2.set_facecolor(bg_color)
+        self._chart_ax2.clear()
+        self._chart_ax2.set_facecolor(bg_color)
 
         import numpy as np
         x = np.arange(len(months))
         width = 0.35
 
-        ax2.bar(x - width/2, cop_in, width, label="Ingresos COP (M)", color="#10b981", alpha=0.9, edgecolor="none")
-        ax2.bar(x + width/2, cop_out, width, label="Gastos COP (M)", color="#f43f5e", alpha=0.9, edgecolor="none")
+        self._chart_ax2.bar(x - width/2, cop_in, width, label="Ingresos COP (M)", color="#10b981", alpha=0.9, edgecolor="none")
+        self._chart_ax2.bar(x + width/2, cop_out, width, label="Gastos COP (M)", color="#f43f5e", alpha=0.9, edgecolor="none")
 
-        ax2.set_xticks(x)
-        ax2.set_xticklabels(months, color=muted_color, fontsize=9)
-        ax2.tick_params(colors=muted_color, labelsize=9)
-        ax2.grid(True, linestyle="--", alpha=0.3, color=grid_color, axis="y")
-        ax2.set_title(f"Flujo Mensual COP - Año {year} (Millones de Pesos)", color=text_color, fontsize=12, fontweight="bold", pad=12)
-        ax2.legend(facecolor=bg_color, edgecolor=grid_color, labelcolor=text_color, fontsize=9)
+        self._chart_ax2.set_xticks(x)
+        self._chart_ax2.set_xticklabels(months, color=muted_color, fontsize=9)
+        self._chart_ax2.tick_params(colors=muted_color, labelsize=9)
+        self._chart_ax2.grid(True, linestyle="--", alpha=0.3, color=grid_color, axis="y")
+        self._chart_ax2.set_title(f"Flujo Mensual COP - Año {year} (Millones de Pesos)", color=text_color, fontsize=12, fontweight="bold", pad=12)
+        self._chart_ax2.legend(facecolor=bg_color, edgecolor=grid_color, labelcolor=text_color, fontsize=9)
 
-        for spine in ax2.spines.values():
+        for spine in self._chart_ax2.spines.values():
             spine.set_color(grid_color)
 
-        chart_card2 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card2.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
-
-        canvas2 = FigureCanvasTkAgg(fig2, master=chart_card2)
-        canvas2.draw()
-        canvas2.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
+        self._chart_canvas2.draw_idle()
 
         # 3. Gráfica de Línea: Evolución del Patrimonio Neto Global
         history = self.controller.get_monthly_net_worth_history(year, exchange_rate=self.current_rate)
         nw_cop_millions = [h["net_worth_cop"] / 1000000.0 for h in history]
 
-        fig3 = Figure(figsize=(8, 3.2), dpi=100, facecolor=bg_color)
-        ax3 = fig3.add_subplot(111)
-        ax3.set_facecolor(bg_color)
+        self._chart_fig3.set_facecolor(bg_color)
+        self._chart_ax3.clear()
+        self._chart_ax3.set_facecolor(bg_color)
 
-        ax3.plot(months, nw_cop_millions, color="#38bdf8", linewidth=2.5, marker="o", markersize=5, markerfacecolor="#0284c7")
-        ax3.fill_between(months, nw_cop_millions, color="#38bdf8", alpha=0.15)
+        self._chart_ax3.plot(months, nw_cop_millions, color="#38bdf8", linewidth=2.5, marker="o", markersize=5, markerfacecolor="#0284c7")
+        self._chart_ax3.fill_between(months, nw_cop_millions, color="#38bdf8", alpha=0.15)
 
-        ax3.tick_params(colors=muted_color, labelsize=9)
-        ax3.grid(True, linestyle="--", alpha=0.3, color=grid_color)
-        ax3.set_title(f"Evolución del Patrimonio Neto Global - Año {year} (Millones COP a TRM ${self.current_rate:,.0f})", color=text_color, fontsize=12, fontweight="bold", pad=12)
+        self._chart_ax3.tick_params(colors=muted_color, labelsize=9)
+        self._chart_ax3.grid(True, linestyle="--", alpha=0.3, color=grid_color)
+        self._chart_ax3.set_title(f"Evolución del Patrimonio Neto Global - Año {year} (Millones COP a TRM ${self.current_rate:,.0f})", color=text_color, fontsize=12, fontweight="bold", pad=12)
 
-        for spine in ax3.spines.values():
+        for spine in self._chart_ax3.spines.values():
             spine.set_color(grid_color)
 
-        chart_card3 = ctk.CTkFrame(self.charts_scroll, fg_color=Theme.BG_CARD_SUBTLE, corner_radius=Theme.SPACING_SM, border_width=1, border_color=Theme.BORDER_SUBTLE)
-        chart_card3.pack(fill="x", pady=Theme.SPACING_XS, padx=Theme.SPACING_XS)
-
-        canvas3 = FigureCanvasTkAgg(fig3, master=chart_card3)
-        canvas3.draw()
-        canvas3.get_tk_widget().pack(fill="both", expand=True, padx=Theme.SPACING_SM, pady=Theme.SPACING_SM)
-
-        self._active_figures.extend([fig1, fig2, fig3])
+        self._chart_canvas3.draw_idle()
 

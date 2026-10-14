@@ -154,17 +154,20 @@ class TestUISmoke(unittest.TestCase):
             # 4. Probar modales asociados a la vista
             edit_modal = EditTransactionModal(app, self.db, "cop_transactions", saved_expense)
             app.update()
+            self.assertGreater(len(edit_modal.winfo_children()), 0, "EditTransactionModal debe construir widgets")
             edit_modal.destroy()
             app.update()
 
             dup_modal = DuplicateModal(app, self.db, "cop_transactions", saved_expense)
             app.update()
+            self.assertGreater(len(dup_modal.winfo_children()), 0, "DuplicateModal debe construir widgets")
             dup_modal.destroy()
             app.update()
 
 
             rec_modal = ApplyRecurringModal(app, self.db)
             app.update()
+            self.assertGreater(len(rec_modal.winfo_children()), 0, "ApplyRecurringModal debe construir widgets")
             rec_modal.destroy()
             app.update()
 
@@ -222,21 +225,25 @@ class TestUISmoke(unittest.TestCase):
             # 2. Probar modales de deudas
             add_modal = AddDebtModal(app, self.db, debt=debt_data)
             app.update()
+            self.assertGreater(len(add_modal.winfo_children()), 0, "AddDebtModal debe construir widgets")
             add_modal.destroy()
             app.update()
 
             pay_modal = DebtPaymentModal(app, self.db, debt=debt_data)
             app.update()
+            self.assertGreater(len(pay_modal.winfo_children()), 0, "DebtPaymentModal debe construir widgets")
             pay_modal.destroy()
             app.update()
 
             hist_modal = DebtHistoryModal(app, self.db, debt_id=debt_id)
             app.update()
+            self.assertGreater(len(hist_modal.winfo_children()), 0, "DebtHistoryModal debe construir widgets")
             hist_modal.destroy()
             app.update()
 
             cc_modal = CCPaymentModal(app, self.db)
             app.update()
+            self.assertGreater(len(cc_modal.winfo_children()), 0, "CCPaymentModal debe construir widgets")
             cc_modal.destroy()
             app.update()
 
@@ -281,6 +288,7 @@ class TestUISmoke(unittest.TestCase):
             # 2. Abrir CSVImporterModal
             importer = CSVImporterModal(app, self.db)
             app.update()
+            self.assertGreater(len(importer.winfo_children()), 0, "CSVImporterModal debe construir widgets")
             importer.destroy()
             app.update()
 
@@ -305,7 +313,7 @@ class TestUISmoke(unittest.TestCase):
             # 4. CRUD en RecurringTab
             settings_view.section_seg.set(SettingsTabs.RECURRING)
             app.update()
-            rec_id = self.db.add_recurring_expense("Alimentación / Mercado", "Mercado Semanal Test", 80000.0, 5)
+            rec_id = self.db.add_recurring_expense("Alimentación / Mercado", "Mercado Semanal Test", 80000.0, currency="COP", due_day=5)
             self.assertGreater(rec_id, 0)
             settings_view.recurring_tab.refresh_data()
             app.update()

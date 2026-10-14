@@ -37,39 +37,40 @@ class AccountMixin:
     def get_accounts(self, currency: Optional[str] = None, only_active: bool = True) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            query = "SELECT id, name, currency, account_type, institution, initial_balance, color, icon, is_active, created_at FROM accounts"
             conditions = []
             params = []
 
             if only_active:
-                conditions.append("is_active = 1")
+                conditions.append("a.is_active = 1")
             if currency:
-                conditions.append("currency = ?")
+                conditions.append("a.currency = ?")
                 params.append(currency)
 
-            if conditions:
-                query += f" WHERE {' AND '.join(conditions)}"
-            query += " ORDER BY currency ASC, name ASC;"
+            where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+
+            query = f"""
+                SELECT 
+                    a.id, a.name, a.currency, a.account_type, a.institution, 
+                    a.initial_balance, a.color, a.icon, a.is_active, a.created_at,
+                    COALESCE(SUM(CASE WHEN t.type IN ('DEPOSIT', 'TRANSFER_IN', 'YIELD') THEN t.amount ELSE 0 END), 0) -
+                    COALESCE(SUM(CASE WHEN t.type IN ('WITHDRAWAL', 'TRANSFER_OUT') THEN t.amount ELSE 0 END), 0) AS tx_balance,
+                    COALESCE(SUM(CASE WHEN t.type = 'YIELD' THEN t.amount ELSE 0 END), 0) AS total_yields
+                FROM accounts a
+                LEFT JOIN account_transactions t ON a.id = t.account_id
+                {where_clause}
+                GROUP BY a.id
+                ORDER BY a.currency ASC, a.name ASC;
+            """
 
             cursor.execute(query, params)
-            accounts = [dict(row) for row in cursor.fetchall()]
-
-            for acc in accounts:
-                acc_id = acc["id"]
-                cursor.execute("""
-                    SELECT 
-                        COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'TRANSFER_IN', 'YIELD') THEN amount ELSE 0 END), 0) -
-                        COALESCE(SUM(CASE WHEN type IN ('WITHDRAWAL', 'TRANSFER_OUT') THEN amount ELSE 0 END), 0) AS balance,
-                        COALESCE(SUM(CASE WHEN type = 'YIELD' THEN amount ELSE 0 END), 0) AS total_yields
-                    FROM account_transactions
-                    WHERE account_id = ?;
-                """, (acc_id,))
-                stats = cursor.fetchone()
-                tx_balance = float(stats["balance"]) if stats else 0.0
-                total_yields = float(stats["total_yields"]) if stats else 0.0
-
-                acc["current_balance"] = acc["initial_balance"] + tx_balance
+            accounts = []
+            for row in cursor.fetchall():
+                acc = dict(row)
+                tx_balance = float(acc.pop("tx_balance", 0.0) or 0.0)
+                total_yields = float(acc.get("total_yields", 0.0) or 0.0)
                 acc["total_yields"] = total_yields
+                acc["current_balance"] = acc["initial_balance"] + tx_balance
+                accounts.append(acc)
 
             return accounts
 
@@ -144,7 +145,7 @@ class AccountMixin:
                     cursor.execute("BEGIN IMMEDIATE;")
 
                     if currency == "COP":
-                        cop_bal = self.get_cop_balance()
+                        cop_bal = self.get_cop_balance(conn=conn)
                         if amount > cop_bal:
                             conn.rollback()
                             return False, f"Saldo insuficiente en cuenta COP (${cop_bal:,.0f} COP)."
@@ -153,8 +154,10 @@ class AccountMixin:
                             INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
                             VALUES (?, ?, 'TRANSFER_TO_INVESTMENT', ?, 0, 'DEBIT', ?);
                         """, (date, f"Inversión: {acc['name']}", amount, desc_notes))
+                        linked_tx_id = cursor.lastrowid
+                        linked_table = "cop_transactions"
                     else:
-                        usd_bal = self.get_usd_balance()
+                        usd_bal = self.get_usd_balance(conn=conn)
                         if amount > usd_bal:
                             conn.rollback()
                             return False, f"Saldo insuficiente en Bóveda USD (${usd_bal:,.2f} USD)."
@@ -163,11 +166,13 @@ class AccountMixin:
                             INSERT INTO usd_transactions (date, platform, type, amount, notes)
                             VALUES (?, ?, 'TRANSFER_TO_INVESTMENT', ?, ?);
                         """, (date, f"Inversión: {acc['name']}", amount, desc_notes))
+                        linked_tx_id = cursor.lastrowid
+                        linked_table = "usd_transactions"
 
                     cursor.execute("""
-                        INSERT INTO account_transactions (account_id, date, type, amount, notes)
-                        VALUES (?, ?, 'TRANSFER_IN', ?, ?);
-                    """, (account_id, date, amount, desc_notes))
+                        INSERT INTO account_transactions (account_id, date, type, amount, notes, linked_tx_id, linked_table)
+                        VALUES (?, ?, 'TRANSFER_IN', ?, ?, ?, ?);
+                    """, (account_id, date, amount, desc_notes, linked_tx_id, linked_table))
 
                     formatted_amount = f"${amount:,.2f}" if currency == "USD" else f"${amount:,.0f}"
                     conn.commit()
@@ -203,21 +208,25 @@ class AccountMixin:
                     cursor = conn.cursor()
                     cursor.execute("BEGIN IMMEDIATE;")
 
-                    cursor.execute("""
-                        INSERT INTO account_transactions (account_id, date, type, amount, notes)
-                        VALUES (?, ?, 'TRANSFER_OUT', ?, ?);
-                    """, (account_id, date, amount, desc_notes))
-
                     if currency == "COP":
                         cursor.execute("""
                             INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
                             VALUES (?, ?, 'TRANSFER_FROM_INVESTMENT', ?, 0, 'DEBIT', ?);
                         """, (date, f"Retiro Inversión: {acc['name']}", amount, desc_notes))
+                        linked_tx_id = cursor.lastrowid
+                        linked_table = "cop_transactions"
                     else:
                         cursor.execute("""
                             INSERT INTO usd_transactions (date, platform, type, amount, notes)
                             VALUES (?, ?, 'TRANSFER_FROM_INVESTMENT', ?, ?);
                         """, (date, f"Retiro Inversión: {acc['name']}", amount, desc_notes))
+                        linked_tx_id = cursor.lastrowid
+                        linked_table = "usd_transactions"
+
+                    cursor.execute("""
+                        INSERT INTO account_transactions (account_id, date, type, amount, notes, linked_tx_id, linked_table)
+                        VALUES (?, ?, 'TRANSFER_OUT', ?, ?, ?, ?);
+                    """, (account_id, date, amount, desc_notes, linked_tx_id, linked_table))
 
                     formatted_amount = f"${amount:,.2f}" if currency == "USD" else f"${amount:,.0f}"
                     conn.commit()
@@ -277,10 +286,25 @@ class AccountMixin:
             with self.get_connection() as conn:
                 try:
                     cursor = conn.cursor()
+                    cursor.execute("SELECT id, account_id, date, type, amount, notes, linked_tx_id, linked_table FROM account_transactions WHERE id = ?;", (tx_id,))
+                    tx = cursor.fetchone()
+                    if not tx:
+                        return False, "Movimiento de inversión no encontrado.", None
+
+                    linked_id = tx["linked_tx_id"] if "linked_tx_id" in tx.keys() else None
+                    linked_tbl = tx["linked_table"] if "linked_table" in tx.keys() else None
+
                     cursor.execute("DELETE FROM account_transactions WHERE id = ?;", (tx_id,))
+                    cursor.execute("DELETE FROM transaction_tags WHERE source_table = 'account_transactions' AND record_id = ?;", (tx_id,))
+
+                    if linked_id and linked_tbl in ("cop_transactions", "usd_transactions"):
+                        cursor.execute(f"DELETE FROM {linked_tbl} WHERE id = ?;", (linked_id,))
+                        cursor.execute("DELETE FROM transaction_tags WHERE source_table = ? AND record_id = ?;", (linked_tbl, linked_id))
+
                     conn.commit()
                     return True, "Movimiento de inversión eliminado.", None
                 except Exception as e:
+                    conn.rollback()
                     return False, f"Error al eliminar: {str(e)}", None
 
     def get_account_transactions(self, account_id: Optional[int] = None, limit: int = 50) -> List[Dict[str, Any]]:

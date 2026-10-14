@@ -26,9 +26,9 @@ class ConversionView(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.db = db_manager
         self.display_limit = 20
+        self.current_usd_balance = 0.0
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         # 1. Cabecera con Toast
@@ -246,7 +246,7 @@ class ConversionView(ctk.CTkFrame):
         try:
             usd_val = float(usd_str) if usd_str else 0.0
             rate_val = float(rate_str) if rate_str else 0.0
-            current_balance = self.db.get_usd_balance()
+            current_balance = self.current_usd_balance
 
             if usd_val > 0 and rate_val > 0:
                 cop_val = usd_val * rate_val
@@ -318,15 +318,14 @@ class ConversionView(ctk.CTkFrame):
             self.rate_entry.delete(0, "end")
             self.notes_entry.delete(0, "end")
             self._on_input_changed()
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
         else:
             self.toast.show(msg, is_error=True)
 
     def refresh_data(self):
         """Actualiza el saldo disponible de la bóveda y el historial de conversiones."""
-        usd_balance = self.db.get_usd_balance()
-        self.lbl_available_usd.configure(text=f"${usd_balance:,.2f} USD")
+        self.current_usd_balance = self.db.get_usd_balance()
+        self.lbl_available_usd.configure(text=f"${self.current_usd_balance:,.2f} USD")
 
         for widget in self.history_scroll.winfo_children():
             widget.destroy()

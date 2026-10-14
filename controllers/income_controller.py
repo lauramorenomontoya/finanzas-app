@@ -5,6 +5,7 @@ Separa la lógica de negocio, validaciones y acceso a datos de la interfaz de us
 
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
+from core.utils import parse_currency_amount
 
 
 class IncomeController:
@@ -24,23 +25,13 @@ class IncomeController:
         """
         Valida los datos de entrada y registra un ingreso en USD o COP.
         """
-        if not amount_str or not amount_str.strip():
+        if not amount_str or not str(amount_str).strip():
             return False, "El monto no puede estar vacío."
 
-        # Limpieza y formateo numérico
-        raw = amount_str.strip()
-        if not is_usd:
-            # En COP se eliminan puntos de miles y se reemplaza coma por punto decimal si la hay
-            clean_str = raw.replace(".", "").replace(",", ".")
-        else:
-            clean_str = raw.replace(",", ".")
-
-        try:
-            amount = float(clean_str)
-            if amount <= 0:
-                return False, "Por favor ingresa un monto válido mayor a 0."
-        except ValueError:
-            return False, "Por favor ingresa un monto numérico válido."
+        currency = "USD" if is_usd else "COP"
+        amount = parse_currency_amount(amount_str, currency=currency)
+        if amount <= 0:
+            return False, "Por favor ingresa un monto numérico válido mayor a 0."
 
         # Validación de fecha
         try:
@@ -55,14 +46,20 @@ class IncomeController:
             clean_notes = notes.strip()
 
             if is_usd:
-                desc_platform = f"{clean_platform} ({clean_category})" if clean_category else clean_platform
-                tx_id = self.db.add_usd_deposit(date_str.strip(), desc_platform, amount, clean_notes)
+                platform_info = clean_platform or "Bóveda USD"
+                final_notes = clean_notes
+                if clean_category and clean_category != "Ingreso":
+                    final_notes = f"[{clean_category}] {clean_notes}".strip() if clean_notes else f"[{clean_category}]"
+                tx_id = self.db.add_usd_deposit(date_str.strip(), platform_info, amount, final_notes)
                 if selected_tag_ids and tx_id:
                     self.db.set_tags_for_record("usd_transactions", tx_id, selected_tag_ids)
-                return True, f"¡Ingreso de +${amount:,.2f} USD guardado en {clean_platform}!"
+                return True, f"¡Ingreso de +${amount:,.2f} USD guardado en {platform_info}!"
             else:
-                desc_cat = f"{clean_category} • {clean_platform}" if clean_platform else clean_category
-                tx_id = self.db.add_cop_income(date_str.strip(), desc_cat, amount, clean_notes)
+                category_name = clean_category or "Ingreso / Salario"
+                final_notes = clean_notes
+                if clean_platform:
+                    final_notes = f"[{clean_platform}] {clean_notes}".strip() if clean_notes else f"[{clean_platform}]"
+                tx_id = self.db.add_cop_income(date_str.strip(), category_name, amount, final_notes)
                 if selected_tag_ids and tx_id:
                     self.db.set_tags_for_record("cop_transactions", tx_id, selected_tag_ids)
                 return True, f"¡Ingreso de +${amount:,.0f} COP registrado con éxito!"

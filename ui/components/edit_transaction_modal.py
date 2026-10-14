@@ -13,6 +13,7 @@ from ui.utils.modal_helper import center_window
 
 
 from ui.components.base_modal import BaseModal
+from core.utils import parse_currency_amount
 
 class EditTransactionModal(BaseModal):
     def __init__(
@@ -171,14 +172,14 @@ class EditTransactionModal(BaseModal):
         try:
             if self.source_table == "usd_transactions":
                 platform = self.category_entry.get().strip()
-                amt = float(self.amount_entry.get().strip().replace(",", "."))
+                amt = parse_currency_amount(self.amount_entry.get(), "USD")
                 if not platform or amt <= 0:
                     raise ValueError()
                 success, msg = self.db.update_usd_transaction(rec_id, date_str, platform, amt, notes)
 
             elif self.source_table == "cop_transactions":
                 category = self.category_entry.get().strip()
-                amt = float(self.amount_entry.get().strip().replace(".", "").replace(",", "."))
+                amt = parse_currency_amount(self.amount_entry.get(), "COP")
                 if not category or amt <= 0:
                     raise ValueError()
                 is_fixed = bool(self.fixed_switch.get())
@@ -187,14 +188,15 @@ class EditTransactionModal(BaseModal):
                 success, msg = self.db.update_cop_transaction(rec_id, date_str, category, amt, is_fixed, pm_code, notes)
 
             elif self.source_table == "conversions":
-                usd_amt = float(self.amount_entry.get().strip().replace(",", "."))
-                rate = float(self.rate_entry.get().strip().replace(",", "."))
+                usd_amt = parse_currency_amount(self.amount_entry.get(), "USD")
+                rate = parse_currency_amount(self.rate_entry.get(), "COP")
                 if usd_amt <= 0 or rate <= 0:
                     raise ValueError()
                 success, msg = self.db.update_conversion(rec_id, date_str, usd_amt, rate, notes)
 
             else:  # account_transactions
-                amt = float(self.amount_entry.get().strip().replace(".", "").replace(",", "."))
+                curr = self.record.get("currency", "COP")
+                amt = parse_currency_amount(self.amount_entry.get(), curr)
                 if amt <= 0:
                     raise ValueError()
                 success, msg = self.db.update_account_transaction(rec_id, date_str, amt, notes)

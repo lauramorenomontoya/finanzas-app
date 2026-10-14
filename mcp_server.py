@@ -9,6 +9,7 @@ import os
 import sys
 import sqlite3
 import json
+import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
@@ -26,24 +27,17 @@ for d in BASE_DIRS:
 from database.db_manager import DatabaseManager
 from mcp.server.mcpserver import MCPServer
 
-# Resolver ruta de la base de datos preferida (Montu con fallback seguro a ControlFinanciero o local)
-if sys.platform == "darwin":
-    NEW_PROD_DB = os.path.expanduser("~/Library/Application Support/Montu/finanzas.db")
-    OLD_PROD_DB = os.path.expanduser("~/Library/Application Support/ControlFinanciero/finanzas.db")
-elif sys.platform == "win32":
-    appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
-    NEW_PROD_DB = os.path.join(appdata, "Montu", "finanzas.db")
-    OLD_PROD_DB = os.path.join(appdata, "ControlFinanciero", "finanzas.db")
-else:
-    NEW_PROD_DB = os.path.expanduser("~/.local/share/Montu/finanzas.db")
-    OLD_PROD_DB = os.path.expanduser("~/.local/share/ControlFinanciero/finanzas.db")
+# Resolver ruta de la base de datos preferida (Montu con fallback a local)
+prod_data_dir = DatabaseManager.get_app_data_dir()
+PROD_DB = os.path.join(prod_data_dir, "finanzas.db")
+LOCAL_DB = os.path.join(CURRENT_DIR, "finanzas.db")
 
-if os.path.exists(OLD_PROD_DB):
-    DB_PATH = OLD_PROD_DB
-elif os.path.exists(NEW_PROD_DB):
-    DB_PATH = NEW_PROD_DB
+if os.path.exists(PROD_DB):
+    DB_PATH = PROD_DB
+elif os.path.exists(LOCAL_DB):
+    DB_PATH = LOCAL_DB
 else:
-    DB_PATH = os.path.join(CURRENT_DIR, "finanzas.db")
+    DB_PATH = PROD_DB
 
 db = DatabaseManager(db_path=DB_PATH)
 mcp = MCPServer("montu")
@@ -85,17 +79,18 @@ def get_financial_summary() -> str:
             },
             "mes_en_curso": current_month,
             "ingresos_mes": {
-                "cop": inc_summary.get("total_cop_month", 0),
-                "usd": inc_summary.get("total_usd_month", 0)
+                "cop": inc_summary.get("month_cop", inc_summary.get("total_cop_month", 0)),
+                "usd": inc_summary.get("month_usd", inc_summary.get("total_usd_month", 0))
             },
             "egresos_mes": {
-                "cop": exp_summary.get("total_cop_month", 0),
-                "usd": exp_summary.get("total_usd_month", 0)
+                "cop": exp_summary.get("month_cop_expenses", exp_summary.get("total_cop_month", 0)),
+                "usd": exp_summary.get("month_usd_expenses", exp_summary.get("total_usd_month", 0))
             },
             "deudas_activas": {
-                "tarjetas_credito_cop": debts.get("total_credit_card_cop", 0),
-                "prestamos_personales_cop": debts.get("total_personal_loans_cop", 0),
-                "total_deuda_cop": debts.get("total_debt_cop", 0)
+                "tarjetas_credito_cop": debts.get("credit_card_debt", 0),
+                "prestamos_personales_cop": debts.get("personal_payable_remaining", debts.get("personal_remaining", 0)),
+                "total_deuda_cop": debts.get("grand_total_debt", 0),
+                "por_cobrar_cop": debts.get("personal_receivable_remaining", 0)
             }
         }
         return json.dumps(summary, indent=2, ensure_ascii=False)
@@ -314,12 +309,15 @@ def query_database(sql_query: str) -> str:
     if not upper.startswith("SELECT") and not upper.startswith("WITH"):
         return json.dumps({"error": "Solo se permiten consultas de lectura (SELECT / WITH)."}, ensure_ascii=False)
 
-    for forbidden in ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE", "ATTACH", "DETACH"]:
-        if forbidden in upper.split():
+    for forbidden in ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE", "ATTACH", "DETACH", "PRAGMA", "VACUUM"]:
+        if re.search(r"\b" + forbidden + r"\b", upper):
             return json.dumps({"error": f"Operación '{forbidden}' no permitida por seguridad."}, ensure_ascii=False)
 
     try:
-        with db.get_connection() as conn:
+        ro_uri = f"file:{os.path.abspath(db.db_path)}?mode=ro"
+        with sqlite3.connect(ro_uri, uri=True, timeout=10.0) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA query_only = ON;")
             cursor = conn.cursor()
             cursor.execute(cleaned)
             rows = cursor.fetchmany(50)

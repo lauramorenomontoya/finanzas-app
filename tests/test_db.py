@@ -5,6 +5,8 @@ TRM en vivo desde APIs gratuitas (open.er-api.com / exchangerate-api.com), CRUD 
 """
 
 import unittest
+from unittest.mock import patch, MagicMock
+import json
 import tempfile
 import os
 import sys
@@ -158,12 +160,18 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertEqual(item["amount"], 135000.0)
         self.assertEqual(item["due_day"], 15)
 
-    def test_currency_service_live_rate(self):
-        # Validar consulta a APIs gratuitas públicas sin API key
-        rate = CurrencyService.get_live_usd_to_cop_rate(timeout=6.0)
+    @patch("urllib.request.urlopen")
+    def test_currency_service_live_rate(self, mock_urlopen):
+        # Desacoplado de red externa mediante mock de respuesta JSON
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = json.dumps([{"valor": "4150.50"}]).encode("utf-8")
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        rate = CurrencyService.get_live_usd_to_cop_rate(timeout=1.0)
         self.assertIsNotNone(rate)
-        self.assertGreater(rate, 2000.0)
-        self.assertLess(rate, 6000.0)
+        self.assertEqual(rate, 4150.50)
 
     def test_categories_crud(self):
         # 1. Crear categoría
@@ -196,8 +204,8 @@ class TestDatabaseManager(unittest.TestCase):
 
     def test_apply_recurring_batch(self):
         # 1. Crear dos gastos fijos
-        id1 = self.db.add_recurring_expense("Hogar", "Internet", 100000.0, "COP", 5)
-        id2 = self.db.add_recurring_expense("Software", "ChatGPT", 20.0, "USD", 1)
+        id1 = self.db.add_recurring_expense("Hogar", "Internet", 100000.0, currency="COP", due_day=5)
+        id2 = self.db.add_recurring_expense("Software", "ChatGPT", 20.0, currency="USD", due_day=1)
 
         # 2. Aplicar en batch
         res = self.db.apply_recurring_batch([id1, id2], date_str="2026-08-01")
@@ -295,7 +303,7 @@ class TestDatabaseManager(unittest.TestCase):
         self.db.add_cop_expense("2026-08-02", "Cuidado", 30000.0)
         self.db.add_cop_expense("2026-08-03", "Peluquería", 25000.0)
         self.db.add_cop_income("2026-08-04", "Nómina", 2000000.0)
-        rec_id = self.db.add_recurring_expense("Suscripciones", "Netflix", 35000.0, "COP", 10)
+        rec_id = self.db.add_recurring_expense("Suscripciones", "Netflix", 35000.0, currency="COP", due_day=10)
 
         # 2. Ejecutar consolidación
         stats = CategoryService.consolidate_database_categories(self.db)

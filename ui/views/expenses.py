@@ -38,7 +38,6 @@ class ExpensesView(ctk.CTkFrame):
         self.checklist_ym = datetime.now().strftime("%Y-%m")
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -225,7 +224,9 @@ class ExpensesView(ctk.CTkFrame):
         # Botón Guardar
         self.btn_submit = ctk.CTkButton(
             form_panel,
-            text="Registrar Egreso COP",
+            text="  Registrar Egreso COP",
+            image=IconHelper.get_icon("plus", size=14, color=Theme.BG_APP),
+            compound="left",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=38,
             corner_radius=Theme.SPACING_SM,
@@ -332,7 +333,9 @@ class ExpensesView(ctk.CTkFrame):
 
         self.btn_batch_apply = ctk.CTkButton(
             p_top,
-            text="Aplicar Gastos del Mes",
+            text=" Aplicar Gastos del Mes",
+            image=IconHelper.get_icon("check", size=13, color=Theme.BG_APP),
+            compound="left",
             height=26,
             corner_radius=Theme.SPACING_XS,
             fg_color=Theme.SUCCESS,
@@ -423,6 +426,7 @@ class ExpensesView(ctk.CTkFrame):
             self.amount_entry.configure(placeholder_text="Ej: 20.00")
             self.payment_combo.pack_forget()
             self.lbl_payment.pack_forget()
+            self.fixed_switch.deselect()
             self.fixed_switch.configure(state="disabled")
             cats = self.controller.get_categories(is_usd_or_type=True)
             if cats:
@@ -469,7 +473,6 @@ class ExpensesView(ctk.CTkFrame):
             self.notes_entry.delete(0, "end")
             if hasattr(self, "tag_selector"):
                 self.tag_selector.clear()
-            self.refresh_data()
             EventBus.publish("DATA_UPDATED")
         else:
             self.toast.show(msg, is_error=True)
@@ -478,11 +481,11 @@ class ExpensesView(ctk.CTkFrame):
         ApplyRecurringModal(
             self.winfo_toplevel(),
             self.db,
+            target_ym=self.checklist_ym,
             on_success=self._on_recurring_applied
         )
 
     def _on_recurring_applied(self):
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
         self.toast.show("¡Gastos fijos aplicados y reflejados en tu balance!", is_error=False)
 
@@ -545,13 +548,6 @@ class ExpensesView(ctk.CTkFrame):
         self.lbl_checklist_month.configure(text=self._format_month_label(self.checklist_ym))
         self._refresh_checklist()
 
-    def _open_apply_recurring_modal(self):
-        ApplyRecurringModal(
-            self.winfo_toplevel(),
-            self.db,
-            target_ym=self.checklist_ym,
-            on_success=self.refresh_data
-        )
 
     def _refresh_checklist(self):
         for widget in self.checklist_scroll.winfo_children():
@@ -693,13 +689,11 @@ class ExpensesView(ctk.CTkFrame):
     def _execute_pay(self, item_id: int, date_str: str, target_month: str):
         success, msg, _ = self.controller.pay_recurring(item_id, date_str=date_str, target_month=target_month)
         self.toast.show(msg, is_error=not success)
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
 
     def _execute_unpay(self, tx_id: int, currency: str):
         success, msg = self.controller.unpay_recurring(tx_id, currency=currency)
         self.toast.show(msg, is_error=not success)
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
 
     # ==========================================
@@ -848,5 +842,4 @@ class ExpensesView(ctk.CTkFrame):
             self.toast.show(msg, is_error=True)
 
     def _on_action_success(self):
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")

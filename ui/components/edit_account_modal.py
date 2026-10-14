@@ -10,6 +10,7 @@ from ui.utils.modal_helper import center_window
 
 
 from ui.components.base_modal import BaseModal
+from core.utils import parse_currency_amount
 
 class EditAccountModal(BaseModal):
     def __init__(
@@ -187,7 +188,6 @@ class EditAccountModal(BaseModal):
         type_str = self.type_combo.get().strip()
         institution = self.inst_entry.get().strip()
         icon = self.icon_entry.get().strip() or "📈"
-        bal_raw = self.bal_entry.get().strip().replace(".", "").replace(",", ".")
 
         if not name:
             self.lbl_error.configure(text="⚠️ Ingresa un nombre para la cuenta.")
@@ -201,11 +201,8 @@ class EditAccountModal(BaseModal):
         elif "Operativa" in type_str:
             type_code = "OPERATIVA"
 
-        try:
-            init_bal = float(bal_raw) if bal_raw else 0.0
-            if init_bal < 0:
-                raise ValueError()
-        except ValueError:
+        init_bal = parse_currency_amount(self.bal_entry.get(), curr)
+        if init_bal < 0:
             self.lbl_error.configure(text="⚠️ El saldo inicial debe ser un número mayor o igual a 0.")
             return
 

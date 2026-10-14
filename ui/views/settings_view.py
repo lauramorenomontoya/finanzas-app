@@ -22,7 +22,6 @@ class SettingsView(ctk.CTkFrame):
         self.controller = SettingsController(db_manager)
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -135,7 +134,6 @@ class SettingsView(ctk.CTkFrame):
 
     def _on_import_completed(self):
         self.toast.show("¡Datos de CSV / Notion importados exitosamente!", is_error=False)
-        self.refresh_data()
         EventBus.publish("DATA_UPDATED")
 
     def _on_section_changed(self, choice: str):
@@ -162,11 +160,8 @@ class SettingsView(ctk.CTkFrame):
             self.ai_tab.refresh_data()
 
     def refresh_data(self):
-        """Delega el refresh a cada una de las pestañas activas/inactivas."""
-        self.categories_tab.refresh_data()
-        self.accounts_tab.refresh_data()
-        self.recurring_tab.refresh_data()
-        self.ai_tab.refresh_data()
+        """Delega el refresh únicamente a la pestaña actualmente visible."""
+        self._show_active_section()
 
     def _check_for_updates(self):
         """Dispara la verificación manual de versiones desde la ventana principal."""

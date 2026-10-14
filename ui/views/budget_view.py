@@ -28,7 +28,6 @@ class BudgetView(ctk.CTkFrame):
         self.expanded_categories: Set[str] = set()
 
         self._build_ui()
-        self.refresh_data()
 
     def _build_ui(self):
         self.toast = ToastNotification(self)
@@ -582,7 +581,7 @@ class BudgetView(ctk.CTkFrame):
         inv_goal = overview["invest_target"]
         if inv_goal <= 0:
             inv_goal = overview["p3_target"]
-        inv_done = overview["total_invested_actual"]
+        inv_done = max(0.0, overview["total_invested_actual"] - moto_done)
 
         total_saved_invested = moto_done + inv_done
         total_p2_goal = max(p2_target_total, moto_goal + em_goal + inv_goal)

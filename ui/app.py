@@ -22,8 +22,10 @@ from ui.views.budget_view import BudgetView
 from ui.views.debt_view import DebtView
 from core.event_bus import EventBus
 from core.constants import APP_VERSION, APP_NAME_VISIBLE, get_asset_path
+from ui.utils.icon_helper import IconHelper
 import os
 import sys
+
 
 
 class FinancialApp(ctk.CTk):
@@ -98,17 +100,21 @@ class FinancialApp(ctk.CTk):
         """Configura el ícono de la ventana según la plataforma."""
         try:
             if sys.platform.startswith("win"):
-                ico_path = get_asset_path("icon.ico")
+                ico_path = get_asset_path("montu_icon_alpha_1024.ico")
+                if not os.path.exists(ico_path):
+                    ico_path = get_asset_path("icon.ico")
                 if os.path.exists(ico_path):
                     self.iconbitmap(ico_path)
             elif sys.platform.startswith("linux"):
-                icon_path = get_asset_path("icon.png")
+                icon_path = get_asset_path("montu_icon_alpha_1024.png")
+                if not os.path.exists(icon_path):
+                    icon_path = get_asset_path("icon.png")
                 if os.path.exists(icon_path):
                     from PIL import Image, ImageTk
                     pil_img = Image.open(icon_path).resize((64, 64), Image.Resampling.LANCZOS)
                     self._tk_icon = ImageTk.PhotoImage(pil_img)
                     self.iconphoto(False, self._tk_icon)
-            # En macOS Cocoa el ícono lo gestiona el Bundle .app (icon.icns) nativamente en el Dock.
+            # En macOS Cocoa el ícono lo gestiona el Bundle .app (montu_icon_1024.icns / icon.icns) nativamente en el Dock.
         except Exception:
             pass
 
@@ -119,34 +125,63 @@ class FinancialApp(ctk.CTk):
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_rowconfigure(10, weight=1)
 
-        # 1. Logotipo y Título de la Aplicación
+        # 1. Logotipo Oficial y Título de la Aplicación
         brand_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         brand_frame.pack(fill="x", padx=Theme.SPACING_MD, pady=(Theme.SPACING_LG, Theme.SPACING_MD))
 
-        brand_header = ctk.CTkFrame(brand_frame, fg_color="transparent")
-        brand_header.pack(fill="x")
-
-        logo_path = get_asset_path("logo.png")
-        if os.path.exists(logo_path):
+        # Intentar cargar logotipo horizontal oficial transparente
+        official_logo_path = get_asset_path("montu_logo_sin_eslogan_alpha.png")
+        if os.path.exists(official_logo_path):
             try:
                 from PIL import Image
-                logo_pil = Image.open(logo_path)
-                self.sidebar_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(30, 30))
-                lbl_logo = ctk.CTkLabel(brand_header, image=self.sidebar_logo_img, text="")
-                lbl_logo.pack(side="left", padx=(0, Theme.SPACING_SM))
+                logo_pil = Image.open(official_logo_path)
+                bbox = logo_pil.getbbox()
+                if bbox:
+                    logo_pil = logo_pil.crop(bbox)
+                aspect = logo_pil.width / max(1, logo_pil.height)
+                target_w = 175
+                target_h = max(24, int(target_w / aspect))
+                self.sidebar_logo_img = ctk.CTkImage(
+                    light_image=logo_pil,
+                    dark_image=logo_pil,
+                    size=(target_w, target_h)
+                )
+                lbl_logo = ctk.CTkLabel(brand_frame, image=self.sidebar_logo_img, text="")
+                lbl_logo.pack(anchor="w", padx=(2, 0), pady=(0, 2))
             except Exception:
-                pass
+                app_title = ctk.CTkLabel(
+                    brand_frame,
+                    text=APP_NAME_VISIBLE,
+                    font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
+                    text_color=Theme.TEXT_PRIMARY
+                )
+                app_title.pack(anchor="w")
+        else:
+            # Fallback a logo cuadrado o texto estándar
+            brand_header = ctk.CTkFrame(brand_frame, fg_color="transparent")
+            brand_header.pack(fill="x")
 
-        title_col = ctk.CTkFrame(brand_header, fg_color="transparent")
-        title_col.pack(side="left", fill="both")
+            logo_path = get_asset_path("logo.png")
+            if os.path.exists(logo_path):
+                try:
+                    from PIL import Image
+                    logo_pil = Image.open(logo_path)
+                    self.sidebar_logo_img = ctk.CTkImage(light_image=logo_pil, dark_image=logo_pil, size=(30, 30))
+                    lbl_logo = ctk.CTkLabel(brand_header, image=self.sidebar_logo_img, text="")
+                    lbl_logo.pack(side="left", padx=(0, Theme.SPACING_SM))
+                except Exception:
+                    pass
 
-        app_title = ctk.CTkLabel(
-            title_col,
-            text=APP_NAME_VISIBLE,
-            font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
-            text_color=Theme.TEXT_PRIMARY
-        )
-        app_title.pack(anchor="w")
+            title_col = ctk.CTkFrame(brand_header, fg_color="transparent")
+            title_col.pack(side="left", fill="both")
+
+            app_title = ctk.CTkLabel(
+                title_col,
+                text=APP_NAME_VISIBLE,
+                font=ctk.CTkFont(family=Theme.FONT_DISPLAY, size=20, weight="bold"),
+                text_color=Theme.TEXT_PRIMARY
+            )
+            app_title.pack(anchor="w")
 
         app_subtitle = ctk.CTkLabel(
             brand_frame,
@@ -157,10 +192,12 @@ class FinancialApp(ctk.CTk):
         app_subtitle.pack(anchor="w", pady=(Theme.SPACING_XS, 0))
 
 
-        # Botón de Búsqueda Rápida Spotlight (Cmd+K)
+        # Botón de Búsqueda Rápida Spotlight (Cmd+K) con Ícono
         btn_search = ctk.CTkButton(
             self.sidebar,
-            text="Buscar... (⌘K)",
+            text="  Buscar... (⌘K)",
+            image=IconHelper.get_icon("search", size=14, color=Theme.TEXT_MUTED),
+            compound="left",
             anchor="w",
             height=32,
             corner_radius=Theme.SPACING_SM,

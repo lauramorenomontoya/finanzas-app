@@ -53,6 +53,9 @@ class ExpenseMixin:
         if not year_month:
             year_month = datetime.now().strftime("%Y-%m")
 
+        start_date = f"{year_month}-01"
+        end_date = f"{year_month}-31"
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
@@ -62,15 +65,15 @@ class ExpenseMixin:
                     COALESCE(SUM(CASE WHEN is_fixed = 1 THEN amount ELSE 0 END), 0) AS fixed_exp,
                     COALESCE(SUM(CASE WHEN payment_method = 'CREDIT_CARD' THEN amount ELSE 0 END), 0) AS cc_exp
                 FROM cop_transactions
-                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE type = 'EXPENSE' AND date >= ? AND date <= ?;
+            """, (start_date, end_date))
             cop_r = cursor.fetchone()
 
             cursor.execute("""
                 SELECT COALESCE(SUM(amount), 0) AS total_usd_exp
                 FROM usd_transactions
-                WHERE type = 'EXPENSE' AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE type = 'EXPENSE' AND date >= ? AND date <= ?;
+            """, (start_date, end_date))
             usd_r = cursor.fetchone()
 
             return {
@@ -161,6 +164,9 @@ class ExpenseMixin:
         if not year_month:
             year_month = datetime.now().strftime("%Y-%m")
 
+        start_date = f"{year_month}-01"
+        end_date = f"{year_month}-31"
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -172,15 +178,15 @@ class ExpenseMixin:
                     COALESCE(SUM(CASE WHEN payment_method = 'DEBIT' AND type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS debit_expenses,
                     COALESCE(SUM(CASE WHEN type = 'CC_PAYMENT' THEN amount ELSE 0 END), 0) AS cc_payments
                 FROM cop_transactions
-                WHERE type IN ('EXPENSE', 'CC_PAYMENT') AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE type IN ('EXPENSE', 'CC_PAYMENT') AND date >= ? AND date <= ?;
+            """, (start_date, end_date))
             row = cursor.fetchone()
 
             cursor.execute("""
                 SELECT COALESCE(SUM(amount), 0) AS total_income
                 FROM cop_transactions
-                WHERE type IN ('TRANSFER_IN', 'MANUAL_INCOME', 'TRANSFER_FROM_INVESTMENT') AND strftime('%Y-%m', date) = ?;
-            """, (year_month,))
+                WHERE type IN ('TRANSFER_IN', 'MANUAL_INCOME', 'TRANSFER_FROM_INVESTMENT') AND date >= ? AND date <= ?;
+            """, (start_date, end_date))
             income_row = cursor.fetchone()
 
             total_expenses = float(row["total_expenses"])
@@ -213,6 +219,9 @@ class ExpenseMixin:
         if not year_month:
             year_month = datetime.now().strftime("%Y-%m")
 
+        start_date = f"{year_month}-01"
+        end_date = f"{year_month}-31"
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -221,10 +230,10 @@ class ExpenseMixin:
                     COALESCE(SUM(amount), 0) AS total,
                     COUNT(*) AS count
                 FROM cop_transactions
-                WHERE type = 'EXPENSE' AND category NOT LIKE 'Ajuste%' AND strftime('%Y-%m', date) = ?
+                WHERE type = 'EXPENSE' AND category NOT LIKE 'Ajuste%' AND date >= ? AND date <= ?
                 GROUP BY category
                 ORDER BY total DESC;
-            """, (year_month,))
+            """, (start_date, end_date))
             return [dict(row) for row in cursor.fetchall()]
 
     def get_expenses_by_category_all_time(self) -> List[Dict[str, Any]]:

@@ -189,60 +189,88 @@ class DebtMixin:
             date = datetime.now().strftime("%Y-%m-%d")
 
         # Validación de saldo disponible solo para pagos que realizo yo (PAYABLE)
-        if is_payable and deduct_from_balance and debt["currency"] == "COP":
-            cop_balance = self.get_cop_balance()
-            if amount > cop_balance:
-                return False, f"Saldo insuficiente en cuenta COP (${cop_balance:,.0f} COP) para realizar el abono de ${amount:,.0f} COP."
+        if is_payable and deduct_from_balance:
+            if debt["currency"] == "COP":
+                cop_balance = self.get_cop_balance()
+                if amount > cop_balance:
+                    return False, f"Saldo insuficiente en cuenta COP (${cop_balance:,.0f} COP) para realizar el abono de ${amount:,.0f} COP."
+            elif debt["currency"] == "USD":
+                usd_balance = self.get_usd_balance()
+                if amount > usd_balance:
+                    return False, f"Saldo insuficiente en Bóveda USD (${usd_balance:,.2f} USD) para realizar el abono de ${amount:,.2f} USD."
 
         with self._write_lock:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 tx_id = None
+                tx_table = None
 
-                # Registrar movimiento en cop_transactions si aplica
-                if deduct_from_balance and debt["currency"] == "COP":
-                    if is_payable:
-                        cat_name = "Abono a Deudas"
-                        cursor.execute("SELECT id FROM categories WHERE name = ?;", (cat_name,))
-                        if not cursor.fetchone():
+                # Registrar movimiento en cop_transactions o usd_transactions si aplica
+                if deduct_from_balance:
+                    if debt["currency"] == "COP":
+                        tx_table = "cop_transactions"
+                        if is_payable:
+                            cat_name = "Abono a Deudas"
+                            cursor.execute("SELECT id FROM categories WHERE name = ?;", (cat_name,))
+                            if not cursor.fetchone():
+                                cursor.execute("""
+                                    INSERT OR IGNORE INTO categories (name, type, icon, color, is_system)
+                                    VALUES ('Abono a Deudas', 'EXPENSE_COP', '🤝', '#f59e0b', 0);
+                                """)
+
+                            expense_note = f"Abono a deuda con {debt['creditor']}"
+                            if notes.strip():
+                                expense_note += f": {notes.strip()}"
+
                             cursor.execute("""
-                                INSERT OR IGNORE INTO categories (name, type, icon, color, is_system)
-                                VALUES ('Abono a Deudas', 'EXPENSE_COP', '🤝', '#f59e0b', 0);
-                            """)
+                                INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
+                                VALUES (?, ?, 'EXPENSE', ?, 0, 'DEBIT', ?);
+                            """, (date, cat_name, float(amount), expense_note))
+                            tx_id = cursor.lastrowid
+                        else:
+                            cat_name = "Cobro de Préstamos"
+                            cursor.execute("SELECT id FROM categories WHERE name = ?;", (cat_name,))
+                            if not cursor.fetchone():
+                                cursor.execute("""
+                                    INSERT OR IGNORE INTO categories (name, type, icon, color, is_system)
+                                    VALUES ('Cobro de Préstamos', 'INCOME_COP', '📥', '#10b981', 0);
+                                """)
 
-                        expense_note = f"Abono a deuda con {debt['creditor']}"
-                        if notes.strip():
-                            expense_note += f": {notes.strip()}"
+                            income_note = f"Pago recibido de {debt['creditor']}"
+                            if notes.strip():
+                                income_note += f": {notes.strip()}"
 
-                        cursor.execute("""
-                            INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
-                            VALUES (?, ?, 'EXPENSE', ?, 0, 'DEBIT', ?);
-                        """, (date, cat_name, float(amount), expense_note))
-                        tx_id = cursor.lastrowid
-                    else:
-                        cat_name = "Cobro de Préstamos"
-                        cursor.execute("SELECT id FROM categories WHERE name = ?;", (cat_name,))
-                        if not cursor.fetchone():
                             cursor.execute("""
-                                INSERT OR IGNORE INTO categories (name, type, icon, color, is_system)
-                                VALUES ('Cobro de Préstamos', 'INCOME_COP', '📥', '#10b981', 0);
-                            """)
-
-                        income_note = f"Pago recibido de {debt['creditor']}"
-                        if notes.strip():
-                            income_note += f": {notes.strip()}"
-
-                        cursor.execute("""
-                            INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
-                            VALUES (?, ?, 'MANUAL_INCOME', ?, 0, 'DEBIT', ?);
-                        """, (date, cat_name, float(amount), income_note))
-                        tx_id = cursor.lastrowid
+                                INSERT INTO cop_transactions (date, category, type, amount, is_fixed, payment_method, notes)
+                                VALUES (?, ?, 'MANUAL_INCOME', ?, 0, 'DEBIT', ?);
+                            """, (date, cat_name, float(amount), income_note))
+                            tx_id = cursor.lastrowid
+                    elif debt["currency"] == "USD":
+                        tx_table = "usd_transactions"
+                        if is_payable:
+                            expense_note = f"Abono a deuda con {debt['creditor']}"
+                            if notes.strip():
+                                expense_note += f": {notes.strip()}"
+                            cursor.execute("""
+                                INSERT INTO usd_transactions (date, platform, type, amount, notes)
+                                VALUES (?, 'Abono a Deudas', 'EXPENSE', ?, ?);
+                            """, (date, float(amount), expense_note))
+                            tx_id = cursor.lastrowid
+                        else:
+                            income_note = f"Pago recibido de {debt['creditor']}"
+                            if notes.strip():
+                                income_note += f": {notes.strip()}"
+                            cursor.execute("""
+                                INSERT INTO usd_transactions (date, platform, type, amount, notes)
+                                VALUES (?, 'Cobro de Préstamos', 'DEPOSIT', ?, ?);
+                            """, (date, float(amount), income_note))
+                            tx_id = cursor.lastrowid
 
                 # Registrar el abono en debt_payments
                 cursor.execute("""
-                    INSERT INTO debt_payments (debt_id, date, amount, notes, transaction_id)
-                    VALUES (?, ?, ?, ?, ?);
-                """, (debt_id, date, float(amount), notes.strip(), tx_id))
+                    INSERT INTO debt_payments (debt_id, date, amount, notes, transaction_id, transaction_table)
+                    VALUES (?, ?, ?, ?, ?, ?);
+                """, (debt_id, date, float(amount), notes.strip(), tx_id, tx_table or 'cop_transactions'))
 
                 conn.commit()
 
@@ -250,7 +278,9 @@ class DebtMixin:
                 new_remaining = max(0.0, remaining - amount)
                 
                 action_word = "Abono registrado" if is_payable else "Pago recibido registrado"
-                msg = f"¡{action_word} de ${amount:,.0f} {debt['currency']} con éxito! Saldo restante: ${new_remaining:,.0f} {debt['currency']}."
+                formatted_amt = f"${amount:,.2f}" if debt["currency"] == "USD" else f"${amount:,.0f}"
+                formatted_rem = f"${new_remaining:,.2f}" if debt["currency"] == "USD" else f"${new_remaining:,.0f}"
+                msg = f"¡{action_word} de {formatted_amt} {debt['currency']} con éxito! Saldo restante: {formatted_rem} {debt['currency']}."
                 if new_status == "PAID":
                     msg += " 🎉 ¡La obligación ha sido completamente liquidada!" if is_payable else f" 🎉 ¡{debt['creditor']} te ha pagado la totalidad!"
 
@@ -281,21 +311,24 @@ class DebtMixin:
             ]
 
     def delete_debt_payment(self, payment_id: int) -> Tuple[bool, str]:
-        """Elimina un abono y revierte su movimiento de saldo si estaba vinculado a cop_transactions."""
+        """Elimina un abono y revierte su movimiento de saldo si estaba vinculado a cop_transactions o usd_transactions."""
         with self._write_lock:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT debt_id, amount, transaction_id FROM debt_payments WHERE id = ?;", (payment_id,))
+                cursor.execute("SELECT debt_id, amount, transaction_id, transaction_table FROM debt_payments WHERE id = ?;", (payment_id,))
                 payment = cursor.fetchone()
                 if not payment:
                     return False, "No se encontró el abono a eliminar."
 
                 debt_id = payment["debt_id"]
                 tx_id = payment["transaction_id"]
+                tx_table = payment["transaction_table"] if "transaction_table" in payment.keys() else "cop_transactions"
 
-                # Si estaba vinculado a cop_transactions, eliminar para restaurar el saldo
+                # Si estaba vinculado a transacciones, eliminar para restaurar el saldo y limpiar tags
                 if tx_id:
-                    cursor.execute("DELETE FROM cop_transactions WHERE id = ?;", (tx_id,))
+                    target_table = tx_table if tx_table in ("cop_transactions", "usd_transactions") else "cop_transactions"
+                    cursor.execute(f"DELETE FROM {target_table} WHERE id = ?;", (tx_id,))
+                    cursor.execute("DELETE FROM transaction_tags WHERE source_table = ? AND record_id = ?;", (target_table, tx_id))
 
                 cursor.execute("DELETE FROM debt_payments WHERE id = ?;", (payment_id,))
                 conn.commit()
@@ -325,24 +358,35 @@ class DebtMixin:
     def get_debts_summary(self) -> Dict[str, Any]:
         """
         Retorna un resumen global consolidado:
-        - Deudas que debo (PAYABLE: total, abonado, restante)
-        - Dinero que me deben (RECEIVABLE: total, cobrado, restante)
+        - Deudas que debo (PAYABLE: total, abonado, restante en COP y USD)
+        - Dinero que me deben (RECEIVABLE: total, cobrado, restante en COP y USD)
         - Deuda de Tarjeta de Crédito
-        - Deuda Total Pasiva (Consolidada: TC + Mis Deudas)
+        - Deuda Total Pasiva (Consolidada: TC + Mis Deudas COP)
         """
         debts = self.get_debts()
         
-        # Mis Deudas (PAYABLE)
-        payable = [d for d in debts if d.get("debt_type") in ("PAYABLE", "OWED_BY_ME", None) and d["currency"] == "COP"]
-        payable_total = sum(d["total_amount"] for d in payable)
-        payable_paid = sum(d["total_paid"] for d in payable)
-        payable_remaining = sum(d["remaining_amount"] for d in payable if d["status"] == "ACTIVE")
+        # Mis Deudas (PAYABLE) COP
+        payable_cop = [d for d in debts if d.get("debt_type") in ("PAYABLE", "OWED_BY_ME", None) and d["currency"] == "COP"]
+        payable_total = sum(d["total_amount"] for d in payable_cop)
+        payable_paid = sum(d["total_paid"] for d in payable_cop)
+        payable_remaining = sum(d["remaining_amount"] for d in payable_cop if d["status"] == "ACTIVE")
 
-        # Dinero que me deben (RECEIVABLE)
-        receivable = [d for d in debts if d.get("debt_type") in ("RECEIVABLE", "OWED_TO_ME") and d["currency"] == "COP"]
-        receivable_total = sum(d["total_amount"] for d in receivable)
-        receivable_paid = sum(d["total_paid"] for d in receivable)
-        receivable_remaining = sum(d["remaining_amount"] for d in receivable if d["status"] == "ACTIVE")
+        # Dinero que me deben (RECEIVABLE) COP
+        receivable_cop = [d for d in debts if d.get("debt_type") in ("RECEIVABLE", "OWED_TO_ME") and d["currency"] == "COP"]
+        receivable_total = sum(d["total_amount"] for d in receivable_cop)
+        receivable_paid = sum(d["total_paid"] for d in receivable_cop)
+        receivable_remaining = sum(d["remaining_amount"] for d in receivable_cop if d["status"] == "ACTIVE")
+
+        # Deudas en USD
+        payable_usd = [d for d in debts if d.get("debt_type") in ("PAYABLE", "OWED_BY_ME", None) and d["currency"] == "USD"]
+        payable_usd_total = sum(d["total_amount"] for d in payable_usd)
+        payable_usd_paid = sum(d["total_paid"] for d in payable_usd)
+        payable_usd_remaining = sum(d["remaining_amount"] for d in payable_usd if d["status"] == "ACTIVE")
+
+        receivable_usd = [d for d in debts if d.get("debt_type") in ("RECEIVABLE", "OWED_TO_ME") and d["currency"] == "USD"]
+        receivable_usd_total = sum(d["total_amount"] for d in receivable_usd)
+        receivable_usd_paid = sum(d["total_paid"] for d in receivable_usd)
+        receivable_usd_remaining = sum(d["remaining_amount"] for d in receivable_usd if d["status"] == "ACTIVE")
 
         cc_debt = self.get_credit_card_debt()
         grand_total_debt = payable_remaining + cc_debt
@@ -355,6 +399,13 @@ class DebtMixin:
             "personal_receivable_total": receivable_total,
             "personal_receivable_paid": receivable_paid,
             "personal_receivable_remaining": receivable_remaining,
+            # Métricas en USD
+            "usd_payable_total": payable_usd_total,
+            "usd_payable_paid": payable_usd_paid,
+            "usd_payable_remaining": payable_usd_remaining,
+            "usd_receivable_total": receivable_usd_total,
+            "usd_receivable_paid": receivable_usd_paid,
+            "usd_receivable_remaining": receivable_usd_remaining,
             # Compatibilidad hacia atrás
             "personal_total": payable_total,
             "personal_paid": payable_paid,
@@ -362,7 +413,7 @@ class DebtMixin:
             "credit_card_debt": cc_debt,
             "grand_total_debt": grand_total_debt,
             "net_debt": net_debt,
-            "active_debts_count": len([d for d in payable if d["status"] == "ACTIVE"]),
-            "active_receivables_count": len([d for d in receivable if d["status"] == "ACTIVE"]),
-            "paid_debts_count": len([d for d in payable if d["status"] == "PAID"])
+            "active_debts_count": len([d for d in debts if d.get("debt_type") in ("PAYABLE", "OWED_BY_ME", None) and d["status"] == "ACTIVE"]),
+            "active_receivables_count": len([d for d in debts if d.get("debt_type") in ("RECEIVABLE", "OWED_TO_ME") and d["status"] == "ACTIVE"]),
+            "paid_debts_count": len([d for d in debts if d.get("debt_type") in ("PAYABLE", "OWED_BY_ME", None) and d["status"] == "PAID"])
         }

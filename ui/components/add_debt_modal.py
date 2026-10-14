@@ -13,6 +13,7 @@ from ui.utils.modal_helper import center_window
 
 
 from ui.components.base_modal import BaseModal
+from core.utils import parse_currency_amount
 
 class AddDebtModal(BaseModal):
     def __init__(
@@ -245,8 +246,8 @@ class AddDebtModal(BaseModal):
 
     def _save_debt(self):
         creditor = self.entry_creditor.get().strip()
-        amount_raw = self.entry_amount.get().strip().replace("$", "").replace(",", "").replace(".", "")
         currency = self.seg_currency.get()
+        amount = parse_currency_amount(self.entry_amount.get(), currency)
         start_date = self.date_picker.get_date()
         due_date = self.entry_due_date.get().strip() or None
         notes = self.entry_notes.get().strip()
@@ -257,11 +258,7 @@ class AddDebtModal(BaseModal):
             self.lbl_error.configure(text=f"⚠️ Ingresa el nombre de {target_who}.")
             return
 
-        try:
-            amount = float(amount_raw)
-            if amount <= 0:
-                raise ValueError()
-        except ValueError:
+        if amount <= 0:
             self.lbl_error.configure(text="⚠️ Ingresa un monto numérico válido mayor a 0.")
             return
 

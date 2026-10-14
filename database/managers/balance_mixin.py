@@ -6,15 +6,22 @@ from typing import List, Dict, Any, Optional, Tuple
 
 
 class BalanceMixin:
-    def get_usd_balance(self) -> float:
-        with self.get_connection() as conn:
+    def get_usd_balance(self, conn: Optional[Any] = None) -> float:
+        query = """
+            SELECT 
+                COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'TRANSFER_FROM_INVESTMENT') THEN amount ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN type IN ('TRANSFER_OUT', 'TRANSFER_TO_INVESTMENT', 'EXPENSE') THEN amount ELSE 0 END), 0) AS balance
+            FROM usd_transactions;
+        """
+        if conn is not None:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'TRANSFER_FROM_INVESTMENT') THEN amount ELSE 0 END), 0) -
-                    COALESCE(SUM(CASE WHEN type IN ('TRANSFER_OUT', 'TRANSFER_TO_INVESTMENT', 'EXPENSE') THEN amount ELSE 0 END), 0) AS balance
-                FROM usd_transactions;
-            """)
+            cursor.execute(query)
+            row = cursor.fetchone()
+            return float(row["balance"]) if row else 0.0
+
+        with self.get_connection() as c:
+            cursor = c.cursor()
+            cursor.execute(query)
             row = cursor.fetchone()
             return float(row["balance"]) if row else 0.0
 
@@ -82,7 +89,7 @@ class BalanceMixin:
                         return False, "Esta transacción es el reflejo de una conversión. Debes eliminarla desde 'Puente Conversión'.", None
 
                     if tx["type"] == "DEPOSIT":
-                        current_balance = self.get_usd_balance()
+                        current_balance = self.get_usd_balance(conn=conn)
                         resulting_balance = current_balance - float(tx["amount"])
 
                         if resulting_balance < -0.001 and not force:
@@ -97,38 +104,61 @@ class BalanceMixin:
                             }
                             return False, "WARNING_NEGATIVE_BALANCE", warning_data
 
+                    if tx["type"] in ("TRANSFER_TO_INVESTMENT", "TRANSFER_FROM_INVESTMENT"):
+                        cursor.execute("SELECT id FROM account_transactions WHERE linked_table = 'usd_transactions' AND linked_tx_id = ?;", (tx_id,))
+                        acc_tx = cursor.fetchone()
+                        if acc_tx:
+                            cursor.execute("DELETE FROM account_transactions WHERE id = ?;", (acc_tx["id"],))
+                            cursor.execute("DELETE FROM transaction_tags WHERE source_table = 'account_transactions' AND record_id = ?;", (acc_tx["id"],))
+
                     cursor.execute("DELETE FROM usd_transactions WHERE id = ?;", (tx_id,))
+                    cursor.execute("DELETE FROM transaction_tags WHERE source_table = 'usd_transactions' AND record_id = ?;", (tx_id,))
                     conn.commit()
                     return True, "Transacción en USD eliminada exitosamente.", None
                 except Exception as e:
                     conn.rollback()
                     return False, f"Error al eliminar: {str(e)}", None
 
-    def get_cop_balance(self) -> float:
-        with self.get_connection() as conn:
+    def get_cop_balance(self, conn: Optional[Any] = None) -> float:
+        query = """
+            SELECT 
+                COALESCE(SUM(CASE WHEN type IN ('TRANSFER_IN', 'MANUAL_INCOME', 'TRANSFER_FROM_INVESTMENT') THEN amount ELSE 0 END), 0) -
+                COALESCE(SUM(CASE 
+                    WHEN type = 'EXPENSE' AND payment_method IN ('DEBIT', 'CASH') THEN amount 
+                    WHEN type IN ('CC_PAYMENT', 'TRANSFER_TO_INVESTMENT') THEN amount
+                    ELSE 0 
+                END), 0) AS balance
+            FROM cop_transactions;
+        """
+        if conn is not None:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN type IN ('TRANSFER_IN', 'MANUAL_INCOME', 'TRANSFER_FROM_INVESTMENT') THEN amount ELSE 0 END), 0) -
-                    COALESCE(SUM(CASE 
-                        WHEN type = 'EXPENSE' AND payment_method IN ('DEBIT', 'CASH') THEN amount 
-                        WHEN type IN ('CC_PAYMENT', 'TRANSFER_TO_INVESTMENT') THEN amount
-                        ELSE 0 
-                    END), 0) AS balance
-                FROM cop_transactions;
-            """)
+            cursor.execute(query)
             row = cursor.fetchone()
             return float(row["balance"]) if row else 0.0
 
-    def get_credit_card_debt(self) -> float:
-        with self.get_connection() as conn:
+        with self.get_connection() as c:
+            cursor = c.cursor()
+            cursor.execute(query)
+            row = cursor.fetchone()
+            return float(row["balance"]) if row else 0.0
+
+    def get_credit_card_debt(self, conn: Optional[Any] = None) -> float:
+        query = """
+            SELECT 
+                COALESCE(SUM(CASE WHEN type = 'EXPENSE' AND payment_method = 'CREDIT_CARD' THEN amount ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN type = 'CC_PAYMENT' THEN amount ELSE 0 END), 0) AS debt
+            FROM cop_transactions;
+        """
+        if conn is not None:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN type = 'EXPENSE' AND payment_method = 'CREDIT_CARD' THEN amount ELSE 0 END), 0) -
-                    COALESCE(SUM(CASE WHEN type = 'CC_PAYMENT' THEN amount ELSE 0 END), 0) AS debt
-                FROM cop_transactions;
-            """)
+            cursor.execute(query)
+            row = cursor.fetchone()
+            debt = float(row["debt"]) if row else 0.0
+            return max(0.0, debt)
+
+        with self.get_connection() as c:
+            cursor = c.cursor()
+            cursor.execute(query)
             row = cursor.fetchone()
             debt = float(row["debt"]) if row else 0.0
             return max(0.0, debt)
@@ -250,7 +280,7 @@ class BalanceMixin:
                         return False, "Este ingreso proviene de una conversión USD. Debes gestionarlo desde 'Puente Conversión'.", None
 
                     if tx["type"] in ("MANUAL_INCOME", "TRANSFER_FROM_INVESTMENT"):
-                        current_bal = self.get_cop_balance()
+                        current_bal = self.get_cop_balance(conn=conn)
                         resulting_bal = current_bal - float(tx["amount"])
                         if resulting_bal < -0.001 and not force:
                             conn.rollback()
@@ -264,7 +294,15 @@ class BalanceMixin:
                             }
                             return False, "WARNING_NEGATIVE_BALANCE", warning_data
 
+                    if tx["type"] in ("TRANSFER_TO_INVESTMENT", "TRANSFER_FROM_INVESTMENT"):
+                        cursor.execute("SELECT id FROM account_transactions WHERE linked_table = 'cop_transactions' AND linked_tx_id = ?;", (tx_id,))
+                        acc_tx = cursor.fetchone()
+                        if acc_tx:
+                            cursor.execute("DELETE FROM account_transactions WHERE id = ?;", (acc_tx["id"],))
+                            cursor.execute("DELETE FROM transaction_tags WHERE source_table = 'account_transactions' AND record_id = ?;", (acc_tx["id"],))
+
                     cursor.execute("DELETE FROM cop_transactions WHERE id = ?;", (tx_id,))
+                    cursor.execute("DELETE FROM transaction_tags WHERE source_table = 'cop_transactions' AND record_id = ?;", (tx_id,))
                     conn.commit()
                     return True, "Movimiento eliminado exitosamente.", None
                 except Exception as e:

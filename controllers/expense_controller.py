@@ -1,24 +1,18 @@
+from core.utils import parse_currency_amount
+
 class ExpenseController:
     def __init__(self, db_manager):
         self.db = db_manager
 
     def add_expense(self, amount_str, category, date_str, notes, is_fixed, is_usd, payment_method_label, selected_tag_ids):
         # 1. Validación de monto
-        amount_clean = amount_str.replace(",", "").replace(".", "").strip()
-        if not amount_clean:
+        if not amount_str or not str(amount_str).strip():
             return False, "El monto no puede estar vacío."
             
-        try:
-            # En COP normalmente son enteros grandes, en USD pueden tener decimales
-            if is_usd:
-                amount = float(amount_clean)
-            else:
-                amount = int(amount_clean)
-                
-            if amount <= 0:
-                return False, "El monto debe ser mayor a cero."
-        except ValueError:
-            return False, "Por favor, ingresa un monto numérico válido."
+        currency = "USD" if is_usd else "COP"
+        amount = parse_currency_amount(amount_str, currency=currency)
+        if amount <= 0:
+            return False, "Por favor, ingresa un monto numérico válido mayor a cero."
 
         # 2. Mapeo de método de pago
         pm_code = "DEBIT"

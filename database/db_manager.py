@@ -10,6 +10,7 @@ import sys
 import shutil
 import threading
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Optional
 
@@ -105,8 +106,9 @@ class DatabaseManager(
 
         self.init_db()
 
-    def get_connection(self) -> sqlite3.Connection:
-        """Obtiene una conexión configurada con WAL mode, alto rendimiento en memoria y soporte foráneo."""
+    @contextmanager
+    def get_connection(self):
+        """Context manager que garantiza el cierre de la conexión SQLite en un bloque finally."""
         conn = sqlite3.connect(self.db_path, timeout=15.0, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON;")
@@ -114,7 +116,17 @@ class DatabaseManager(
         conn.execute("PRAGMA synchronous = NORMAL;")
         conn.execute("PRAGMA cache_size = -64000;")
         conn.execute("PRAGMA temp_store = MEMORY;")
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            raise
+        finally:
+            conn.close()
 
 
     def init_db(self) -> None:
@@ -165,6 +177,8 @@ class DatabaseManager(
                         exchange_rate REAL NOT NULL CHECK(exchange_rate > 0),
                         cop_amount REAL NOT NULL CHECK(cop_amount > 0),
                         notes TEXT,
+                        usd_tx_id INTEGER REFERENCES usd_transactions(id) ON DELETE SET NULL,
+                        cop_tx_id INTEGER REFERENCES cop_transactions(id) ON DELETE SET NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -227,6 +241,8 @@ class DatabaseManager(
                         type TEXT NOT NULL CHECK(type IN ('DEPOSIT', 'WITHDRAWAL', 'YIELD', 'TRANSFER_IN', 'TRANSFER_OUT')),
                         amount REAL NOT NULL CHECK(amount > 0),
                         notes TEXT,
+                        linked_tx_id INTEGER,
+                        linked_table TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -274,7 +290,8 @@ class DatabaseManager(
                         date TEXT NOT NULL,
                         amount REAL NOT NULL CHECK(amount > 0),
                         notes TEXT,
-                        transaction_id INTEGER REFERENCES cop_transactions(id) ON DELETE SET NULL,
+                        transaction_id INTEGER,
+                        transaction_table TEXT DEFAULT 'cop_transactions',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -309,6 +326,28 @@ class DatabaseManager(
                 if "recurring_id" not in usd_cols:
                     cursor.execute("ALTER TABLE usd_transactions ADD COLUMN recurring_id INTEGER REFERENCES recurring_expenses(id) ON DELETE SET NULL;")
 
+                # Migración defensiva: usd_tx_id y cop_tx_id en conversions
+                cursor.execute("PRAGMA table_info(conversions);")
+                conv_cols = [row["name"] for row in cursor.fetchall()]
+                if "usd_tx_id" not in conv_cols:
+                    cursor.execute("ALTER TABLE conversions ADD COLUMN usd_tx_id INTEGER REFERENCES usd_transactions(id) ON DELETE SET NULL;")
+                if "cop_tx_id" not in conv_cols:
+                    cursor.execute("ALTER TABLE conversions ADD COLUMN cop_tx_id INTEGER REFERENCES cop_transactions(id) ON DELETE SET NULL;")
+
+                # Migración defensiva: linked_tx_id y linked_table en account_transactions
+                cursor.execute("PRAGMA table_info(account_transactions);")
+                acc_cols = [row["name"] for row in cursor.fetchall()]
+                if "linked_tx_id" not in acc_cols:
+                    cursor.execute("ALTER TABLE account_transactions ADD COLUMN linked_tx_id INTEGER;")
+                if "linked_table" not in acc_cols:
+                    cursor.execute("ALTER TABLE account_transactions ADD COLUMN linked_table TEXT;")
+
+                # Migración defensiva: transaction_table en debt_payments
+                cursor.execute("PRAGMA table_info(debt_payments);")
+                dp_cols = [row["name"] for row in cursor.fetchall()]
+                if "transaction_table" not in dp_cols:
+                    cursor.execute("ALTER TABLE debt_payments ADD COLUMN transaction_table TEXT DEFAULT 'cop_transactions';")
+
                 # Índices para acelerar consultas por fecha y tipo
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_date_type ON cop_transactions(date, type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_cop_cat ON cop_transactions(category);")
@@ -316,6 +355,8 @@ class DatabaseManager(
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_date_type ON usd_transactions(date, type);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_usd_recurring ON usd_transactions(recurring_id);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_acc_date_type ON account_transactions(date, type);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_acc_linked ON account_transactions(linked_table, linked_tx_id);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_conv_tx ON conversions(usd_tx_id, cop_tx_id);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_tx_tags ON transaction_tags(source_table, record_id);")
 
                 # Pre-poblar categorías limpias por defecto si está vacía
@@ -466,22 +507,28 @@ class DatabaseManager(
             cursor.execute("ALTER TABLE categories_new RENAME TO categories;")
             cursor.execute("PRAGMA foreign_keys = ON;")
 
-    def create_backup(self) -> Optional[str]:
-        """Crea un respaldo de seguridad del archivo SQLite en la carpeta backups/."""
+    def create_backup(self, dest_path: Optional[str] = None) -> Optional[str]:
+        """Crea un respaldo de seguridad íntegro del archivo SQLite."""
         if not os.path.exists(self.db_path):
             return None
 
-        base_dir = os.path.dirname(self.db_path)
-        backup_dir = os.path.join(base_dir, "backups")
-        os.makedirs(backup_dir, exist_ok=True)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_filename = f"finanzas_backup_{timestamp}.db"
-        backup_filepath = os.path.join(backup_dir, backup_filename)
+        if dest_path:
+            backup_filepath = dest_path
+            os.makedirs(os.path.dirname(os.path.abspath(backup_filepath)), exist_ok=True)
+            backup_dir = os.path.dirname(os.path.abspath(backup_filepath))
+        else:
+            base_dir = os.path.dirname(self.db_path)
+            backup_dir = os.path.join(base_dir, "backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f"finanzas_backup_{timestamp}.db"
+            backup_filepath = os.path.join(backup_dir, backup_filename)
 
         try:
             with self._write_lock:
-                shutil.copy2(self.db_path, backup_filepath)
+                with self.get_connection() as src_conn:
+                    with sqlite3.connect(backup_filepath) as dst_conn:
+                        src_conn.backup(dst_conn)
 
             # Mantener máximo los 15 backups más recientes
             backups = sorted(
@@ -526,10 +573,11 @@ class DatabaseManager(
 
     def set_setting(self, key: str, value: str):
         """Guarda o actualiza un valor de configuración persistente."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO app_settings (key, value, updated_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;
-            """, (key, str(value)))
+        with self._write_lock:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO app_settings (key, value, updated_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;
+                """, (key, str(value)))

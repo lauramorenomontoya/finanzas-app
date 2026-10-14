@@ -4,6 +4,7 @@ Mixin para Importación y Descarga de Plantillas CSV y Datos de Notion.
 
 import csv
 import os
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional
 
@@ -113,64 +114,66 @@ class CSVMixin:
                 # Crear respaldo preventivo
                 self.create_backup()
 
-                for row_idx, raw_row in enumerate(rows, start=2):
-                    row = {k.strip().lower(): v.strip() for k, v in raw_row.items() if k and v is not None}
+                # Batching seguro con Write Lock para prevenir contención de bloqueos WAL
+                with self._write_lock:
+                    for row_idx, raw_row in enumerate(rows, start=2):
+                        row = {k.strip().lower(): v.strip() for k, v in raw_row.items() if k and v is not None}
 
-                    tx_type = (row.get("tipo") or row.get("type") or row.get("modulo") or "").upper()
-                    raw_date = row.get("fecha") or row.get("date")
-                    parsed_d = NotionImporter.parse_spanish_date(raw_date)
-                    date_val = parsed_d if parsed_d else (raw_date or datetime.now().strftime("%Y-%m-%d"))
+                        tx_type = (row.get("tipo") or row.get("type") or row.get("modulo") or "").upper()
+                        raw_date = row.get("fecha") or row.get("date")
+                        parsed_d = NotionImporter.parse_spanish_date(raw_date)
+                        date_val = parsed_d if parsed_d else (raw_date or datetime.now().strftime("%Y-%m-%d"))
 
-                    concept = row.get("concepto") or row.get("categoria") or row.get("description") or row.get("concept") or "Movimiento Importado"
-                    amount_str = row.get("monto") or row.get("amount") or row.get("valor") or "0"
-                    currency = (row.get("moneda") or row.get("currency") or "COP").upper()
-                    pm = (row.get("metodo_pago") or row.get("payment_method") or "DEBIT").upper()
-                    fixed_str = (row.get("es_fijo") or row.get("is_fixed") or "0").lower()
-                    notes = row.get("notas") or row.get("notes") or row.get("detalle") or "Importado desde CSV"
+                        concept = row.get("concepto") or row.get("categoria") or row.get("description") or row.get("concept") or "Movimiento Importado"
+                        amount_str = row.get("monto") or row.get("amount") or row.get("valor") or "0"
+                        currency = (row.get("moneda") or row.get("currency") or "COP").upper()
+                        pm = (row.get("metodo_pago") or row.get("payment_method") or "DEBIT").upper()
+                        fixed_str = (row.get("es_fijo") or row.get("is_fixed") or "0").lower()
+                        notes = row.get("notas") or row.get("notes") or row.get("detalle") or "Importado desde CSV"
 
-                    amount = NotionImporter.parse_currency_amount(amount_str)
-                    if amount <= 0:
-                        skipped_count += 1
-                        continue
+                        amount = NotionImporter.parse_currency_amount(amount_str)
+                        if amount <= 0:
+                            skipped_count += 1
+                            continue
 
-                    pm_code = "DEBIT"
-                    if "TC" in pm or "CREDIT" in pm or "TARJETA" in pm:
-                        pm_code = "CREDIT_CARD"
-                    elif "CASH" in pm or "EFECTIVO" in pm:
-                        pm_code = "CASH"
+                        pm_code = "DEBIT"
+                        if "TC" in pm or "CREDIT" in pm or "TARJETA" in pm:
+                            pm_code = "CREDIT_CARD"
+                        elif "CASH" in pm or "EFECTIVO" in pm:
+                            pm_code = "CASH"
 
-                    is_fixed = fixed_str in ("1", "true", "si", "sí", "yes", "fijo")
+                        is_fixed = fixed_str in ("1", "true", "si", "sí", "yes", "fijo")
 
-                    try:
-                        if "CONVERSION" in tx_type:
-                            rate = 3100.0
-                            try:
-                                if notes and any(c.isdigit() for c in notes):
-                                    rate_digits = "".join([c for c in notes if c.isdigit() or c in ".,"])
-                                    if rate_digits:
-                                        rate = float(rate_digits.replace(",", "."))
-                            except Exception:
+                        try:
+                            if "CONVERSION" in tx_type:
                                 rate = 3100.0
-                            self.execute_conversion(date_val, amount, rate, notes=notes)
-                            imported_count += 1
+                                try:
+                                    if notes:
+                                        m_rate = re.search(r"(\d{3,5}(?:[.,]\d+)?)", notes)
+                                        if m_rate:
+                                            rate = float(m_rate.group(1).replace(",", "."))
+                                except Exception:
+                                    rate = 3100.0
+                                self.execute_conversion(date_val, amount, rate, notes=notes)
+                                imported_count += 1
 
-                        elif "USD" in tx_type or currency == "USD":
-                            if "GASTO" in tx_type or "EGRESO" in tx_type or "EXPENSE" in tx_type:
-                                self.add_usd_expense(date_val, concept, amount, notes=notes)
+                            elif "USD" in tx_type or currency == "USD":
+                                if "GASTO" in tx_type or "EGRESO" in tx_type or "EXPENSE" in tx_type:
+                                    self.add_usd_expense(date_val, concept, amount, notes=notes)
+                                else:
+                                    self.add_usd_deposit(date_val, concept, amount, notes=notes)
+                                imported_count += 1
+
                             else:
-                                self.add_usd_deposit(date_val, concept, amount, notes=notes)
-                            imported_count += 1
+                                if "GASTO" in tx_type or "EGRESO" in tx_type or "EXPENSE" in tx_type:
+                                    self.add_cop_expense(date_val, concept, amount, is_fixed=is_fixed, payment_method=pm_code, notes=notes)
+                                else:
+                                    self.add_cop_income(date_val, concept, amount, notes=notes)
+                                imported_count += 1
 
-                        else:
-                            if "GASTO" in tx_type or "EGRESO" in tx_type or "EXPENSE" in tx_type:
-                                self.add_cop_expense(date_val, concept, amount, is_fixed=is_fixed, payment_method=pm_code, notes=notes)
-                            else:
-                                self.add_cop_income(date_val, concept, amount, notes=notes)
-                            imported_count += 1
-
-                    except Exception as row_err:
-                        skipped_count += 1
-                        errors.append(f"Fila {row_idx}: {str(row_err)}")
+                        except Exception as row_err:
+                            skipped_count += 1
+                            errors.append(f"Fila {row_idx}: {str(row_err)}")
 
             return {
                 "success": imported_count > 0 or skipped_count == 0,
