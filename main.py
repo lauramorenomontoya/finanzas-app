@@ -21,6 +21,18 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+# Asegurar certificados CA en macOS/Linux para entornos congelados (PyInstaller)
+if "SSL_CERT_FILE" not in os.environ:
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        for ca_rel in ["certifi/cacert.pem", "cacert.pem"]:
+            ca_cand = os.path.join(meipass, ca_rel)
+            if os.path.exists(ca_cand):
+                os.environ["SSL_CERT_FILE"] = ca_cand
+                break
+    if "SSL_CERT_FILE" not in os.environ and os.path.exists("/etc/ssl/cert.pem"):
+        os.environ["SSL_CERT_FILE"] = "/etc/ssl/cert.pem"
+
 # Auto-relanzar usando el entorno virtual si se ejecutó con el Python del sistema (solo en modo desarrollo)
 if not getattr(sys, "frozen", False):
     venv_python = os.path.join(BASE_DIR, "venv", "bin", "python3")

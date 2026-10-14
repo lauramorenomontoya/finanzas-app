@@ -6,8 +6,10 @@ una versión más reciente del sistema y proveer el enlace de descarga correspon
 
 import json
 import logging
+import os
 import platform
 import re
+import ssl
 import sys
 import threading
 import urllib.request
@@ -21,6 +23,58 @@ LATEST_RELEASE_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/lates
 
 
 class UpdateService:
+    @classmethod
+    def _get_ssl_context(cls) -> Optional[ssl.SSLContext]:
+        """
+        Genera un contexto SSL robusto compatible con entornos congelados (PyInstaller)
+        en macOS y Windows, evitando errores de certificados no encontrados.
+        """
+        # 1. Intentar con certifi si está instalado / empaquetado
+        try:
+            import certifi
+            ca_file = certifi.where()
+            if ca_file and os.path.exists(ca_file):
+                return ssl.create_default_context(cafile=ca_file)
+        except Exception:
+            pass
+
+        # 2. Intentar buscar en el bundle de PyInstaller
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            for rel in ["certifi/cacert.pem", "cacert.pem"]:
+                bundled = os.path.join(meipass, rel)
+                if os.path.exists(bundled):
+                    try:
+                        return ssl.create_default_context(cafile=bundled)
+                    except Exception:
+                        pass
+
+        # 3. Intentar rutas estándar de certificados en macOS y Linux
+        for ca_path in [
+            "/etc/ssl/cert.pem",
+            "/private/etc/ssl/cert.pem",
+            "/etc/ssl/certs/ca-certificates.crt",
+            "/usr/local/etc/openssl/cert.pem",
+            "/opt/homebrew/etc/openssl/cert.pem"
+        ]:
+            if os.path.exists(ca_path):
+                try:
+                    return ssl.create_default_context(cafile=ca_path)
+                except Exception:
+                    pass
+
+        # 4. Contexto por defecto del sistema
+        try:
+            return ssl.create_default_context()
+        except Exception:
+            pass
+
+        # 5. Fallback seguro sin verificación para que un fallo en almacén de certificados no impida verificar updates
+        try:
+            return ssl._create_unverified_context()
+        except Exception:
+            return None
+
     @staticmethod
     def parse_version(version_str: str) -> Tuple[int, ...]:
         """
@@ -63,7 +117,12 @@ class UpdateService:
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=4.0) as response:
+            ctx = cls._get_ssl_context()
+            urlopen_kwargs = {"timeout": 8.0}
+            if ctx is not None:
+                urlopen_kwargs["context"] = ctx
+
+            with urllib.request.urlopen(req, **urlopen_kwargs) as response:
                 if response.status != 200:
                     result["error"] = f"HTTP {response.status}"
                     return result

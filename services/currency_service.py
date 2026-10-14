@@ -38,9 +38,13 @@ class CurrencyService:
         }
 
         try:
-            ctx = ssl.create_default_context()
+            from services.update_service import UpdateService
+            ctx = UpdateService._get_ssl_context()
         except Exception:
-            ctx = None
+            try:
+                ctx = ssl.create_default_context()
+            except Exception:
+                ctx = None
 
         # 1. Intentar Superintendencia Financiera de Colombia (TRM Oficial)
         try:
